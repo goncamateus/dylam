@@ -11,21 +11,21 @@ import envs
 
 from pyvirtualdisplay import Display
 
-from methods.sac import SAC
+from methods.sac import SAC, SACStrat
 from utils.experiment import get_experiment, make_env
 from utils.experiment import parse_args
 from utils.experiment import setup_run
+from utils.logger import SACLogger
 
 
-def train(args, exp_name, wandb_run, artifact):
+def train(args, exp_name, logger: SACLogger):
     envs = gym.vector.AsyncVectorEnv(
         [make_env(args, i, exp_name) for i in range(args.num_envs)]
     )
-    agent = SAC(args, envs.single_observation_space, envs.single_action_space)
+    method = SAC if not args.dylam else SACStrat
+    agent = method(args, envs.single_observation_space, envs.single_action_space)
 
-    start_time = time.time()
     obs, _ = envs.reset()
-    log = {}
     for global_step in range(args.total_timesteps):
         if global_step < args.learning_starts:
             actions = np.array(
@@ -35,16 +35,7 @@ def train(args, exp_name, wandb_run, artifact):
             actions = agent.get_action(obs)
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
 
-        if "final_info" in infos:
-            for info in infos["final_info"]:
-                if info:
-                    print(
-                        f"global_step={global_step}, episodic_return={info['reward_total']}"
-                    )
-                    keys_to_log = [x for x in info.keys() if x.startswith("reward_")]
-                    for key in keys_to_log:
-                        log[f"ep_info/{key.replace('reward_', '')}"] = info[key]
-                    break
+        logger.log_episode(infos, rewards)
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `terminal_observation`
         real_next_obs = next_obs.copy()
@@ -65,26 +56,20 @@ def train(args, exp_name, wandb_run, artifact):
                 agent.critic_target.sync(args.tau)
 
             if global_step % 100 == 0:
-                log.update(
+                logger.log_losses(
                     {
-                        "losses/Value1_loss": qf1_loss.item(),
-                        "losses/Value2_loss": qf2_loss.item(),
-                        "losses/alpha": agent.alpha,
-                        "charts/SPS": int(global_step / (time.time() - start_time)),
+                        "policy_loss": policy_loss,
+                        "qf1_loss": qf1_loss,
+                        "qf2_loss": qf2_loss,
+                        "alpha": alpha_loss,
                     }
                 )
 
-                if update_actor:
-                    log.update({"losses/policy_loss": policy_loss.item()})
-                if args.autotune:
-                    log.update({"losses/alpha_loss": alpha_loss.item()})
-
-        wandb.log(log, global_step)
+        logger.push(global_step)
         if global_step % 9999 == 0:
             agent.save(f"models/{exp_name}/")
 
-    artifact.add_file(f"models/{exp_name}/actor.pt")
-    wandb_run.log_artifact(artifact)
+    logger.log_artifact()
     envs.close()
 
 
@@ -92,8 +77,9 @@ def main(params):
     exp_name = f"{params.env}-{params.setup}_{int(time.time())}"
     _display = Display(visible=0, size=(1400, 900))
     _display.start()
-    wandb_run, artifact = setup_run(exp_name, params)
-    train(params, exp_name, wandb_run, artifact)
+    logger = SACLogger(exp_name, params)
+    setup_run(params)
+    train(params, exp_name, logger)
 
 
 if __name__ == "__main__":

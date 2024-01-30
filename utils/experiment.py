@@ -63,9 +63,9 @@ def base_hyperparams():
         "epsilon": 1e-6,
         "autotune": True,
         "reward_scaling": 1.0,
-        "lambda_temporal": 0,
-        "lambda_spacial": 0,
-        "caps_epsilon": 1,
+        "dylam_rb": 10,
+        "dylam_tau": 0.995,
+        "dylam": False,
     }
     return hyper_params
 
@@ -73,7 +73,21 @@ def base_hyperparams():
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--env", type=str, default="Baseline")
-    parser.add_argument("--setup", type=str, default="Pure")
+    parser.add_argument(
+        "--reward-scaling", type=float, default=1.0, help="reward scaling factor"
+    )
+    parser.add_argument(
+        "--dylam-rb", type=int, default=10, help="number of episodes to calculate rb"
+    )
+    parser.add_argument("--dylam-tau", type=float, default=0.995, help="dylam tau")
+    parser.add_argument(
+        "--dylam",
+        type=lambda x: bool(strtobool(x)),
+        default=False,
+        nargs="?",
+        const=True,
+        help="Rather use DyLam or not",
+    )
     parser.add_argument(
         "--cuda",
         type=lambda x: bool(strtobool(x)),
@@ -120,27 +134,9 @@ def get_experiment(arguments):
     return experiment
 
 
-def setup_run(exp_name, params):
-    project = "PathPlanning"
-    if params.seed == 0:
-        params.seed = int(time.time())
-    params.method = "sac"
-    wandb_run = wandb.init(
-        project=project,
-        name=exp_name,
-        entity="goncamateus",
-        config=vars(params),
-        monitor_gym=True,
-        mode=None if params.track else "disabled",
-        save_code=True,
-    )
-    artifact = wandb.Artifact("model", type="model")
-    print(vars(params))
-
+def setup_run(params):
     # TRY NOT TO MODIFY: seeding
     random.seed(params.seed)
     np.random.seed(params.seed)
     torch.manual_seed(params.seed)
     torch.backends.cudnn.deterministic = params.torch_deterministic
-
-    return wandb_run, artifact
