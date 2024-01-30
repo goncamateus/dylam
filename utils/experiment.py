@@ -63,6 +63,7 @@ def base_hyperparams():
         "epsilon": 1e-6,
         "autotune": True,
         "reward_scaling": 1.0,
+        "num_rewards": 1,
         "dylam_rb": 10,
         "dylam_tau": 0.995,
         "dylam": False,
@@ -73,21 +74,6 @@ def base_hyperparams():
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--env", type=str, default="Baseline")
-    parser.add_argument(
-        "--reward-scaling", type=float, default=1.0, help="reward scaling factor"
-    )
-    parser.add_argument(
-        "--dylam-rb", type=int, default=10, help="number of episodes to calculate rb"
-    )
-    parser.add_argument("--dylam-tau", type=float, default=0.995, help="dylam tau")
-    parser.add_argument(
-        "--dylam",
-        type=lambda x: bool(strtobool(x)),
-        default=False,
-        nargs="?",
-        const=True,
-        help="Rather use DyLam or not",
-    )
     parser.add_argument(
         "--cuda",
         type=lambda x: bool(strtobool(x)),

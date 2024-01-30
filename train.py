@@ -11,7 +11,7 @@ import envs
 
 from pyvirtualdisplay import Display
 
-from methods.sac import SAC, SACStrat
+from methods.sac import SACStrat
 from utils.experiment import get_experiment, make_env
 from utils.experiment import parse_args
 from utils.experiment import setup_run
@@ -22,8 +22,8 @@ def train(args, exp_name, logger: SACLogger):
     envs = gym.vector.AsyncVectorEnv(
         [make_env(args, i, exp_name) for i in range(args.num_envs)]
     )
-    method = SAC if not args.dylam else SACStrat
-    agent = method(args, envs.single_observation_space, envs.single_action_space)
+
+    agent = SACStrat(args, envs.single_observation_space, envs.single_action_space)
 
     obs, _ = envs.reset()
     for global_step in range(args.total_timesteps):
