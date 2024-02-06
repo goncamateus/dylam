@@ -28,15 +28,18 @@ class WandbResultLogger:
                         print(f"episodic_return={info['episode']['r'][0]}")
                         self.log.update(
                             {
-                                "ep_info/length": info["episode"]["l"][0],
-                                "ep_info/reward": info["episode"]["r"][0],
+                                "ep_info/total": info["episode"]["r"][0],
                             }
                         )
                     else:
                         print(f"episodic_return={info['reward_total']}")
-                        keys_to_log = [x for x in info.keys() if x.startswith("reward_")]
+                        keys_to_log = [
+                            x for x in info.keys() if x.startswith("reward_")
+                        ]
                         for key in keys_to_log:
-                            self.log[f"ep_info/{key.replace('reward_', '')}"] = info[key]
+                            self.log[f"ep_info/{key.replace('reward_', '')}"] = info[
+                                key
+                            ]
                     break
         self.log.update({"rewards": rewards})
 
@@ -50,7 +53,10 @@ class WandbResultLogger:
             self.log.update({"lambdas/component_" + str(i): lambdas[i].item()})
 
     def log_artifact(self):
-        self.artifact.add_file(f"models/{self.run.config['name']}/actor.pt")
+        gym_names = self.run.config["gym_id"].split("-")
+        first_name = gym_names[0] if gym_names[0] != "mo" else gym_names[1]
+        name = f"{first_name}_{self.run.config['seed']}"
+        self.artifact.add_file(f"models/{name}/actor.pt")
 
     def push(self, global_step):
         self.run.log(self.log, global_step)

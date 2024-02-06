@@ -75,7 +75,9 @@ def train(args, exp_name, logger: SACLogger):
 
 
 def main(params):
-    exp_name = f"{params.setup}-{params.env}_{int(time.time())}"
+    gym_names = params.gym_id.split("-")
+    first_name = gym_names[0] if gym_names[0] != "mo" else gym_names[1]
+    exp_name = f"{first_name}_{int(time.time())}"
     _display = Display(visible=0, size=(1400, 900))
     _display.start()
     logger = SACLogger(exp_name, params)
