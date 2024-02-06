@@ -307,6 +307,7 @@ class SAC(nn.Module):
             state_batch, action_batch, reward_batch, next_state_batch, done_batch
         )
         policy_loss = None
+        alpha_loss = None
         if update_actor:
             policy_loss, alpha_loss = self.update_actor(state_batch)
 
@@ -334,8 +335,8 @@ class SACStrat(SAC):
         log_sig_max=2,
         hidden_dim=256,
     ):
-        self.is_dylam = args.is_dylam
-        self.num_rewards = args.n_rewards
+        self.is_dylam = args.dylam
+        self.num_rewards = args.num_rewards
         super().__init__(
             args, observation_space, action_space, log_sig_min, log_sig_max, hidden_dim
         )
@@ -347,9 +348,9 @@ class SACStrat(SAC):
             self.lambdas = torch.Tensor(args.lambdas).to(self.device)
         self.r_max = torch.Tensor(args.r_max).to(self.device)
         self.r_min = torch.Tensor(args.r_min).to(self.device)
-        self.rew_tau = args.rew_tau
+        self.rew_tau = args.dylam_tau
         self.last_reward_mean = None
-        self.last_episode_rewards = StratLastRewards(args.episodes_rb, self.num_rewards)
+        self.last_episode_rewards = StratLastRewards(args.dylam_rb, self.num_rewards)
 
     def get_networks(
         self, action_space, epsilon, log_sig_min=-5, log_sig_max=2, hidden_dim=256
@@ -385,7 +386,7 @@ class SACStrat(SAC):
         self.actor_optim.zero_grad()
         policy_loss.backward()
         self.actor_optim.step()
-        
+
         alpha_loss = self.update_alpha(state_batch)
 
         return policy_loss, alpha_loss

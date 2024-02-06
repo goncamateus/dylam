@@ -1,0 +1,18 @@
+Baseline:
+  LUNARLANDER:
+    gym_id: LunarLanderContinuous-v2
+    num_envs: 16
+    total_timesteps: 200000
+    dylam: false
+  MOUNTAINCAR:
+    gym_id: MountainCarContinuous-v0
+    num_envs: 16
+    total_timesteps: 200000
+  HOPPER:
+    gym_id: Hopper-v4
+    num_envs: 16
+    total_timesteps: 200000
+  MARIO:
+    gym_id: SuperMarioBros-v0
+    num_envs: 16
+    total_timesteps: 1000000

@@ -24,10 +24,19 @@ class WandbResultLogger:
         if "final_info" in infos:
             for info in infos["final_info"]:
                 if info:
-                    print(f"episodic_return={info['reward_total']}")
-                    keys_to_log = [x for x in info.keys() if x.startswith("reward_")]
-                    for key in keys_to_log:
-                        self.log[f"ep_info/{key.replace('reward_', '')}"] = info[key]
+                    if "episode" in info:
+                        print(f"episodic_return={info['episode']['r'][0]}")
+                        self.log.update(
+                            {
+                                "ep_info/length": info["episode"]["l"][0],
+                                "ep_info/reward": info["episode"]["r"][0],
+                            }
+                        )
+                    else:
+                        print(f"episodic_return={info['reward_total']}")
+                        keys_to_log = [x for x in info.keys() if x.startswith("reward_")]
+                        for key in keys_to_log:
+                            self.log[f"ep_info/{key.replace('reward_', '')}"] = info[key]
                     break
         self.log.update({"rewards": rewards})
 

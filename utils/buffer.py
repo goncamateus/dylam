@@ -13,12 +13,13 @@ class ReplayBuffer:
 
     def add(self, state, action, reward, next_state, done):
         for i in range(len(state)):
-            if reward[i].shape == ():
-                reward[i] = np.array([reward[i]])
+            rew = reward[i]
+            if rew.shape == ():
+                rew = np.array([rew])
             experience = (
                 state[i],
                 action[i],
-                reward[i],
+                rew,
                 next_state[i],
                 done[i],
             )

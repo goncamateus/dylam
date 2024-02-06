@@ -61,7 +61,8 @@ def train(args, exp_name, logger: SACLogger):
                         "policy_loss": policy_loss,
                         "qf1_loss": qf1_loss,
                         "qf2_loss": qf2_loss,
-                        "alpha": alpha_loss,
+                        "alpha": agent.alpha,
+                        "alpha_loss": alpha_loss,
                     }
                 )
 
@@ -74,7 +75,7 @@ def train(args, exp_name, logger: SACLogger):
 
 
 def main(params):
-    exp_name = f"{params.env}-{params.setup}_{int(time.time())}"
+    exp_name = f"{params.setup}-{params.env}_{int(time.time())}"
     _display = Display(visible=0, size=(1400, 900))
     _display.start()
     logger = SACLogger(exp_name, params)

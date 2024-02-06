@@ -67,13 +67,17 @@ def base_hyperparams():
         "dylam_rb": 10,
         "dylam_tau": 0.995,
         "dylam": False,
+        "lambdas": [1],
+        "r_max": [1],
+        "r_min": [0],
     }
     return hyper_params
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--env", type=str, default="Baseline")
+    parser.add_argument("--setup", type=str, default="Baseline")
+    parser.add_argument("--env", type=str, default="LunarLander")
     parser.add_argument(
         "--cuda",
         type=lambda x: bool(strtobool(x)),
@@ -105,8 +109,8 @@ def parse_args():
         help="Log on wandb",
     )
     args = parser.parse_args()
-    args.env = args.env.lower().title()
-    args.setup = args.setup.lower().upper()
+    args.env = args.env.lower().upper()
+    args.setup = args.setup.lower().title()
     return args
 
 
@@ -115,7 +119,7 @@ def get_experiment(arguments):
         params = safe_load(f)
     experiment = base_hyperparams()
     experiment.update(vars(arguments))
-    experiment.update(params[arguments.env][arguments.setup])
+    experiment.update(params[arguments.setup][arguments.env])
     experiment = argparse.Namespace(**experiment)
     return experiment
 
