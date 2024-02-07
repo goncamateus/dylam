@@ -7,7 +7,7 @@ from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch.distributions import Normal
+from torch.distributions import Normal, Categorical
 from torch.optim import Adam
 
 from utils.buffer import ReplayBuffer, StratLastRewards
@@ -18,6 +18,12 @@ def weights_init_(m):
     if isinstance(m, nn.Linear):
         torch.nn.init.xavier_uniform_(m.weight, gain=1)
         torch.nn.init.constant_(m.bias, 0)
+
+
+def cnn_weights_init(layer, bias_const=0.0):
+    nn.init.kaiming_normal_(layer.weight)
+    torch.nn.init.constant_(layer.bias, bias_const)
+    return layer
 
 
 class QNetwork(nn.Module):
@@ -49,6 +55,149 @@ class QNetwork(nn.Module):
         x1 = self.q1(xu)
         x2 = self.q2(xu)
         return x1, x2
+
+
+class DiscreteQNetwork(nn.Module):
+    def __init__(self, num_inputs, num_actions, num_outputs=1, hidden_dim=256):
+        super(QNetwork, self).__init__()
+
+        # Q1 architecture
+        self.q1 = nn.Sequential(
+            nn.Linear(num_inputs, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, num_actions * num_outputs),
+        )
+
+        # Q2 architecture
+        self.q2 = nn.Sequential(
+            nn.Linear(num_inputs, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, num_actions * num_outputs),
+        )
+
+        self.apply(weights_init_)
+
+    def forward(self, state):
+        x1 = self.q1(state)
+        x1 = x1.view(-1, self.num_actions, self.num_outputs)
+        x2 = self.q2(state)
+        x2 = x2.view(-1, self.num_actions, self.num_outputs)
+        return x1, x2
+
+
+class ImageQNetwork(nn.Module):
+    def __init__(self, obs_shape, num_actions, num_outputs=1, **kwargs):
+        super().__init__()
+        self.num_actions = num_actions
+        self.num_outputs = num_outputs
+        self.conv1 = nn.Sequential(
+            cnn_weights_init(nn.Conv2d(obs_shape[0], 32, kernel_size=8, stride=4)),
+            nn.ReLU(),
+            cnn_weights_init(nn.Conv2d(32, 64, kernel_size=4, stride=2)),
+            nn.ReLU(),
+            cnn_weights_init(nn.Conv2d(64, 64, kernel_size=3, stride=1)),
+            nn.Flatten(),
+        )
+        self.conv2 = nn.Sequential(
+            cnn_weights_init(nn.Conv2d(obs_shape[0], 32, kernel_size=8, stride=4)),
+            nn.ReLU(),
+            cnn_weights_init(nn.Conv2d(32, 64, kernel_size=4, stride=2)),
+            nn.ReLU(),
+            cnn_weights_init(nn.Conv2d(64, 64, kernel_size=3, stride=1)),
+            nn.Flatten(),
+        )
+
+        with torch.inference_mode():
+            output_dim = self.conv1(torch.zeros(1, *obs_shape)).shape[1]
+
+        self.fc1 = cnn_weights_init(nn.Linear(output_dim, 512))
+        self.fc2 = cnn_weights_init(nn.Linear(output_dim, 512))
+        self.fc_q1 = cnn_weights_init(nn.Linear(512, num_actions * num_outputs))
+        self.fc_q2 = cnn_weights_init(nn.Linear(512, num_actions * num_outputs))
+
+    def forward(self, x):
+        x1 = F.relu(self.conv1(x / 255.0))
+        x1 = F.relu(self.fc1(x1))
+        q1 = self.fc_q1(x1)
+        q1 = q1.view(-1, self.num_actions, self.num_outputs)
+
+        x2 = F.relu(self.conv2(x / 255.0))
+        x2 = F.relu(self.fc2(x2))
+        q2 = self.fc_q2(x2)
+        q2 = q2.view(-1, self.num_actions, self.num_outputs)
+
+        return q1, q2
+
+
+class CategoricalPolicy(nn.Module):
+    def __init__(
+        self,
+        num_inputs,
+        num_actions,
+        hidden_dim=256,
+        action_space=None,
+        **kwargs,
+    ):
+        super(CategoricalPolicy, self).__init__()
+        self.encoder = nn.Sequential(
+            nn.Linear(num_inputs, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+        )
+        self.apply(weights_init_)
+        self.fc_logits = nn.Linear(hidden_dim, num_actions)
+
+    def forward(self, state):
+        x = self.encoder(state)
+        logits = self.fc_logits(x)
+        return logits
+
+    def get_action(self, x):
+        logits = self(x / 255.0)
+        policy_dist = Categorical(logits=logits)
+        action = policy_dist.sample()
+        # Action probabilities for calculating the adapted soft-Q loss
+        action_probs = policy_dist.probs
+        log_prob = F.log_softmax(logits, dim=1)
+        return action, log_prob, action_probs
+
+    def sample(self, x):
+        return self.get_action(x)
+
+
+class ImageCategoricalPolicy(CategoricalPolicy):
+
+    def __init__(
+        self,
+        obs_shape,
+        num_actions,
+        **kwargs,
+    ):
+        self.encoder = nn.Sequential(
+            cnn_weights_init(nn.Conv2d(obs_shape[0], 32, kernel_size=8, stride=4)),
+            nn.ReLU(),
+            cnn_weights_init(nn.Conv2d(32, 64, kernel_size=4, stride=2)),
+            nn.ReLU(),
+            cnn_weights_init(nn.Conv2d(64, 64, kernel_size=3, stride=1)),
+            nn.Flatten(),
+        )
+        with torch.inference_mode():
+            output_dim = self.encoder(torch.zeros(1, *obs_shape)).shape[1]
+        self.fc1 = cnn_weights_init(nn.Linear(output_dim, 512))
+        self.fc_logits = cnn_weights_init(nn.Linear(512, num_actions))
+
+    def forward(self, state):
+        x = self.encoder(state)
+        x = F.relu(self.fc1(x))
+        logits = self.fc_logits(x)
+        return logits
 
 
 class GaussianPolicy(nn.Module):
@@ -120,6 +269,56 @@ class GaussianPolicy(nn.Module):
         return super(GaussianPolicy, self).to(device)
 
 
+class ImageGaussianPolicy(nn.Module):
+    def __init__(
+        self,
+        obs_shape,
+        num_actions,
+        log_sig_min=-5,
+        log_sig_max=2,
+        epsilon=1e-6,
+        action_space=None,
+        **kwargs,
+    ):
+        super(GaussianPolicy, self).__init__()
+        self.log_sig_min = log_sig_min
+        self.log_sig_max = log_sig_max
+        self.epsilon = epsilon
+        self.encoder = nn.Sequential(
+            cnn_weights_init(nn.Conv2d(obs_shape[0], 32, kernel_size=8, stride=4)),
+            nn.ReLU(),
+            cnn_weights_init(nn.Conv2d(32, 64, kernel_size=4, stride=2)),
+            nn.ReLU(),
+            cnn_weights_init(nn.Conv2d(64, 64, kernel_size=3, stride=1)),
+            nn.Flatten(),
+        )
+        with torch.inference_mode():
+            output_dim = self.encoder(torch.zeros(1, *obs_shape)).shape[1]
+        self.fc1 = cnn_weights_init(nn.Linear(output_dim, 512))
+        self.mean_linear = cnn_weights_init(nn.Linear(512, num_actions))
+        self.log_std_linear = cnn_weights_init(nn.Linear(512, num_actions))
+
+        # action rescaling
+        if action_space is None:
+            self.action_scale = torch.tensor(1.0)
+            self.action_bias = torch.tensor(0.0)
+        else:
+            self.action_scale = torch.FloatTensor(
+                (action_space.high - action_space.low) / 2.0
+            )
+            self.action_bias = torch.FloatTensor(
+                (action_space.high + action_space.low) / 2.0
+            )
+
+    def forward(self, state):
+        x = self.encoder(state)
+        x = F.relu(self.fc1(x))
+        mean = self.mean_linear(x)
+        log_std = self.log_std_linear(x)
+        log_std = torch.clamp(log_std, min=self.log_sig_min, max=self.log_sig_max)
+        return mean, log_std
+
+
 class TargetNet:
     """
     Wrapper around model which provides copy of it instead of trained weights
@@ -169,11 +368,17 @@ class SAC(nn.Module):
         self.num_inputs = np.array(observation_space.shape).prod()
         self.num_actions = np.array(action_space.shape).prod()
         self.reward_scaling = args.reward_scaling
+        self.with_image = args.with_image
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
         )
         self.actor, self.critic = self.get_networks(
-            action_space, args.epsilon, log_sig_min, log_sig_max, hidden_dim
+            action_space,
+            args.epsilon,
+            log_sig_min,
+            log_sig_max,
+            hidden_dim,
+            self.with_image,
         )
         self.critic_target = TargetCritic(self.critic)
         self.actor_optim = Adam(self.actor.parameters(), lr=args.policy_lr)
@@ -197,18 +402,44 @@ class SAC(nn.Module):
         self.to(self.device)
 
     def get_networks(
-        self, action_space, epsilon, log_sig_min=-5, log_sig_max=2, hidden_dim=256
+        self,
+        action_space,
+        epsilon,
+        log_sig_min=-5,
+        log_sig_max=2,
+        hidden_dim=256,
+        with_image=False,
     ):
-        actor = GaussianPolicy(
-            self.num_inputs,
-            self.num_actions,
-            log_sig_min=log_sig_min,
-            log_sig_max=log_sig_max,
-            hidden_dim=hidden_dim,
-            epsilon=epsilon,
-            action_space=action_space,
-        )
-        critic = QNetwork(self.num_inputs, self.num_actions, hidden_dim=hidden_dim)
+        if with_image:
+            actor = ImageGaussianPolicy(
+                self.observation_space.shape,
+                self.num_actions,
+                log_sig_min=log_sig_min,
+                log_sig_max=log_sig_max,
+                hidden_dim=hidden_dim,
+                epsilon=epsilon,
+                action_space=action_space,
+            )
+            critic = ImageQNetwork(
+                self.observation_space.shape,
+                self.num_actions,
+                hidden_dim=hidden_dim,
+            )
+        else:
+            actor = GaussianPolicy(
+                self.num_inputs,
+                self.num_actions,
+                log_sig_min=log_sig_min,
+                log_sig_max=log_sig_max,
+                hidden_dim=hidden_dim,
+                epsilon=epsilon,
+                action_space=action_space,
+            )
+            critic = QNetwork(
+                self.num_inputs,
+                self.num_actions,
+                hidden_dim=hidden_dim,
+            )
         return actor, critic
 
     def get_replay_buffer(self, buffer_size):
