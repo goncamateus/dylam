@@ -53,10 +53,7 @@ class WandbResultLogger:
             self.log.update({"lambdas/component_" + str(i): lambdas[i].item()})
 
     def log_artifact(self):
-        gym_names = self.run.config["gym_id"].split("-")
-        first_name = gym_names[0] if gym_names[0] != "mo" else gym_names[1]
-        name = f"{first_name}_{self.run.config['seed']}"
-        self.artifact.add_file(f"models/{name}/actor.pt")
+        self.artifact.add_file(f"models/{self.run.name}/actor.pt")
 
     def push(self, global_step):
         self.run.log(self.log, global_step)

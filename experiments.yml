@@ -11,7 +11,7 @@ Baseline:
   HOPPER:
     gym_id: Hopper-v4
     num_envs: 16
-    total_timesteps: 200000
+    total_timesteps: 1000000
   MARIO:
     gym_id: SuperMarioBros-v0
     num_envs: 16

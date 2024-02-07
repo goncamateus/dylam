@@ -4,3 +4,5 @@ wandb>=0.16.0
 pyvirtualdisplay>=3.0
 moviepy >= 1.0.0
 pandas >= 2.1.4
+gym-super-mario-bros==7.4.0
+gymnasium[all]==0.29.1
