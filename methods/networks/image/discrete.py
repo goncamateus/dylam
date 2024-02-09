@@ -4,7 +4,6 @@ import torch.nn.functional as F
 
 from torch.distributions import Categorical
 
-from methods.networks.raw.discrete import CategoricalPolicy
 from methods.networks.utils import kaiming_init
 
 
