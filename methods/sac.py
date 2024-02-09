@@ -64,9 +64,14 @@ class SAC(nn.Module):
         self.log_alpha = None
         self.alpha_optim = None
         if args.autotune:
-            self.target_entropy = -torch.prod(
-                torch.Tensor(self.action_space.shape).to(self.device)
-            ).item()
+            if self.continuous_actions:
+                self.target_entropy = -torch.prod(
+                    torch.Tensor(self.action_space.shape).to(self.device)
+                ).item()
+            else:
+                self.target_entropy = -args.target_entropy_scale * torch.log(
+                    1 / torch.tensor(self.num_actions)
+                ).to(self.device)
             self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
             self.alpha = self.log_alpha.exp().item()
             self.alpha_optim = Adam([self.log_alpha], lr=args.q_lr)

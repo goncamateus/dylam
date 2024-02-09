@@ -73,6 +73,7 @@ def base_hyperparams():
         "target_network_frequency": 1,
         "noise_clip": 0.5,
         "alpha": 0.2,
+        "target_entropy_scale": 1,
         "epsilon": 1e-6,
         "autotune": True,
         "reward_scaling": 1.0,

@@ -12,17 +12,15 @@ Baseline:
     gym_id: Hopper-v4
     num_envs: 16
     total_timesteps: 1000000
-  MARIO:
-    gym_id: SuperMarioBros-v0
-    num_envs: 16
-    total_timesteps: 1000000
   LANDERDISCRETE:
     gym_id: LunarLander-v2
     num_envs: 16
     total_timesteps: 200000
-    dylam: false
-  RACING:
-    gym_id: CarRacing-v2
+    target_network_frequency: 8000
+    target_entropy_scale: 0.89
+  MOUNTAINDISCRETE:
+    gym_id: MountainCar-v0
     num_envs: 16
     total_timesteps: 200000
-    with_image: true
+    target_network_frequency: 8000
+    target_entropy_scale: 0.89
