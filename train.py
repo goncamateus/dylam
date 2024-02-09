@@ -52,6 +52,7 @@ def train(args, exp_name, logger: SACLogger):
             policy_loss, qf1_loss, qf2_loss, alpha_loss = agent.update(
                 args.batch_size, update_actor
             )
+            print("Um foi")
 
             if global_step % args.target_network_frequency == 0:
                 agent.critic_target.sync(args.tau)

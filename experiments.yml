@@ -21,3 +21,8 @@ Baseline:
     num_envs: 16
     total_timesteps: 200000
     dylam: false
+  RACING:
+    gym_id: CarRacing-v2
+    num_envs: 16
+    total_timesteps: 200000
+    with_image: true

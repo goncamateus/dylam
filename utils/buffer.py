@@ -14,11 +14,14 @@ class ReplayBuffer:
     def add(self, state, action, reward, next_state, done):
         for i in range(len(state)):
             rew = reward[i]
+            act = action[i]
             if rew.shape == ():
                 rew = np.array([rew])
+            if act.shape == ():
+                act = np.array([act])
             experience = (
                 state[i],
-                action[i],
+                act,
                 rew,
                 next_state[i],
                 done[i],
@@ -33,12 +36,14 @@ class ReplayBuffer:
         self.buffer.clear()
         self.ptr = 0
 
-    def sample(self, batch_size):
+    def sample(self, batch_size, continuous=True):
         """From a batch of experience, return values in Tensor form on device"""
         batch = random.sample(self.buffer, batch_size)
         states, actions, rewards, next_states, dones = map(np.array, zip(*batch))
         states_v = torch.Tensor(states).to(self.device)
-        actions_v = torch.Tensor(actions).to(self.device)
+        actions_v = torch.tensor(
+            actions, dtype=torch.float32 if continuous else torch.long
+        ).to(self.device)
         rewards_v = torch.Tensor(rewards).to(self.device)
         last_states_v = torch.Tensor(next_states).to(self.device)
         dones_t = torch.BoolTensor(dones).to(self.device)

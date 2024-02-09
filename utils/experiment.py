@@ -12,6 +12,13 @@ import wandb
 
 import envs
 
+from stable_baselines3.common.atari_wrappers import (
+    ClipRewardEnv,
+    EpisodicLifeEnv,
+    FireResetEnv,
+    MaxAndSkipEnv,
+    NoopResetEnv,
+)
 
 def strtobool(value: str) -> bool:
     value = value.lower()
@@ -31,6 +38,11 @@ def make_env(args, idx, run_name):
             )
         else:
             env = gym.make(args.gym_id)
+        if args.with_image:
+            env = MaxAndSkipEnv(env, skip=4)
+            env = gym.wrappers.ResizeObservation(env, (84, 84))
+            env = gym.wrappers.GrayScaleObservation(env)
+            env = gym.wrappers.FrameStack(env, 4)
         env = gym.wrappers.RecordEpisodeStatistics(env)
         env.action_space.seed(args.seed)
         return env
