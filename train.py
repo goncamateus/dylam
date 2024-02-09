@@ -33,6 +33,7 @@ def train(args, exp_name, logger: SACLogger):
             )
         else:
             actions = agent.get_action(obs)
+
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
 
         logger.log_episode(infos, rewards)

@@ -1,6 +1,7 @@
 import copy
 import os
 
+import gymnasium as gym
 import numpy as np
 import torch
 from torch import Tensor
@@ -59,8 +60,10 @@ class QNetwork(nn.Module):
 
 class DiscreteQNetwork(nn.Module):
     def __init__(self, num_inputs, num_actions, num_outputs=1, hidden_dim=256):
-        super(QNetwork, self).__init__()
-
+        super(DiscreteQNetwork, self).__init__()
+        self.num_actions = num_actions
+        self.num_outputs = num_outputs
+        self.num_inputs = num_inputs
         # Q1 architecture
         self.q1 = nn.Sequential(
             nn.Linear(num_inputs, hidden_dim),
@@ -160,6 +163,10 @@ class CategoricalPolicy(nn.Module):
         return logits
 
     def get_action(self, x):
+        action, _, _ = self.sample(x)
+        return action.detach().cpu().numpy()
+
+    def sample(self, x):
         logits = self(x / 255.0)
         policy_dist = Categorical(logits=logits)
         action = policy_dist.sample()
@@ -167,9 +174,6 @@ class CategoricalPolicy(nn.Module):
         action_probs = policy_dist.probs
         log_prob = F.log_softmax(logits, dim=1)
         return action, log_prob, action_probs
-
-    def sample(self, x):
-        return self.get_action(x)
 
 
 class ImageCategoricalPolicy(CategoricalPolicy):
@@ -280,7 +284,7 @@ class ImageGaussianPolicy(nn.Module):
         action_space=None,
         **kwargs,
     ):
-        super(GaussianPolicy, self).__init__()
+        super(ImageGaussianPolicy, self).__init__()
         self.log_sig_min = log_sig_min
         self.log_sig_max = log_sig_max
         self.epsilon = epsilon
@@ -344,7 +348,12 @@ class TargetNet:
 
 class TargetCritic(TargetNet):
     def __call__(self, S, A):
-        return self.target_model(S, A)
+        output = (
+            self.target_model(S, A)
+            if isinstance(self.model, QNetwork)
+            else self.target_model(S)
+        )
+        return output
 
 
 class SAC(nn.Module):
@@ -362,13 +371,20 @@ class SAC(nn.Module):
         self.log_sig_max = log_sig_max
         self.epsilon = args.epsilon
         self.gamma = args.gamma
+        self.with_image = args.with_image
         self.hidden_dim = hidden_dim
         self.action_space = action_space
         self.observation_space = observation_space
-        self.num_inputs = np.array(observation_space.shape).prod()
-        self.num_actions = np.array(action_space.shape).prod()
+        self.continuous_actions = not isinstance(action_space, gym.spaces.Discrete)
+        if self.with_image:
+            self.num_inputs = observation_space.shape
+        else:
+            self.num_inputs = np.array(observation_space.shape).prod()
+        if self.continuous_actions:
+            self.num_actions = np.array(action_space.shape).prod()
+        else:
+            self.num_actions = action_space.n
         self.reward_scaling = args.reward_scaling
-        self.with_image = args.with_image
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
         )
@@ -412,7 +428,7 @@ class SAC(nn.Module):
     ):
         if with_image:
             actor = ImageGaussianPolicy(
-                self.observation_space.shape,
+                self.num_inputs,
                 self.num_actions,
                 log_sig_min=log_sig_min,
                 log_sig_max=log_sig_max,
@@ -421,25 +437,38 @@ class SAC(nn.Module):
                 action_space=action_space,
             )
             critic = ImageQNetwork(
-                self.observation_space.shape,
+                self.num_inputs,
                 self.num_actions,
                 hidden_dim=hidden_dim,
             )
         else:
-            actor = GaussianPolicy(
-                self.num_inputs,
-                self.num_actions,
-                log_sig_min=log_sig_min,
-                log_sig_max=log_sig_max,
-                hidden_dim=hidden_dim,
-                epsilon=epsilon,
-                action_space=action_space,
-            )
-            critic = QNetwork(
-                self.num_inputs,
-                self.num_actions,
-                hidden_dim=hidden_dim,
-            )
+            if self.continuous_actions:
+                actor = GaussianPolicy(
+                    self.num_inputs,
+                    self.num_actions,
+                    log_sig_min=log_sig_min,
+                    log_sig_max=log_sig_max,
+                    hidden_dim=hidden_dim,
+                    epsilon=epsilon,
+                    action_space=action_space,
+                )
+                critic = QNetwork(
+                    self.num_inputs,
+                    self.num_actions,
+                    hidden_dim=hidden_dim,
+                )
+            else:
+                actor = CategoricalPolicy(
+                    self.num_inputs,
+                    self.num_actions,
+                    hidden_dim=hidden_dim,
+                    action_space=action_space,
+                )
+                critic = DiscreteQNetwork(
+                    self.num_inputs,
+                    self.num_actions,
+                    hidden_dim=hidden_dim,
+                )
         return actor, critic
 
     def get_replay_buffer(self, buffer_size):
@@ -462,19 +491,31 @@ class SAC(nn.Module):
             next_state_action, next_state_log_pi, _ = self.actor.sample(
                 next_state_batch
             )
-            qf1_next_target, qf2_next_target = self.critic_target.target_model(
+            qf1_next_target, qf2_next_target = self.critic_target(
                 next_state_batch, next_state_action
             )
-
+            qf1_next_target = qf1_next_target.squeeze(-1)
+            qf2_next_target = qf2_next_target.squeeze(-1)
             min_qf_next_target = (
                 torch.min(qf1_next_target, qf2_next_target)
                 - self.alpha * next_state_log_pi
             )
             min_qf_next_target[done_batch] = 0.0
+            if not self.continuous_actions:
+                min_qf_next_target = min_qf_next_target.sum(dim=1).unsqueeze(1)
             next_q_value = reward_batch + self.gamma * min_qf_next_target
         # Two Q-functions to mitigate
         # positive bias in the policy improvement step
-        qf1, qf2 = self.critic(state_batch, action_batch)
+        if self.continuous_actions:
+            qf1, qf2 = self.critic(state_batch, action_batch)
+        else:
+            qf1, qf2 = self.critic(state_batch)
+        qf1 = qf1.squeeze(-1)
+        qf2 = qf2.squeeze(-1)
+
+        if not self.continuous_actions:
+            qf1 = qf1.gather(1, action_batch.long().unsqueeze(1))
+            qf2 = qf2.gather(1, action_batch.long().unsqueeze(1))
 
         # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
         qf1_loss = F.mse_loss(qf1, next_q_value)
@@ -506,14 +547,20 @@ class SAC(nn.Module):
         return alpha_loss
 
     def update_actor(self, state_batch):
-        pi, log_pi, _ = self.actor.sample(state_batch)
-
-        qf1_pi, qf2_pi = self.critic(state_batch, pi)
+        pi, log_pi, action_probs = self.actor.sample(state_batch)
+        if self.continuous_actions:
+            qf1_pi, qf2_pi = self.critic(state_batch, pi)
+        else:
+            qf1_pi, qf2_pi = self.critic(state_batch)
         min_qf_pi = torch.min(qf1_pi, qf2_pi)
 
         # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
         policy_loss = self.alpha * log_pi
-        policy_loss = policy_loss - min_qf_pi
+        if self.continuous_actions:
+            policy_loss = policy_loss - min_qf_pi
+        else:
+            policy_loss = (action_probs * policy_loss) - min_qf_pi
+            breakpoint()
         policy_loss = policy_loss.mean()
 
         self.actor_optim.zero_grad()
@@ -584,31 +631,75 @@ class SACStrat(SAC):
         self.last_episode_rewards = StratLastRewards(args.dylam_rb, self.num_rewards)
 
     def get_networks(
-        self, action_space, epsilon, log_sig_min=-5, log_sig_max=2, hidden_dim=256
+        self,
+        action_space,
+        epsilon,
+        log_sig_min=-5,
+        log_sig_max=2,
+        hidden_dim=256,
+        with_image=False,
     ):
-        actor = GaussianPolicy(
-            self.num_inputs,
-            self.num_actions,
-            log_sig_min=log_sig_min,
-            log_sig_max=log_sig_max,
-            hidden_dim=hidden_dim,
-            epsilon=epsilon,
-            action_space=action_space,
-        )
-        critic = QNetwork(
-            self.num_inputs,
-            self.num_actions,
-            num_outputs=self.num_rewards,
-            hidden_dim=hidden_dim,
-        )
+        if with_image:
+            actor = ImageGaussianPolicy(
+                self.num_inputs,
+                self.num_actions,
+                log_sig_min=log_sig_min,
+                log_sig_max=log_sig_max,
+                hidden_dim=hidden_dim,
+                epsilon=epsilon,
+                action_space=action_space,
+            )
+            critic = ImageQNetwork(
+                self.num_inputs,
+                self.num_actions,
+                hidden_dim=hidden_dim,
+                num_outputs=self.num_rewards,
+            )
+        else:
+            if self.continuous_actions:
+                actor = GaussianPolicy(
+                    self.num_inputs,
+                    self.num_actions,
+                    log_sig_min=log_sig_min,
+                    log_sig_max=log_sig_max,
+                    hidden_dim=hidden_dim,
+                    epsilon=epsilon,
+                    action_space=action_space,
+                )
+                critic = QNetwork(
+                    self.num_inputs,
+                    self.num_actions,
+                    hidden_dim=hidden_dim,
+                    num_outputs=self.num_rewards,
+                )
+            else:
+                actor = CategoricalPolicy(
+                    self.num_inputs,
+                    self.num_actions,
+                    hidden_dim=hidden_dim,
+                    action_space=action_space,
+                )
+                critic = DiscreteQNetwork(
+                    self.num_inputs,
+                    self.num_actions,
+                    hidden_dim=hidden_dim,
+                    num_outputs=self.num_rewards,
+                )
         return actor, critic
 
     def update_actor(self, state_batch):
-        pi, log_pi, _ = self.actor.sample(state_batch)
+        pi, log_pi, action_probs = self.actor.sample(state_batch)
 
-        qf1_pi, qf2_pi = self.critic(state_batch, pi)
+        qf1_pi, qf2_pi = (
+            self.critic(state_batch, pi)
+            if self.continuous_actions
+            else self.critic(state_batch)
+        )
         min_qf_pi = torch.min(qf1_pi, qf2_pi)
-        min_qf_pi = (min_qf_pi * self.lambdas).sum(1).view(-1, 1)
+        if self.continuous_actions:
+            min_qf_pi = torch.einsum("ij,i->i", min_qf_pi, self.lambdas).view(-1, 1)
+        else:
+            min_qf_pi = torch.einsum("ijk,k->ij", min_qf_pi, self.lambdas)
 
         # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
         policy_loss = self.alpha * log_pi

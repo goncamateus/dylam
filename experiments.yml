@@ -16,3 +16,8 @@ Baseline:
     gym_id: SuperMarioBros-v0
     num_envs: 16
     total_timesteps: 1000000
+  LANDERDISCRETE:
+    gym_id: LunarLander-v2
+    num_envs: 16
+    total_timesteps: 200000
+    dylam: false

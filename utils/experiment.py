@@ -40,6 +40,7 @@ def make_env(args, idx, run_name):
 
 def base_hyperparams():
     hyper_params = {
+        "with_image": False,
         "seed": 0,
         "total_timesteps": 1000000,
         "torch_deterministic": True,
