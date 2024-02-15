@@ -85,6 +85,8 @@ class ContinuousMountainCar(Continuous_MountainCarEnv, EzPickle):
         self.cumulative_reward_info["Original_reward"] += reward.sum()
         if not self.stratified:
             reward = reward.sum()
+        else:
+            reward /= np.array([999, 350], dtype=np.float32)
 
         self.state = np.array([position, velocity], dtype=np.float32)
 
