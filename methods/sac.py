@@ -177,8 +177,8 @@ class SAC(nn.Module):
         else:
             qf1, qf2 = self.critic(state_batch)
             indices = action_batch.squeeze(1)
-            qf1 = qf1[torch.arange(qf1.size(0)), indices, :].squeeze()
-            qf2 = qf2[torch.arange(qf2.size(0)), indices, :].squeeze()
+            qf1 = qf1[torch.arange(qf1.size(0)), indices, :]
+            qf2 = qf2[torch.arange(qf2.size(0)), indices, :]
         # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
         qf1_loss = F.mse_loss(qf1, next_q_value)
 
@@ -389,6 +389,8 @@ class SACStrat(SAC):
         self.last_reward_mean = rew_mean_t
 
     def add_episode_rewards(self, rewards, terminations, truncations):
+        if self.num_rewards == 1:
+            rewards = rewards.reshape(-1, 1)
         self.episode_rewards += rewards
         for i, (term, trunc) in enumerate(zip(terminations, truncations)):
             if term or trunc:
