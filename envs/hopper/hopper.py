@@ -69,13 +69,12 @@ class Hopper(HopperEnv, EzPickle):
         vec_reward = np.array(
             [x_velocity, height, -energy_cost, healthy_reward], dtype=np.float32
         )
-        self.cumulative_reward_info = {
-            "reward_Forward": x_velocity,
-            "reward_Jump": height,
-            "reward_Energy": -energy_cost,
-            "reward_Healthy": healthy_reward,
-            "Original_reward": vec_reward.sum(),
-        }
+        self.cumulative_reward_info["reward_Forward"] += x_velocity
+        self.cumulative_reward_info["reward_Jump"] += height
+        self.cumulative_reward_info["reward_Energy"] += -energy_cost
+        self.cumulative_reward_info["reward_Healthy"] += healthy_reward
+        self.cumulative_reward_info["Original_reward"] += vec_reward.sum()
+
         if not self.stratified:
             vec_reward = vec_reward.sum()
         else:
