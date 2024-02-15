@@ -3,7 +3,6 @@ Baseline:
     gym_id: LunarLanderContinuous-v2
     num_envs: 16
     total_timesteps: 200000
-    dylam: false
   MOUNTAINCAR:
     gym_id: MountainCarContinuous-v0
     num_envs: 16

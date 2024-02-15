@@ -22,7 +22,6 @@ def train(args, exp_name, logger: SACLogger):
     envs = gym.vector.AsyncVectorEnv(
         [make_env(args, i, exp_name) for i in range(args.num_envs)]
     )
-
     agent = SACStrat(args, envs.single_observation_space, envs.single_action_space)
 
     obs, _ = envs.reset()
@@ -35,7 +34,7 @@ def train(args, exp_name, logger: SACLogger):
             actions = agent.get_action(obs)
 
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
-
+        agent.add_episode_rewards(rewards, terminations, truncations)
         logger.log_episode(infos, rewards)
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `terminal_observation`
@@ -48,6 +47,8 @@ def train(args, exp_name, logger: SACLogger):
 
         # ALGO LOGIC: training.
         if global_step > args.learning_starts:
+            if args.dylam:
+                agent.update_lambdas()
             update_actor = global_step % args.policy_frequency == 0
             policy_loss, qf1_loss, qf2_loss, alpha_loss = agent.update(
                 args.batch_size, update_actor
@@ -66,6 +67,8 @@ def train(args, exp_name, logger: SACLogger):
                         "alpha_loss": alpha_loss,
                     }
                 )
+                if args.dylam:
+                    logger.log_lambdas(agent.lambdas)
 
         logger.push(global_step)
         if global_step % 9999 == 0:

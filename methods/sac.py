@@ -152,22 +152,23 @@ class SAC(nn.Module):
         self, state_batch, action_batch, reward_batch, next_state_batch, done_batch
     ):
         with torch.no_grad():
-            next_state_action, next_state_log_pi, _ = self.actor.sample(
-                next_state_batch
+            next_state_action, next_state_log_pi, next_state_action_probs = (
+                self.actor.sample(next_state_batch)
             )
             qf1_next_target, qf2_next_target = self.critic_target(
                 next_state_batch, next_state_action
             )
             if not self.continuous_actions:
-                qf1_next_target = qf1_next_target.sum(-1)
-                qf2_next_target = qf2_next_target.sum(-1)
-            min_qf_next_target = (
-                torch.min(qf1_next_target, qf2_next_target)
-                - self.alpha * next_state_log_pi
-            )
+                next_state_log_pi = next_state_log_pi.unsqueeze(2)
+                next_state_action_probs = next_state_action_probs.unsqueeze(2)
+
+            min_qf_next_target = torch.min(qf1_next_target, qf2_next_target)
+            min_qf_next_target = min_qf_next_target - self.alpha * next_state_log_pi
+            min_qf_next_target *= 1 if self.continuous_actions else next_state_action_probs
+            
             min_qf_next_target[done_batch] = 0.0
             if not self.continuous_actions:
-                min_qf_next_target = min_qf_next_target.sum(dim=1).unsqueeze(1)
+                min_qf_next_target = min_qf_next_target.sum(dim=1)
             next_q_value = reward_batch + self.gamma * min_qf_next_target
         # Two Q-functions to mitigate
         # positive bias in the policy improvement step
@@ -175,9 +176,9 @@ class SAC(nn.Module):
             qf1, qf2 = self.critic(state_batch, action_batch)
         else:
             qf1, qf2 = self.critic(state_batch)
-            qf1 = qf1.sum(-1).gather(1, action_batch)
-            qf2 = qf2.sum(-1).gather(1, action_batch)
-
+            indices = action_batch.squeeze(1)
+            qf1 = qf1[torch.arange(qf1.size(0)), indices, :].squeeze()
+            qf2 = qf2[torch.arange(qf2.size(0)), indices, :].squeeze()
         # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
         qf1_loss = F.mse_loss(qf1, next_q_value)
 
@@ -287,6 +288,7 @@ class SACStrat(SAC):
         self.r_max = torch.Tensor(args.r_max).to(self.device)
         self.r_min = torch.Tensor(args.r_min).to(self.device)
         self.rew_tau = args.dylam_tau
+        self.episode_rewards = np.zeros((args.num_envs, args.num_rewards))
         self.last_reward_mean = None
         self.last_episode_rewards = StratLastRewards(args.dylam_rb, self.num_rewards)
 
@@ -357,7 +359,7 @@ class SACStrat(SAC):
         )
         min_qf_pi = torch.min(qf1_pi, qf2_pi)
         if self.continuous_actions:
-            min_qf_pi = torch.einsum("ij,i->i", min_qf_pi, self.lambdas).view(-1, 1)
+            min_qf_pi = torch.einsum("ij,j->i", min_qf_pi, self.lambdas).view(-1, 1)
         else:
             min_qf_pi = torch.einsum("ijk,k->ij", min_qf_pi, self.lambdas)
 
@@ -377,9 +379,18 @@ class SACStrat(SAC):
 
     def update_lambdas(self):
         rew_mean_t = torch.Tensor(self.last_episode_rewards.mean()).to(self.device)
-        if self.last_rew_mean is not None:
-            rew_mean_t = rew_mean_t + (self.last_rew_mean - rew_mean_t) * self.rew_tau
+        if self.last_reward_mean is not None:
+            rew_mean_t = (
+                rew_mean_t + (self.last_reward_mean - rew_mean_t) * self.rew_tau
+            )
         dQ = torch.clamp((self.r_max - rew_mean_t) / (self.r_max - self.r_min), 0, 1)
         expdQ = torch.exp(dQ) - 1
         self.lambdas = expdQ / (torch.sum(expdQ, 0) + 1e-4)
-        self.last_rew_mean = rew_mean_t
+        self.last_reward_mean = rew_mean_t
+
+    def add_episode_rewards(self, rewards, terminations, truncations):
+        self.episode_rewards += rewards
+        for i, (term, trunc) in enumerate(zip(terminations, truncations)):
+            if term or trunc:
+                self.last_episode_rewards.add(self.episode_rewards[i])
+                self.episode_rewards[i] = np.zeros(self.num_rewards)

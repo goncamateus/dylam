@@ -25,14 +25,12 @@ class WandbResultLogger:
             for info in infos["final_info"]:
                 if info:
                     if "episode" in info:
-                        print(f"episodic_return={info['episode']['r'][0]}")
+                        print(f"episodic_return={info['Original_reward']}")
                         self.log.update(
                             {
-                                "ep_info/total": info["episode"]["r"][0],
+                                "ep_info/total": info["Original_reward"],
                             }
                         )
-                    else:
-                        print(f"episodic_return={info['reward_total']}")
                         keys_to_log = [
                             x for x in info.keys() if x.startswith("reward_")
                         ]
