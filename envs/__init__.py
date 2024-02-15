@@ -34,13 +34,27 @@ register(
 )
 
 register(
-    id="SuperMarioBros-v0",
-    entry_point="envs.super_mario.super_mario:SuperMarioBros",
-    nondeterministic=True,
+    id="mo-MountainCar-v0",
+    entry_point="envs.mountain_car.discrete:MountainCar",
+    max_episode_steps=999,
 )
 
 register(
-    id="mo-SuperMarioBros-v0",
-    entry_point="envs.super_mario.mo_super_mario:MOSuperMarioBros",
-    nondeterministic=True,
+    id="MountainCar-v0",
+    entry_point="envs.mountain_car.discrete:MountainCar",
+    kwargs={"stratified": False},
+    max_episode_steps=999,
+)
+
+register(
+    id="mo-MountainCarContinuous-v0",
+    entry_point="envs.mountain_car.continuous:ContinuousMountainCar",
+    max_episode_steps=999,
+)
+
+register(
+    id="MountainCarContinuous-v0",
+    entry_point="envs.mountain_car.continuous:ContinuousMountainCar",
+    kwargs={"stratified": False},
+    max_episode_steps=999,
 )
