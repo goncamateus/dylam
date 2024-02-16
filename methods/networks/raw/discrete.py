@@ -72,7 +72,7 @@ class CategoricalPolicy(nn.Module):
         return action.detach().cpu().numpy()
 
     def sample(self, x):
-        logits = self(x / 255.0)
+        logits = self(x)
         policy_dist = Categorical(logits=logits)
         action = policy_dist.sample()
         # Action probabilities for calculating the adapted soft-Q loss

@@ -14,6 +14,15 @@ import envs
 from stable_baselines3.common.atari_wrappers import (
     MaxAndSkipEnv,
 )
+from gymnasium.wrappers import (
+    FrameStack,
+    GrayScaleObservation,
+    ResizeObservation,
+    TimeLimit,
+)
+from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
+from mo_gymnasium.utils import MOMaxAndSkipObservation
+from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 
 
 def strtobool(value: str) -> bool:
@@ -25,24 +34,31 @@ def strtobool(value: str) -> bool:
 
 def make_env(args, idx, run_name):
     def thunk():
+        env = mogym.make(
+            args.gym_id,
+            render_mode="rgb_array" if args.capture_video and idx == 0 else None,
+        )
         if args.capture_video and idx == 0:
-            env = mogym.make(args.gym_id, render_mode="rgb_array")
-            env = gym.wrappers.RecordVideo(
+            env = gym.experimental.wrappers.RecordVideoV0(
                 env,
                 f"videos/{run_name}",
                 episode_trigger=lambda x: x % args.video_freq == 0,
             )
-        else:
-            env = mogym.make(args.gym_id)
-        if args.with_image:
-            env = MaxAndSkipEnv(env, skip=4)
-            env = gym.wrappers.ResizeObservation(env, (84, 84))
-            env = gym.wrappers.GrayScaleObservation(env)
-            env = gym.wrappers.FrameStack(env, 4)
         if args.stratified:
             env = mogym.MORecordEpisodeStatistics(env)
         else:
             env = gym.wrappers.RecordEpisodeStatistics(env)
+        if args.with_image:
+            if "SuperMario" in args.gym_id:
+                env = JoypadSpace(env, SIMPLE_MOVEMENT)
+            if args.stratified:
+                env = MOMaxAndSkipObservation(env, skip=4)
+            else:
+                env = MaxAndSkipEnv(env, skip=4)
+            env = ResizeObservation(env, (84, 84))
+            env = GrayScaleObservation(env)
+            env = FrameStack(env, 4)
+            env = TimeLimit(env, max_episode_steps=1000)
         env.action_space.seed(args.seed)
         return env
 
