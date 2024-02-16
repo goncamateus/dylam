@@ -3,20 +3,16 @@ from typing import Optional
 import gymnasium as gym
 import numpy as np
 from gym_super_mario_bros import SuperMarioBrosEnv
-from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from gymnasium.utils import EzPickle, seeding
 
-# from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv
-from gymnasium.wrappers import GrayScaleObservation, ResizeObservation
 from nes_py.nes_env import SCREEN_SHAPE_24_BIT
-
-# from nes_py.wrappers import JoypadSpace
-from envs.super_mario.joypad_space import JoypadSpace
 
 
 class SuperMarioBros(SuperMarioBrosEnv, EzPickle):
     """
     ## Description
+    Multi-objective version of the SuperMarioBro environment.
+
     See [gym-super-mario-bros](https://github.com/Kautenja/gym-super-mario-bros) for more information.
 
     ## Reward Space
@@ -35,6 +31,7 @@ class SuperMarioBros(SuperMarioBrosEnv, EzPickle):
 
     def __init__(
         self,
+        stratified=False,
         rom_mode="pixel",
         lost_levels=False,
         target=None,
@@ -53,7 +50,7 @@ class SuperMarioBros(SuperMarioBrosEnv, EzPickle):
         )
         self.render_mode = render_mode
         super().__init__(rom_mode, lost_levels, target)
-
+        self.stratified = stratified
         self.objectives = set(objectives)
         self.death_as_penalty = death_as_penalty
         if self.death_as_penalty:  # death is not a separate objective
@@ -84,10 +81,18 @@ class SuperMarioBros(SuperMarioBrosEnv, EzPickle):
             high[obj_idx] = np.inf
 
         self.reward_space = gym.spaces.Box(
-            low=low.sum(),
-            high=high.sum(),
-            shape=(1,),
+            low=low,
+            high=high,
+            shape=(len(self.objectives),),
         )
+        self.cumulative_reward_info = {
+            "reward_Xpos": 0,
+            "reward_Time": 0,
+            "reward_Death": 0,
+            "reward_Coins": 0,
+            "reward_Kill": 0,
+            "Original_reward": 0,
+        }
 
         # observation space for the environment is static across all instances
         self.observation_space = gym.spaces.Box(
@@ -109,6 +114,14 @@ class SuperMarioBros(SuperMarioBrosEnv, EzPickle):
         self.stage_bonus = 0
         self.lives = 2
         obs = super().reset()
+        self.cumulative_reward_info = {
+            "reward_Xpos": 0,
+            "reward_Time": 0,
+            "reward_Death": 0,
+            "reward_Coins": 0,
+            "reward_Kill": 0,
+            "Original_reward": 0,
+        }
         if self.render_mode == "human":
             self.render()
         return obs, {}
@@ -198,32 +211,20 @@ class SuperMarioBros(SuperMarioBrosEnv, EzPickle):
         self.lives = info["life"]
 
         vec_reward *= self.reward_space.shape[0] / 150
+        self.cumulative_reward_info["reward_Xpos"] += vec_reward[0]
+        self.cumulative_reward_info["reward_Time"] += vec_reward[1]
+        self.cumulative_reward_info["reward_Death"] += vec_reward[2]
+        self.cumulative_reward_info["reward_Coins"] += vec_reward[2]
+        self.cumulative_reward_info["reward_Kill"] += vec_reward[2]
+        self.cumulative_reward_info["Original_reward"] += vec_reward.sum()
+        if self.stratified:
+            vec_reward /= np.array([1, 1, 1, 1, 1], dtype=np.float32)
+        else:
+            vec_reward = vec_reward.sum()
 
         info["score"] = info["score"] + self.stage_bonus
-
-        if self.render_mode == "human":
+        
+        if self.render_mode in ["human", "rgb_array"]:
             self.render()
 
-        return obs, vec_reward.sum(), bool(done), False, info
-
-
-if __name__ == "__main__":
-    env = SuperMarioBros()
-    env = JoypadSpace(env, SIMPLE_MOVEMENT)
-    # env = MaxAndSkipEnv(env, 4)
-    env = ResizeObservation(env, (84, 84))
-    env = GrayScaleObservation(env)
-    # env = FrameStack(env, 4)
-    env = mo_gym.LinearReward(env)
-
-    terminated = False
-    env.reset()
-    while True:
-        obs, r, terminated, truncated, info = env.step(env.action_space.sample())
-        print(r, info["vector_reward"], terminated, info["time"])
-        """ plt.figure()
-        plt.imshow(obs, cmap='gray', vmin=0, vmax=255)
-        plt.show() """
-        env.render()
-        if terminated:
-            env.reset()
+        return obs, vec_reward, bool(done), False, self.cumulative_reward_info

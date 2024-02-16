@@ -73,3 +73,17 @@ register(
     kwargs={"stratified": False},
     max_episode_steps=1000,
 )
+
+register(
+    id="mo-SuperMario-v0",
+    entry_point="envs.super_mario.super_mario:SuperMarioBros",
+    kwargs={"stratified": True},
+    nondeterministic=True,
+)
+
+register(
+    id="SuperMario-v0",
+    entry_point="envs.super_mario.super_mario:SuperMarioBros",
+    kwargs={"stratified": False},
+    nondeterministic=True,
+)

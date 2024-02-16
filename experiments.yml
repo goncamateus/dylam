@@ -23,3 +23,10 @@ Baseline:
     total_timesteps: 200000
     target_network_frequency: 8000
     target_entropy_scale: 0.89
+  MARIO:
+    gym_id: SuperMario-v0
+    num_envs: 16
+    total_timesteps: 1000000
+    target_network_frequency: 8000
+    target_entropy_scale: 0.89
+    with_image: true
