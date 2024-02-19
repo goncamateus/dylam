@@ -78,7 +78,7 @@ class Hopper(HopperEnv, EzPickle):
         if not self.stratified:
             vec_reward = vec_reward.sum()
         else:
-            vec_reward /= np.array([1, 1, 1, 1], dtype=np.float32)
+            vec_reward /= np.array([3000, 2000, 850, 1000], dtype=np.float32)
 
         if self.render_mode == "human":
             self.render()
