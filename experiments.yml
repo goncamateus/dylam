@@ -19,3 +19,13 @@ Dylam:
     r_max: [100, 250, -20, -2]
     r_min: [-100, -200, -170, -15]
     dylam_tau: 0.9999
+  HOPPER:
+    gym_id: mo-Hopper-v4
+    num_envs: 16
+    total_timesteps: 1000000
+    stratified: True
+    dylam: True
+    num_rewards: 4
+    lambdas: [0.25, 0.25, 0.25, 0.25]
+    r_max: [3000, 2000, -200, 1000]
+    r_min: [0, 0, -850, 0]
