@@ -3,30 +3,19 @@ Baseline:
     gym_id: LunarLanderContinuous-v2
     num_envs: 16
     total_timesteps: 200000
-  MOUNTAINCAR:
-    gym_id: MountainCarContinuous-v0
-    num_envs: 16
-    total_timesteps: 200000
   HOPPER:
     gym_id: Hopper-v4
     num_envs: 16
     total_timesteps: 1000000
-  LANDERDISCRETE:
-    gym_id: LunarLander-v2
+Dylam:
+  LUNARLANDER:
+    gym_id: mo-LunarLanderContinuous-v2
     num_envs: 16
     total_timesteps: 200000
-    target_network_frequency: 8000
-    target_entropy_scale: 0.89
-  MOUNTAINDISCRETE:
-    gym_id: MountainCar-v0
-    num_envs: 16
-    total_timesteps: 200000
-    target_network_frequency: 8000
-    target_entropy_scale: 0.89
-  MARIO:
-    gym_id: SuperMario-v0
-    num_envs: 16
-    total_timesteps: 1000000
-    target_network_frequency: 8000
-    target_entropy_scale: 0.89
-    with_image: true
+    stratified: True
+    dylam: True
+    num_rewards: 4
+    lambdas: [0.25, 0.25, 0.25, 0.25]
+    r_max: [100, 250, -20, -2]
+    r_min: [-100, -200, -170, -15]
+    dylam_tau: 0.9999
