@@ -164,8 +164,10 @@ class SAC(nn.Module):
 
             min_qf_next_target = torch.min(qf1_next_target, qf2_next_target)
             min_qf_next_target = min_qf_next_target - self.alpha * next_state_log_pi
-            min_qf_next_target *= 1 if self.continuous_actions else next_state_action_probs
-            
+            min_qf_next_target *= (
+                1 if self.continuous_actions else next_state_action_probs
+            )
+
             min_qf_next_target[done_batch] = 0.0
             if not self.continuous_actions:
                 min_qf_next_target = min_qf_next_target.sum(dim=1)
@@ -378,15 +380,18 @@ class SACStrat(SAC):
         return policy_loss, alpha_loss
 
     def update_lambdas(self):
-        rew_mean_t = torch.Tensor(self.last_episode_rewards.mean()).to(self.device)
-        if self.last_reward_mean is not None:
-            rew_mean_t = (
-                rew_mean_t + (self.last_reward_mean - rew_mean_t) * self.rew_tau
+        if self.last_episode_rewards.can_do():
+            rew_mean_t = torch.Tensor(self.last_episode_rewards.mean()).to(self.device)
+            if self.last_reward_mean is not None:
+                rew_mean_t = (
+                    rew_mean_t + (self.last_reward_mean - rew_mean_t) * self.rew_tau
+                )
+            dQ = torch.clamp(
+                (self.r_max - rew_mean_t) / (self.r_max - self.r_min), 0, 1
             )
-        dQ = torch.clamp((self.r_max - rew_mean_t) / (self.r_max - self.r_min), 0, 1)
-        expdQ = torch.exp(dQ) - 1
-        self.lambdas = expdQ / (torch.sum(expdQ, 0) + 1e-4)
-        self.last_reward_mean = rew_mean_t
+            expdQ = torch.exp(dQ) - 1
+            self.lambdas = expdQ / (torch.sum(expdQ, 0) + 1e-4)
+            self.last_reward_mean = rew_mean_t
 
     def add_episode_rewards(self, rewards, terminations, truncations):
         if self.num_rewards == 1:

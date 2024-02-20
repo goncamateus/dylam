@@ -34,7 +34,6 @@ def train(args, exp_name, logger: SACLogger):
             actions = agent.get_action(obs)
 
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
-        agent.add_episode_rewards(rewards, terminations, truncations)
         logger.log_episode(infos, rewards)
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `terminal_observation`
@@ -48,6 +47,7 @@ def train(args, exp_name, logger: SACLogger):
         # ALGO LOGIC: training.
         if global_step > args.learning_starts:
             if args.dylam:
+                agent.add_episode_rewards(rewards, terminations, truncations)
                 agent.update_lambdas()
             update_actor = global_step % args.policy_frequency == 0
             policy_loss, qf1_loss, qf2_loss, alpha_loss = agent.update(
