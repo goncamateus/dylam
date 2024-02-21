@@ -47,6 +47,7 @@ def make_env(args, idx, run_name):
         if args.stratified:
             env = mogym.MORecordEpisodeStatistics(env)
         else:
+            env = mogym.LinearReward(env)
             env = gym.wrappers.RecordEpisodeStatistics(env)
         if args.with_image:
             if "SuperMario" in args.gym_id:

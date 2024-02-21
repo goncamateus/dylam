@@ -1,10 +1,10 @@
 Baseline:
   LUNARLANDER:
-    gym_id: LunarLanderContinuous-v2
+    gym_id: mo-LunarLanderContinuous-v2
     num_envs: 16
     total_timesteps: 200000
   HOPPER:
-    gym_id: Hopper-v4
+    gym_id: mo-Hopper-v4
     num_envs: 16
     total_timesteps: 1000000
 Dylam:

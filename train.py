@@ -53,7 +53,7 @@ def train(args, exp_name, logger: SACLogger):
             policy_loss, qf1_loss, qf2_loss, alpha_loss = agent.update(
                 args.batch_size, update_actor
             )
-            
+
             if global_step % args.target_network_frequency == 0:
                 agent.critic_target.sync(args.tau)
 
@@ -79,9 +79,8 @@ def train(args, exp_name, logger: SACLogger):
 
 
 def main(params):
-    gym_names = params.gym_id.split("-")
-    first_name = gym_names[0] if gym_names[0] != "mo" else gym_names[1]
-    exp_name = f"{first_name}_{int(time.time())}"
+    gym_name = params.gym_id.split("-")[1]
+    exp_name = f"{gym_name}_{int(time.time())}"
     _display = Display(visible=0, size=(1400, 900))
     _display.start()
     logger = SACLogger(exp_name, params)
