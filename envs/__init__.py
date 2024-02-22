@@ -38,3 +38,9 @@ register(
     entry_point="envs.super_mario.super_mario:SuperMarioBros",
     nondeterministic=True,
 )
+
+register(
+    id="mo-Pendulum-v1",
+    entry_point="envs.pendulum.pendulum:Pendulum",
+    max_episode_steps=200,
+)
