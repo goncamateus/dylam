@@ -11,6 +11,10 @@ Baseline:
     gym_id: mo-Pendulum-v1
     num_envs: 16
     total_timesteps: 100000
+  REACHER:
+    gym_id: mo-Reacher-v4
+    num_envs: 16
+    total_timesteps: 100000
 Dylam:
   LUNARLANDER:
     gym_id: mo-LunarLanderContinuous-v2
@@ -43,3 +47,13 @@ Dylam:
     lambdas: [0.3333, 0.3333, 0.3333]
     r_max: [0, 0, 0]
     r_min: [-1973.9208802178716, -1280, -0.8]
+  REACHER:
+    gym_id: mo-Reacher-v4
+    num_envs: 16
+    total_timesteps: 1000000
+    stratified: True
+    dylam: True
+    num_rewards: 4
+    lambdas: [0.25, 0.25, 0.25, 0.25]
+    r_max: [50, 50, 50, 50]
+    r_min: [-50, -50, -50, -50]
