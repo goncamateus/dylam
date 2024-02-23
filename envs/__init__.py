@@ -2,14 +2,14 @@ from gymnasium.envs.registration import register
 
 register(
     id="mo-LunarLander-v2",
-    entry_point="envs.lunar_lander.lunar_lander:LunarLanderStratV2",
+    entry_point="envs.lunar_lander.lunar_lander:LunarLanderStrat",
     max_episode_steps=1000,
     reward_threshold=200,
 )
 
 register(
     id="mo-LunarLanderContinuous-v2",
-    entry_point="envs.lunar_lander.lunar_lander:LunarLanderStratV2",
+    entry_point="envs.lunar_lander.lunar_lander:LunarLanderStrat",
     kwargs={"continuous": True},
     max_episode_steps=1000,
     reward_threshold=200,

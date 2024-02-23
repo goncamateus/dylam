@@ -3,20 +3,11 @@ import math
 import gymnasium as gym
 import numpy as np
 from gymnasium.envs.box2d.lunar_lander import (
-    FPS,
-    LEG_DOWN,
-    MAIN_ENGINE_POWER,
-    SCALE,
-    SIDE_ENGINE_AWAY,
-    SIDE_ENGINE_HEIGHT,
-    SIDE_ENGINE_POWER,
-    VIEWPORT_H,
-    VIEWPORT_W,
     LunarLander,
 )
 
 
-class LunarLanderStratV2(
+class LunarLanderStrat(
     LunarLander
 ):  # no need for EzPickle, it's already in LunarLander
     """
@@ -33,8 +24,8 @@ class LunarLanderStratV2(
     - 3: Fuel cost (side engine)
     """
 
-    def __init__(self, stratified=True, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.cumulative_reward_info = {
             "reward_Shaping": 0,
             "reward_Power_linear": 0,
@@ -42,15 +33,19 @@ class LunarLanderStratV2(
             "reward_Goal": 0,
             "Original_reward": 0,
         }
-        self.stratified = stratified
-        self.num_rewards = 4
         self.reward_space = gym.spaces.Box(
-            low=np.array([-100, -np.inf, -1, -1]),
-            high=np.array([100, np.inf, 0, 0]),
+            low=np.array(
+                [-1.0, -1.0, -1.0, -1.0],
+                dtype=np.float32,
+            ),
+            high=np.array(
+                [1.0, 0.0, 0.0, 1.0],
+                dtype=np.float32,
+            ),
             shape=(4,),
-            dtype=np.float32,
         )
         self.reward_dim = 4
+        self.prev_rew = None
 
     def reset(self, **kwargs):
         self.cumulative_reward_info = {
@@ -63,19 +58,8 @@ class LunarLanderStratV2(
         return super().reset(**kwargs)
 
     def step(self, action):
-        # Update wind
-        assert self.lander is not None, "You forgot to call reset()"
         if self.continuous:
             action = np.clip(action, -1, +1).astype(np.float32)
-        else:
-            assert self.action_space.contains(
-                action
-            ), f"{action!r} ({type(action)}) invalid "
-
-        # Engines
-        tip = (math.sin(self.lander.angle), math.cos(self.lander.angle))
-        side = (-tip[1], tip[0])
-        dispersion = [self.np_random.uniform(-1.0, +1.0) / SCALE for _ in range(2)]
 
         m_power = 0.0
         if (self.continuous and action[0] > 0.0) or (
@@ -87,26 +71,6 @@ class LunarLanderStratV2(
                 assert m_power >= 0.5 and m_power <= 1.0
             else:
                 m_power = 1.0
-            # 4 is move a bit downwards, +-2 for randomness
-            ox = tip[0] * (4 / SCALE + 2 * dispersion[0]) + side[0] * dispersion[1]
-            oy = -tip[1] * (4 / SCALE + 2 * dispersion[0]) - side[1] * dispersion[1]
-            impulse_pos = (self.lander.position[0] + ox, self.lander.position[1] + oy)
-            p = self._create_particle(
-                3.5,  # 3.5 is here to make particle speed adequate
-                impulse_pos[0],
-                impulse_pos[1],
-                m_power,
-            )  # particles are just a decoration
-            p.ApplyLinearImpulse(
-                (ox * MAIN_ENGINE_POWER * m_power, oy * MAIN_ENGINE_POWER * m_power),
-                impulse_pos,
-                True,
-            )
-            self.lander.ApplyLinearImpulse(
-                (-ox * MAIN_ENGINE_POWER * m_power, -oy * MAIN_ENGINE_POWER * m_power),
-                impulse_pos,
-                True,
-            )
 
         s_power = 0.0
         if (self.continuous and np.abs(action[1]) > 0.5) or (
@@ -114,93 +78,47 @@ class LunarLanderStratV2(
         ):
             # Orientation engines
             if self.continuous:
-                direction = np.sign(action[1])
                 s_power = np.clip(np.abs(action[1]), 0.5, 1.0)
                 assert s_power >= 0.5 and s_power <= 1.0
             else:
-                direction = action - 2
                 s_power = 1.0
-            ox = tip[0] * dispersion[0] + side[0] * (
-                3 * dispersion[1] + direction * SIDE_ENGINE_AWAY / SCALE
-            )
-            oy = -tip[1] * dispersion[0] - side[1] * (
-                3 * dispersion[1] + direction * SIDE_ENGINE_AWAY / SCALE
-            )
-            impulse_pos = (
-                self.lander.position[0] + ox - tip[0] * 17 / SCALE,
-                self.lander.position[1] + oy + tip[1] * SIDE_ENGINE_HEIGHT / SCALE,
-            )
-            p = self._create_particle(0.7, impulse_pos[0], impulse_pos[1], s_power)
-            p.ApplyLinearImpulse(
-                (ox * SIDE_ENGINE_POWER * s_power, oy * SIDE_ENGINE_POWER * s_power),
-                impulse_pos,
-                True,
-            )
-            self.lander.ApplyLinearImpulse(
-                (-ox * SIDE_ENGINE_POWER * s_power, -oy * SIDE_ENGINE_POWER * s_power),
-                impulse_pos,
-                True,
-            )
 
-        self.world.Step(1.0 / FPS, 6 * 30, 2 * 30)
+        state, reward, termination, truncated, info = super().step(action)
+        reward_vec = np.zeros(self.reward_dim)
+        shaping = 0
+        # Distance to center
+        shaping = -np.sqrt(state[0] * state[0] + state[1] * state[1])
+        # Speed discount
+        shaping -= -np.sqrt(state[2] * state[2] + state[3] * state[3])
+        # Angle discount
+        shaping -= -abs(state[4])
+        if self.prev_rew is not None:
+            reward_vec[0] = shaping - self.prev_rew
 
-        pos = self.lander.position
-        vel = self.lander.linearVelocity
-        state = [
-            (pos.x - VIEWPORT_W / SCALE / 2) / (VIEWPORT_W / SCALE / 2),
-            (pos.y - (self.helipad_y + LEG_DOWN / SCALE)) / (VIEWPORT_H / SCALE / 2),
-            vel.x * (VIEWPORT_W / SCALE / 2) / FPS,
-            vel.y * (VIEWPORT_H / SCALE / 2) / FPS,
-            self.lander.angle,
-            20.0 * self.lander.angularVelocity / FPS,
-            1.0 if self.legs[0].ground_contact else 0.0,
-            1.0 if self.legs[1].ground_contact else 0.0,
-        ]
-        assert len(state) == 8
+        # Power discount
+        reward_vec[1] = -m_power
+        reward_vec[2] = -s_power
 
-        reward = 0
-        vector_reward = np.zeros(4, dtype=np.float32)
-        shaping = (
-            -100 * np.sqrt(state[0] * state[0] + state[1] * state[1])
-            - 100 * np.sqrt(state[2] * state[2] + state[3] * state[3])
-            - 100 * abs(state[4])
-            + 10 * state[6]
-            + 10 * state[7]
-        )  # And ten points for legs contact, the idea is if you
-        # lose contact again after landing, you get negative reward
-        if self.prev_shaping is not None:
-            reward = shaping - self.prev_shaping
-            vector_reward[1] = shaping - self.prev_shaping
-        self.prev_shaping = shaping
+        # Win/Lost
+        if termination:
+            self.prev_rew = None
+            shaping = 0
+            reward_vec = np.zeros(self.reward_dim)
+            if self.game_over or abs(state[0]) >= 1.0:
+                reward_vec[3] = -1
+            if not self.lander.awake:
+                reward_vec[3] = 1
 
-        reward -= (
-            m_power * 0.30
-        )  # less fuel spent is better, about -30 for heuristic landing
-        vector_reward[2] = -m_power * 0.30
-        reward -= s_power * 0.03
-        vector_reward[3] = -s_power * 0.03
+        if reward == 0:
+            reward_vec = np.zeros(self.reward_dim)
 
-        terminated = False
-        if self.game_over or abs(state[0]) >= 1.0:
-            terminated = True
-            reward = -100
-            vector_reward[0] = -100
-        if not self.lander.awake:
-            terminated = True
-            reward = +100
-            vector_reward[0] = +100
-        self.cumulative_reward_info["reward_Goal"] += vector_reward[0]
-        self.cumulative_reward_info["reward_Shaping"] += vector_reward[1]
-        self.cumulative_reward_info["reward_Power_linear"] += vector_reward[2]
-        self.cumulative_reward_info["reward_Power_angular"] += vector_reward[3]
+        self.prev_rew = shaping
+
+        self.cumulative_reward_info["reward_Shaping"] += reward_vec[0]
+        self.cumulative_reward_info["reward_Power_linear"] += reward_vec[1]
+        self.cumulative_reward_info["reward_Power_angular"] += reward_vec[2]
+        self.cumulative_reward_info["reward_Goal"] += reward_vec[3]
+
         self.cumulative_reward_info["Original_reward"] += reward
-        if not self.stratified:
-            vector_reward = vector_reward.sum()
-
-        return (
-            np.array(state, dtype=np.float32),
-            vector_reward,
-            terminated,
-            False,
-            self.cumulative_reward_info,
-        )
+        info.update(self.cumulative_reward_info)
+        return state, reward_vec, termination, truncated, info
