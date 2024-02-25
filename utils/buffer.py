@@ -59,9 +59,29 @@ class StratLastRewards:
         self.size = size
         self._can_do = False
         self.rewards = np.zeros((size, n_rewards))
+        self.min_rewards = np.zeros(n_rewards)
+        self.max_rewards = np.zeros(n_rewards)
 
-    def add(self, rewards):
-        self.rewards[self.pos] = rewards
+    def normalize(self):
+        self.min_rewards = np.minimum(self.min_rewards, np.min(self.rewards, axis=0))
+        self.max_rewards = np.maximum(self.max_rewards, np.max(self.rewards, axis=0))
+        for i, reward in enumerate(self.rewards):
+            norm = (reward - self.min_rewards) / (
+                self.max_rewards - self.min_rewards + 1e-6
+            )
+            norm = (2 * norm) - 1
+            self.rewards[i] = norm
+
+    def denormalize(self):
+        for i, reward in enumerate(self.rewards):
+            reward = (reward + 1) / 2
+            reward = reward * (self.max_rewards - self.min_rewards)
+            self.rewards[i] = reward + self.min_rewards
+
+    def add(self, reward):
+        self.denormalize()
+        self.rewards[self.pos] = reward
+        self.normalize()
         if self.pos == self.size - 1:
             self._can_do = True
         self.pos = (self.pos + 1) % self.rewards.shape[0]

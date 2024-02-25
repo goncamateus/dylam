@@ -47,11 +47,9 @@ def make_env(args, idx, run_name):
                 episode_trigger=lambda x: x % args.video_freq == 0,
             )
         if args.stratified:
-            env = NormalizeMOReward(env)
             env = mogym.MORecordEpisodeStatistics(env)
         else:
             env = mogym.LinearReward(env)
-            env = NormalizeReward(env)
             env = gym.wrappers.RecordEpisodeStatistics(env)
         if args.with_image:
             if "SuperMario" in args.gym_id:
