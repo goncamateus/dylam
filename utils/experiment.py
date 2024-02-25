@@ -24,6 +24,8 @@ from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
 from mo_gymnasium.utils import MOMaxAndSkipObservation
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 
+from utils.wrappers import NormalizeMOReward, NormalizeReward
+
 
 def strtobool(value: str) -> bool:
     value = value.lower()
@@ -45,9 +47,11 @@ def make_env(args, idx, run_name):
                 episode_trigger=lambda x: x % args.video_freq == 0,
             )
         if args.stratified:
+            env = NormalizeMOReward(env)
             env = mogym.MORecordEpisodeStatistics(env)
         else:
             env = mogym.LinearReward(env)
+            env = NormalizeReward(env)
             env = gym.wrappers.RecordEpisodeStatistics(env)
         if args.with_image:
             if "SuperMario" in args.gym_id:
