@@ -3,10 +3,12 @@ Baseline:
     gym_id: mo-LunarLanderContinuous-v2
     num_envs: 16
     total_timesteps: 200000
+    reward_scaling: 100
   HOPPER:
     gym_id: mo-Hopper-v4
     num_envs: 16
     total_timesteps: 1000000
+    reward_scaling: 100
   PENDULUM:
     gym_id: mo-Pendulum-v1
     num_envs: 16
