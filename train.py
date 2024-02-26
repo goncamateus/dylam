@@ -22,7 +22,11 @@ def train(args, exp_name, logger: SACLogger):
     envs = gym.vector.AsyncVectorEnv(
         [make_env(args, i, exp_name) for i in range(args.num_envs)]
     )
-    agent = SACStrat(args, envs.single_observation_space, envs.single_action_space)
+    agent = SACStrat(
+        args,
+        envs.single_observation_space,
+        envs.single_action_space,
+    )
 
     obs, _ = envs.reset()
     for global_step in range(args.total_timesteps):

@@ -22,6 +22,7 @@ Dylam:
     stratified: True
     dylam: True
     num_rewards: 7
+    reward_frequencies: [1000, 1000, 1000, 1, 1000, 1000, 1]
     r_max: [1, 1, 1, 1, 0, 0, 1]
     r_min: [-1, -1, -1, -1, -1, -1, -1]
     dylam_tau: 0.9999
@@ -33,6 +34,7 @@ Dylam:
     stratified: True
     dylam: True
     num_rewards: 4
+    reward_frequencies: [1000, 1000, 1000, 1000]
     r_max: [1, 1, 0, 1]
     r_min: [-1, -1, -1, -1]
     dylam_tau: 0.9999

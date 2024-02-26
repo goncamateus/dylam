@@ -54,17 +54,29 @@ class ReplayBuffer:
 
 
 class StratLastRewards:
-    def __init__(self, size, n_rewards):
+    def __init__(self, size, n_rewards, reward_frequencies):
         self.pos = 0
         self.size = size
+        self.reward_frequencies = np.array(reward_frequencies)
         self._can_do = False
         self.rewards = np.zeros((size, n_rewards))
         self.min_rewards = np.zeros(n_rewards)
         self.max_rewards = np.zeros(n_rewards)
 
+    def define_range(self, rewards):
+        instant_min = rewards.min(axis=0)
+        instant_max = rewards.max(axis=0)
+
+        self.min_rewards = (
+            np.minimum(self.min_rewards / self.reward_frequencies, instant_min)
+            * self.reward_frequencies
+        )
+        self.max_rewards = (
+            np.maximum(self.max_rewards / self.reward_frequencies, instant_max)
+            * self.reward_frequencies
+        )
+
     def normalize(self):
-        self.min_rewards = np.minimum(self.min_rewards, np.min(self.rewards, axis=0))
-        self.max_rewards = np.maximum(self.max_rewards, np.max(self.rewards, axis=0))
         for i, reward in enumerate(self.rewards):
             norm = (reward - self.min_rewards) / (
                 self.max_rewards - self.min_rewards + 1e-6
