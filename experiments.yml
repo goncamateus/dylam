@@ -34,10 +34,12 @@ Dylam:
     total_timesteps: 1000000
     stratified: True
     dylam: True
-    num_rewards: 4
-    lambdas: [0.25, 0.25, 0.25, 0.25]
-    r_max: [3000, 2000, -200, 1000]
-    r_min: [0, 0, -850, 0]
+    num_rewards: 3
+    lambdas: [0.3333333, 0.3333333, 0.3333333]
+    r_max: [1, 1, 1]
+    r_min: [0, 0, 0]
+    dylam_tau: 0.9999
+    reward_scaling: 100
   PENDULUM:
     gym_id: mo-Pendulum-v1
     num_envs: 16

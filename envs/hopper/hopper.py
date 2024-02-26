@@ -19,17 +19,16 @@ class Hopper(HopperEnv, EzPickle):
     If the cost_objective flag is set to False, the reward is 2-dimensional, and the cost is added to other objectives.
     """
 
-    def __init__(self, stratified=False, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
         EzPickle.__init__(self, True, **kwargs)
         self.cost_objetive = True
-        self.reward_dim = 4
-        self.reward_space = Box(low=-np.inf, high=np.inf, shape=(self.reward_dim,))
-        self.stratified = stratified
+        self.reward_dim = 3
+        self.reward_space = Box(low=-1, high=1, shape=(self.reward_dim,))
         self.cumulative_reward_info = {
             "reward_Forward": 0,
             "reward_Jump": 0,
-            "reward_Energy": 0,
+            # "reward_Energy": 0,
             "reward_Healthy": 0,
             "Original_reward": 0,
         }
@@ -38,7 +37,7 @@ class Hopper(HopperEnv, EzPickle):
         self.cumulative_reward_info = {
             "reward_Forward": 0,
             "reward_Jump": 0,
-            "reward_Energy": 0,
+            # "reward_Energy": 0,
             "reward_Healthy": 0,
             "Original_reward": 0,
         }
@@ -63,20 +62,23 @@ class Hopper(HopperEnv, EzPickle):
         terminated = self.terminated
 
         z = self.data.qpos[1]
-        height = 10 * (z - self.init_qpos[1])
+        height = z - self.init_qpos[1]
         energy_cost = np.sum(np.square(action))
 
         vec_reward = np.array(
-            [x_velocity, height, -energy_cost, healthy_reward], dtype=np.float32
+            [
+                x_velocity,
+                height,
+                # -energy_cost,
+                healthy_reward,
+            ],
+            dtype=np.float32,
         )
         self.cumulative_reward_info["reward_Forward"] += x_velocity
         self.cumulative_reward_info["reward_Jump"] += height
-        self.cumulative_reward_info["reward_Energy"] += -energy_cost
+        # self.cumulative_reward_info["reward_Energy"] += -energy_cost
         self.cumulative_reward_info["reward_Healthy"] += healthy_reward
         self.cumulative_reward_info["Original_reward"] += vec_reward.sum()
-
-        if not self.stratified:
-            vec_reward = vec_reward.sum()
 
         if self.render_mode == "human":
             self.render()
