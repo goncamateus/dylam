@@ -44,9 +44,3 @@ register(
     entry_point="envs.pendulum.pendulum:Pendulum",
     max_episode_steps=200,
 )
-
-register(
-    id="mo-Reacher-v4",
-    entry_point="envs.reacher.reacher:Reacher",
-    max_episode_steps=50,
-)
