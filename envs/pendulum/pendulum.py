@@ -27,9 +27,9 @@ class Pendulum(PendulumEnv):
         angular_vel = state[2]
         torque = action[0]
         reward_vec = np.zeros(3, dtype=np.float32)
-        reward_vec[0] = -(theta**2)
-        reward_vec[1] = -0.1 * angular_vel**2
-        reward_vec[2] = -0.001 * torque**2
+        reward_vec[0] = -theta
+        reward_vec[1] = -angular_vel
+        reward_vec[2] = -torque
         self.cumulative_reward_info["reward_Theta"] += reward_vec[0]
         self.cumulative_reward_info["reward_Angular_vel"] += reward_vec[1]
         self.cumulative_reward_info["reward_Torque"] += reward_vec[2]

@@ -23,12 +23,12 @@ class Hopper(HopperEnv, EzPickle):
         super().__init__(**kwargs)
         EzPickle.__init__(self, True, **kwargs)
         self.cost_objetive = True
-        self.reward_dim = 3
+        self.reward_dim = 4
         self.reward_space = Box(low=-1, high=1, shape=(self.reward_dim,))
         self.cumulative_reward_info = {
             "reward_Forward": 0,
             "reward_Jump": 0,
-            # "reward_Energy": 0,
+            "reward_Energy": 0,
             "reward_Healthy": 0,
             "Original_reward": 0,
         }
@@ -37,7 +37,7 @@ class Hopper(HopperEnv, EzPickle):
         self.cumulative_reward_info = {
             "reward_Forward": 0,
             "reward_Jump": 0,
-            # "reward_Energy": 0,
+            "reward_Energy": 0,
             "reward_Healthy": 0,
             "Original_reward": 0,
         }
@@ -69,16 +69,18 @@ class Hopper(HopperEnv, EzPickle):
             [
                 x_velocity,
                 height,
-                # -energy_cost,
+                -energy_cost,
                 healthy_reward,
             ],
             dtype=np.float32,
         )
         self.cumulative_reward_info["reward_Forward"] += x_velocity
         self.cumulative_reward_info["reward_Jump"] += height
-        # self.cumulative_reward_info["reward_Energy"] += -energy_cost
+        self.cumulative_reward_info["reward_Energy"] += -energy_cost
         self.cumulative_reward_info["reward_Healthy"] += healthy_reward
-        self.cumulative_reward_info["Original_reward"] += vec_reward.sum()
+        self.cumulative_reward_info["Original_reward"] += (
+            vec_reward[0] + (10 * vec_reward[1]) + vec_reward[2:].sum()
+        )
 
         if self.render_mode == "human":
             self.render()

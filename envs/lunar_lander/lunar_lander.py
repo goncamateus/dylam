@@ -31,8 +31,8 @@ class LunarLanderStrat(
             "reward_Speed": 0,
             "reward_Angle": 0,
             "reward_Contact": 0,
-            # "reward_Power_linear": 0,
-            # "reward_Power_angular": 0,
+            "reward_Power_linear": 0,
+            "reward_Power_angular": 0,
             "reward_Goal": 0,
             "Original_reward": 0,
         }
@@ -43,8 +43,8 @@ class LunarLanderStrat(
                     -1.0,
                     -1.0,
                     -1.0,
-                    # -1.0,
-                    # -1.0,
+                    -1.0,
+                    -1.0,
                     -1.0,
                 ],
                 dtype=np.float32,
@@ -55,15 +55,15 @@ class LunarLanderStrat(
                     1.0,
                     1.0,
                     1.0,
-                    # 0.0,
-                    # 0.0,
+                    0.0,
+                    0.0,
                     1.0,
                 ],
                 dtype=np.float32,
             ),
-            shape=(5,),
+            shape=(7,),
         )
-        self.reward_dim = 5
+        self.reward_dim = 7
         self.prev_rew = None
 
     def reset(self, **kwargs):
@@ -72,8 +72,8 @@ class LunarLanderStrat(
             "reward_Speed": 0,
             "reward_Angle": 0,
             "reward_Contact": 0,
-            # "reward_Power_linear": 0,
-            # "reward_Power_angular": 0,
+            "reward_Power_linear": 0,
+            "reward_Power_angular": 0,
             "reward_Goal": 0,
             "Original_reward": 0,
         }
@@ -120,8 +120,8 @@ class LunarLanderStrat(
             reward_vec[:4] = shaping - self.prev_rew
 
         # Power discount
-        # reward_vec[4] = -m_power
-        # reward_vec[5] = -s_power
+        reward_vec[4] = -m_power
+        reward_vec[5] = -s_power
 
         # Win/Lost
         if termination:
@@ -129,9 +129,9 @@ class LunarLanderStrat(
             shaping = 0
             reward_vec = np.zeros(self.reward_dim)
             if self.game_over or abs(state[0]) >= 1.0:
-                reward_vec[4] = -1
+                reward_vec[6] = -1
             if not self.lander.awake:
-                reward_vec[4] = 1
+                reward_vec[6] = 1
 
         if reward == 0:
             reward_vec = np.zeros(self.reward_dim)
@@ -142,9 +142,9 @@ class LunarLanderStrat(
         self.cumulative_reward_info["reward_Speed"] += reward_vec[1]
         self.cumulative_reward_info["reward_Angle"] += reward_vec[2]
         self.cumulative_reward_info["reward_Contact"] += reward_vec[3]
-        # self.cumulative_reward_info["reward_Power_linear"] += reward_vec[4]
-        # self.cumulative_reward_info["reward_Power_angular"] += reward_vec[5]
-        self.cumulative_reward_info["reward_Goal"] += reward_vec[4]
+        self.cumulative_reward_info["reward_Power_linear"] += reward_vec[4]
+        self.cumulative_reward_info["reward_Power_angular"] += reward_vec[5]
+        self.cumulative_reward_info["reward_Goal"] += reward_vec[6]
 
         self.cumulative_reward_info["Original_reward"] += reward
         info.update(self.cumulative_reward_info)
