@@ -114,15 +114,14 @@ class LunarLanderStrat(
         shaping[0] += -np.sqrt(state[2] * state[2] + state[3] * state[3])
         # Angle discount
         shaping[0] += -abs(state[4])
-        shaping[0] /= 2
         # Ground Contacts
         shaping[1] = (state[6] + state[7]) / 2
         if self.prev_rew is not None:
             reward_vec[:2] = shaping - self.prev_rew
 
         # Power discount
-        reward_vec[2] = -m_power/1000
-        reward_vec[3] = -s_power/1000
+        reward_vec[2] = -m_power
+        reward_vec[3] = -s_power
 
         # Win/Lost
         if termination:

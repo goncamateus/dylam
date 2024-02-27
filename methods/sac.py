@@ -369,10 +369,12 @@ class SACStrat(SAC):
 
         # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
         policy_loss = self.alpha * log_pi
-        policy_loss = policy_loss - min_qf_pi
-        if not self.continuous_actions:
-            policy_loss *= action_probs
+        if self.continuous_actions:
+            policy_loss = policy_loss - min_qf_pi
+        else:
+            policy_loss = (action_probs * policy_loss) - min_qf_pi
         policy_loss = policy_loss.mean()
+        
         self.actor_optim.zero_grad()
         policy_loss.backward()
         self.actor_optim.step()
