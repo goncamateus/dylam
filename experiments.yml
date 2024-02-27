@@ -21,12 +21,10 @@ Dylam:
     total_timesteps: 200000
     stratified: True
     dylam: True
-    num_rewards: 7
-    reward_frequencies: [1000, 1000, 1000, 1, 1000, 1000, 1]
-    r_max: [1, 1, 1, 1, 0, 0, 1]
-    r_min: [-1, -1, -1, -1, -1, -1, -1]
+    num_rewards: 5
+    r_max: [1, 1, 0, 0, 1]
+    r_min: [-1, 0, -1, -1, -1]
     dylam_tau: 0.9999
-    reward_scaling: 100
   HOPPER:
     gym_id: mo-Hopper-v4
     num_envs: 16

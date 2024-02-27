@@ -41,7 +41,7 @@ def make_env(args, idx, run_name):
             render_mode="rgb_array" if args.capture_video and idx == 0 else None,
         )
         if args.capture_video and idx == 0:
-            env = gym.experimental.wrappers.RecordVideoV0(
+            env = gym.wrappers.RecordVideo(
                 env,
                 f"videos/{run_name}",
                 episode_trigger=lambda x: x % args.video_freq == 0,

@@ -293,7 +293,7 @@ class SACStrat(SAC):
         self.episode_rewards = np.zeros((args.num_envs, args.num_rewards))
         self.last_reward_mean = None
         self.last_episode_rewards = StratLastRewards(
-            args.dylam_rb, self.num_rewards, args.reward_frequencies
+            args.dylam_rb, self.num_rewards
         )
 
     def get_networks(
@@ -398,7 +398,6 @@ class SACStrat(SAC):
     def add_episode_rewards(self, rewards, terminations, truncations):
         if self.num_rewards == 1:
             rewards = rewards.reshape(-1, 1)
-        self.last_episode_rewards.define_range(rewards)
         self.episode_rewards += rewards
         for i, (term, trunc) in enumerate(zip(terminations, truncations)):
             if term or trunc:

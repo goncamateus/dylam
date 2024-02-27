@@ -54,46 +54,14 @@ class ReplayBuffer:
 
 
 class StratLastRewards:
-    def __init__(self, size, n_rewards, reward_frequencies):
+    def __init__(self, size, n_rewards):
         self.pos = 0
         self.size = size
-        self.reward_frequencies = np.array(reward_frequencies)
         self._can_do = False
         self.rewards = np.zeros((size, n_rewards))
-        self.min_rewards = np.zeros(n_rewards)
-        self.max_rewards = np.zeros(n_rewards)
-
-    def define_range(self, rewards):
-        instant_min = rewards.min(axis=0)
-        instant_max = rewards.max(axis=0)
-
-        self.min_rewards = (
-            np.minimum(self.min_rewards / self.reward_frequencies, instant_min)
-            * self.reward_frequencies
-        )
-        self.max_rewards = (
-            np.maximum(self.max_rewards / self.reward_frequencies, instant_max)
-            * self.reward_frequencies
-        )
-
-    def normalize(self):
-        for i, reward in enumerate(self.rewards):
-            norm = (reward - self.min_rewards) / (
-                self.max_rewards - self.min_rewards + 1e-6
-            )
-            norm = (2 * norm) - 1
-            self.rewards[i] = norm
-
-    def denormalize(self):
-        for i, reward in enumerate(self.rewards):
-            reward = (reward + 1) / 2
-            reward = reward * (self.max_rewards - self.min_rewards)
-            self.rewards[i] = reward + self.min_rewards
 
     def add(self, reward):
-        self.denormalize()
         self.rewards[self.pos] = reward
-        self.normalize()
         if self.pos == self.size - 1:
             self._can_do = True
         self.pos = (self.pos + 1) % self.rewards.shape[0]
