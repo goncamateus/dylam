@@ -27,6 +27,7 @@ def train(args, exp_name, logger: SACLogger):
             args,
             envs.single_observation_space,
             envs.single_action_space,
+            hidden_dim=args.hidden_dim,
         )
     else:
         agent = SAC(args, envs.single_observation_space, envs.single_action_space)
@@ -87,7 +88,7 @@ def train(args, exp_name, logger: SACLogger):
 
 def main(params):
     gym_name = params.gym_id.split("-")[1]
-    exp_name = f"{gym_name}_{int(time.time())}"
+    exp_name = f"{gym_name}-{params.setup}_{int(time.time())}"
     _display = Display(visible=0, size=(1400, 900))
     _display.start()
     logger = SACLogger(exp_name, params)

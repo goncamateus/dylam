@@ -103,6 +103,7 @@ def base_hyperparams():
         "lambdas": [1],
         "r_max": [1],
         "r_min": [0],
+        "hidden_dim": 256,
     }
     return hyper_params
 

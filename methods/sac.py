@@ -286,15 +286,13 @@ class SACStrat(SAC):
                 torch.ones(args.num_rewards).to(self.device) / args.num_rewards
             )
         else:
-            self.lambdas = torch.Tensor(args.lambdas).to(self.device)
+            self.lambdas = torch.ones(args.num_rewards).to(self.device)
         self.r_max = torch.Tensor(args.r_max).to(self.device)
         self.r_min = torch.Tensor(args.r_min).to(self.device)
         self.rew_tau = args.dylam_tau
         self.episode_rewards = np.zeros((args.num_envs, args.num_rewards))
         self.last_reward_mean = None
-        self.last_episode_rewards = StratLastRewards(
-            args.dylam_rb, self.num_rewards
-        )
+        self.last_episode_rewards = StratLastRewards(args.dylam_rb, self.num_rewards)
 
     def get_networks(
         self,
@@ -374,7 +372,7 @@ class SACStrat(SAC):
         else:
             policy_loss = (action_probs * policy_loss) - min_qf_pi
         policy_loss = policy_loss.mean()
-        
+
         self.actor_optim.zero_grad()
         policy_loss.backward()
         self.actor_optim.step()

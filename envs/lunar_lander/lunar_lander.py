@@ -30,7 +30,7 @@ class LunarLanderStrat(
             "reward_Shaping": 0,
             # "reward_Speed": 0,
             # "reward_Angle": 0,
-            "reward_Contact": 0,
+            # "reward_Contact": 0,
             "reward_Power_linear": 0,
             "reward_Power_angular": 0,
             "reward_Goal": 0,
@@ -42,7 +42,7 @@ class LunarLanderStrat(
                     -1.0,
                     # -1.0,
                     # -1.0,
-                    -1.0,
+                    # -1.0,
                     -1.0,
                     -1.0,
                     -1.0,
@@ -54,16 +54,16 @@ class LunarLanderStrat(
                     1.0,
                     # 1.0,
                     # 1.0,
-                    1.0,
+                    # 1.0,
                     0.0,
                     0.0,
                     1.0,
                 ],
                 dtype=np.float32,
             ),
-            shape=(5,),
+            shape=(4,),
         )
-        self.reward_dim = 5
+        self.reward_dim = 4
         self.prev_rew = None
 
     def reset(self, **kwargs):
@@ -71,7 +71,7 @@ class LunarLanderStrat(
             "reward_Shaping": 0,
             # "reward_Speed": 0,
             # "reward_Angle": 0,
-            "reward_Contact": 0,
+            # "reward_Contact": 0,
             "reward_Power_linear": 0,
             "reward_Power_angular": 0,
             "reward_Goal": 0,
@@ -107,21 +107,22 @@ class LunarLanderStrat(
 
         state, reward, termination, truncated, info = super().step(action)
         reward_vec = np.zeros(self.reward_dim)
-        shaping = np.zeros(2)
         # Distance to center
-        shaping[0] = -np.sqrt(state[0] * state[0] + state[1] * state[1])
+        shaping = -np.sqrt(state[0] * state[0] + state[1] * state[1])
         # Speed discount
-        shaping[0] += -np.sqrt(state[2] * state[2] + state[3] * state[3])
+        shaping += -np.sqrt(state[2] * state[2] + state[3] * state[3])
         # Angle discount
-        shaping[0] += -abs(state[4])
+        shaping += -abs(state[4])
         # Ground Contacts
-        shaping[1] = (state[6] + state[7]) / 2
+        shaping += state[6]
+        shaping += state[7]
+        shaping /= 4
         if self.prev_rew is not None:
-            reward_vec[:2] = shaping - self.prev_rew
+            reward_vec[0] = shaping - self.prev_rew
 
         # Power discount
-        reward_vec[2] = -m_power
-        reward_vec[3] = -s_power
+        reward_vec[1] = -m_power/1000
+        reward_vec[2] = -s_power/1000
 
         # Win/Lost
         if termination:
@@ -129,9 +130,9 @@ class LunarLanderStrat(
             shaping = 0
             reward_vec = np.zeros(self.reward_dim)
             if self.game_over or abs(state[0]) >= 1.0:
-                reward_vec[4] = -1
+                reward_vec[3] = -1
             if not self.lander.awake:
-                reward_vec[4] = 1
+                reward_vec[3] = 1
 
         if reward == 0:
             reward_vec = np.zeros(self.reward_dim)
@@ -141,10 +142,10 @@ class LunarLanderStrat(
         self.cumulative_reward_info["reward_Shaping"] += reward_vec[0]
         # self.cumulative_reward_info["reward_Speed"] += reward_vec[1]
         # self.cumulative_reward_info["reward_Angle"] += reward_vec[2]
-        self.cumulative_reward_info["reward_Contact"] += reward_vec[1]
-        self.cumulative_reward_info["reward_Power_linear"] += reward_vec[2]
-        self.cumulative_reward_info["reward_Power_angular"] += reward_vec[3]
-        self.cumulative_reward_info["reward_Goal"] += reward_vec[4]
+        # self.cumulative_reward_info["reward_Contact"] += reward_vec[1]
+        self.cumulative_reward_info["reward_Power_linear"] += reward_vec[1]/1000
+        self.cumulative_reward_info["reward_Power_angular"] += reward_vec[2]/1000
+        self.cumulative_reward_info["reward_Goal"] += reward_vec[3]
 
         self.cumulative_reward_info["Original_reward"] += reward
         info.update(self.cumulative_reward_info)
