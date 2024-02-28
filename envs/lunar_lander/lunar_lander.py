@@ -143,8 +143,8 @@ class LunarLanderStrat(
         # self.cumulative_reward_info["reward_Speed"] += reward_vec[1]
         # self.cumulative_reward_info["reward_Angle"] += reward_vec[2]
         # self.cumulative_reward_info["reward_Contact"] += reward_vec[1]
-        self.cumulative_reward_info["reward_Power_linear"] += reward_vec[1]/1000
-        self.cumulative_reward_info["reward_Power_angular"] += reward_vec[2]/1000
+        self.cumulative_reward_info["reward_Power_linear"] += reward_vec[1]
+        self.cumulative_reward_info["reward_Power_angular"] += reward_vec[2]
         self.cumulative_reward_info["reward_Goal"] += reward_vec[3]
 
         self.cumulative_reward_info["Original_reward"] += reward
