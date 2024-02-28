@@ -28,9 +28,6 @@ class LunarLanderStrat(
         super().__init__(*args, **kwargs)
         self.cumulative_reward_info = {
             "reward_Shaping": 0,
-            # "reward_Speed": 0,
-            # "reward_Angle": 0,
-            # "reward_Contact": 0,
             "reward_Power_linear": 0,
             "reward_Power_angular": 0,
             "reward_Goal": 0,
@@ -40,9 +37,6 @@ class LunarLanderStrat(
             low=np.array(
                 [
                     -1.0,
-                    # -1.0,
-                    # -1.0,
-                    # -1.0,
                     -1.0,
                     -1.0,
                     -1.0,
@@ -52,9 +46,6 @@ class LunarLanderStrat(
             high=np.array(
                 [
                     1.0,
-                    # 1.0,
-                    # 1.0,
-                    # 1.0,
                     0.0,
                     0.0,
                     1.0,
@@ -69,9 +60,6 @@ class LunarLanderStrat(
     def reset(self, **kwargs):
         self.cumulative_reward_info = {
             "reward_Shaping": 0,
-            # "reward_Speed": 0,
-            # "reward_Angle": 0,
-            # "reward_Contact": 0,
             "reward_Power_linear": 0,
             "reward_Power_angular": 0,
             "reward_Goal": 0,
@@ -140,9 +128,6 @@ class LunarLanderStrat(
         self.prev_rew = shaping
 
         self.cumulative_reward_info["reward_Shaping"] += reward_vec[0]
-        # self.cumulative_reward_info["reward_Speed"] += reward_vec[1]
-        # self.cumulative_reward_info["reward_Angle"] += reward_vec[2]
-        # self.cumulative_reward_info["reward_Contact"] += reward_vec[1]
         self.cumulative_reward_info["reward_Power_linear"] += reward_vec[1]
         self.cumulative_reward_info["reward_Power_angular"] += reward_vec[2]
         self.cumulative_reward_info["reward_Goal"] += reward_vec[3]
