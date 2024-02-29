@@ -96,21 +96,21 @@ class LunarLanderStrat(
         state, reward, termination, truncated, info = super().step(action)
         reward_vec = np.zeros(self.reward_dim)
         # Distance to center
-        shaping = -np.sqrt(state[0] * state[0] + state[1] * state[1])
+        shaping = -np.sqrt(state[0] * state[0] + state[1] * state[1])*1000
         # Speed discount
-        shaping += -np.sqrt(state[2] * state[2] + state[3] * state[3])
+        shaping += -np.sqrt(state[2] * state[2] + state[3] * state[3])*1000
         # Angle discount
-        shaping += -abs(state[4])
+        shaping += -abs(state[4])*1000
         # Ground Contacts
         shaping += state[6]
         shaping += state[7]
-        shaping /= 4
+        shaping /= 3
         if self.prev_rew is not None:
             reward_vec[0] = shaping - self.prev_rew
 
         # Power discount
-        reward_vec[1] = -m_power/1000
-        reward_vec[2] = -s_power/1000
+        reward_vec[1] = -m_power
+        reward_vec[2] = -s_power
 
         # Win/Lost
         if termination:

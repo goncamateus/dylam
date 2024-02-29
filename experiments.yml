@@ -3,11 +3,11 @@ Baseline:
     gym_id: mo-LunarLanderContinuous-v2
     num_envs: 16
     total_timesteps: 200000
-    reward_scaling: 100
   HOPPER:
     gym_id: mo-Hopper-v4
     num_envs: 16
     total_timesteps: 500000
+    reward_scaling: 100
   PENDULUM:
     gym_id: mo-Pendulum-v1
     num_envs: 16
@@ -37,9 +37,8 @@ Dylam:
     stratified: True
     dylam: True
     num_rewards: 4
-    r_max: [1, -0.5, -0.5, 1]
-    r_min: [-1, -1, -1, -1]
-    dylam_rb: 100
+    r_max: [1000, -0, 0, 1]
+    r_min: [-1000, -1000, -1000, -1]
   HOPPER:
     gym_id: mo-Hopper-v4
     num_envs: 16
@@ -47,8 +46,8 @@ Dylam:
     stratified: True
     dylam: True
     num_rewards: 4
-    r_max: [1, 1, -0.5, 1]
-    r_min: [-1, -1, -1, 0]
+    r_max: [1800, 250, -400, 1000]
+    r_min: [0, -250, -1000, 0]
     dylam_tau: 0.9999
     dylam_rb: 100
     reward_scaling: 100
