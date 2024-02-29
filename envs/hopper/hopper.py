@@ -49,16 +49,10 @@ class Hopper(HopperEnv, EzPickle):
         x_position_after = self.data.qpos[0]
         x_velocity = (x_position_after - x_position_before) / self.dt
 
-        # ctrl_cost = self.control_cost(action)
-
-        # forward_reward = self._forward_reward_weight * x_velocity
         healthy_reward = self.healthy_reward
 
-        # rewards = forward_reward + healthy_reward
-        # costs = ctrl_cost
-
         observation = self._get_obs()
-        # reward = rewards - costs
+
         terminated = self.terminated
 
         z = self.data.qpos[1]
@@ -67,19 +61,20 @@ class Hopper(HopperEnv, EzPickle):
 
         vec_reward = np.array(
             [
-                x_velocity,
-                height,
-                -energy_cost,
-                healthy_reward,
+                x_velocity/1800,
+                height/250,
+                -energy_cost/800,
+                healthy_reward/1000,
             ],
             dtype=np.float32,
         )
+        
         self.cumulative_reward_info["reward_Forward"] += x_velocity
         self.cumulative_reward_info["reward_Jump"] += height
         self.cumulative_reward_info["reward_Energy"] += -energy_cost
         self.cumulative_reward_info["reward_Healthy"] += healthy_reward
         self.cumulative_reward_info["Original_reward"] += (
-            vec_reward[0] + (10 * vec_reward[1]) + vec_reward[2:].sum()
+            x_velocity + (10 * height) - energy_cost + healthy_reward
         )
 
         if self.render_mode == "human":
