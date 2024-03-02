@@ -223,7 +223,7 @@ class SAC(nn.Module):
         if self.continuous_actions:
             policy_loss = policy_loss - min_qf_pi
         else:
-            policy_loss = (action_probs * policy_loss) - min_qf_pi
+            policy_loss = (action_probs * policy_loss) - min_qf_pi.squeeze()
         policy_loss = policy_loss.mean()
 
         self.actor_optim.zero_grad()
