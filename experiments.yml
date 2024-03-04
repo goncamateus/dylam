@@ -11,10 +11,6 @@ Baseline:
     gym_id: mo-Pendulum-v1
     num_envs: 16
     total_timesteps: 100000
-  FLAPPYBIRD:
-    gym_id: mo-FlappyBird-v0
-    num_envs: 16
-    total_timesteps: 500000
 
 Dylam:
   LUNARLANDER:
@@ -47,12 +43,3 @@ Dylam:
     num_rewards: 3
     r_max: [0, 0, 0]
     r_min: [-100, -100, -100]
-  FLAPPYBIRD:
-    gym_id: mo-FlappyBird-v0
-    num_envs: 16
-    total_timesteps: 500000
-    stratified: True
-    dylam: True
-    num_rewards: 4
-    r_max: [50, 1000, 0, 0]
-    r_min: [0, 0, -1000, -1]
