@@ -1,7 +1,7 @@
 import numpy as np
 
 from gymnasium.spaces import Box
-from gymnasium.envs.classic_control.pendulum import PendulumEnv
+from gymnasium.envs.classic_control.pendulum import PendulumEnv, angle_normalize
 
 
 class Pendulum(PendulumEnv):
@@ -23,13 +23,14 @@ class Pendulum(PendulumEnv):
 
     def step(self, action):
         state, reward, termination, truncated, info = super().step(action)
-        theta = np.arccos(state[0])
+        theta = angle_normalize(np.arccos(state[0]))
         angular_vel = state[2]
-        torque = action[0]
+        torque = np.clip(action, -self.max_torque, self.max_torque)[0]
         reward_vec = np.zeros(3, dtype=np.float32)
-        reward_vec[0] = -theta
-        reward_vec[1] = -angular_vel
-        reward_vec[2] = -torque
+        reward_vec[0] = abs(theta) / np.pi
+        reward_vec[1] = abs(angular_vel) / 8
+        reward_vec[2] = abs(torque) / 2
+        reward_vec *= -1
         self.cumulative_reward_info["reward_Theta"] += reward_vec[0]
         self.cumulative_reward_info["reward_Angular_vel"] += reward_vec[1]
         self.cumulative_reward_info["reward_Torque"] += reward_vec[2]

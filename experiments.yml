@@ -56,4 +56,4 @@ Dylam:
     dylam: True
     num_rewards: 3
     r_max: [0, 0, 0]
-    r_min: [-1973.9208802178716, -1280, -0.8]
+    r_min: [-100, -100, -100]
