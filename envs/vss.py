@@ -39,10 +39,10 @@ class VSS(VSSEnv):
 
         # Check if goal ocurred
         if self.frame.ball.x > (self.field.length / 2):
-            reward[3] = 1
+            reward[3] = 10
             goal = True
         elif self.frame.ball.x < -(self.field.length / 2):
-            reward[3] = -1
+            reward[3] = -10
             goal = True
         else:
             if self.last_frame is not None:
@@ -53,15 +53,15 @@ class VSS(VSSEnv):
                 # Calculate Energy penalty
                 energy_penalty = self.__energy_penalty()
 
-                reward[0] = move_reward
-                reward[1] = ball_grad_reward
-                reward[2] = energy_penalty
+                reward[0] = move_reward*2.5*0.2
+                reward[1] = ball_grad_reward*3*0.8
+                reward[2] = energy_penalty*2e-4
+                self.cumulative_reward_info["reward_move"] += reward[0]
+                self.cumulative_reward_info["reward_ball"] += reward[1]
+                self.cumulative_reward_info["reward_energy"] += reward[2]
 
-        self.cumulative_reward_info["reward_move"] += reward[0]
-        self.cumulative_reward_info["reward_ball"] += reward[1]
-        self.cumulative_reward_info["reward_energy"] += reward[2]
-        self.cumulative_reward_info["reward_goal"] += reward[3]
-        self.cumulative_reward_info["Original_reward"] += reward[3]
+        self.cumulative_reward_info["reward_goal"] += reward[3]/10
+        self.cumulative_reward_info["Original_reward"] += reward.sum()
         return reward, goal
 
     def step(self, action):
