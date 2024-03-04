@@ -25,5 +25,5 @@ register(
 register(
     id="mo-VSS-v0",
     entry_point="envs.vss:VSS",
-    max_episode_steps=200,
+    max_episode_steps=1200,
 )
