@@ -11,6 +11,10 @@ Baseline:
     gym_id: mo-Pendulum-v1
     num_envs: 16
     total_timesteps: 100000
+  VSS:
+    gym_id: mo-VSS-v0
+    num_envs: 16
+    total_timesteps: 100000
 
 Dylam:
   LUNARLANDER:

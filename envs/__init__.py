@@ -21,3 +21,9 @@ register(
     entry_point="envs.pendulum:Pendulum",
     max_episode_steps=200,
 )
+
+register(
+    id="mo-VSS-v0",
+    entry_point="envs.vss:VSS",
+    max_episode_steps=200,
+)
