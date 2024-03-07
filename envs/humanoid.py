@@ -37,7 +37,7 @@ class Humanoid(HumanoidEnv, EzPickle):
         x_velocity, _ = xy_velocity
 
         forward_reward = x_velocity
-        healthy_reward = self.healthy_reward / 5
+        healthy_reward = self.healthy_reward
 
         observation = self._get_obs()
 
@@ -48,8 +48,8 @@ class Humanoid(HumanoidEnv, EzPickle):
         vec_reward = np.array(
             [
                 forward_reward,
-                -energy_cost/2.72,
-                healthy_reward,
+                -energy_cost / 2.72,
+                healthy_reward / 5,
             ],
             dtype=np.float32,
         )
