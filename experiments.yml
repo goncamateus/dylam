@@ -11,6 +11,10 @@ Baseline:
     gym_id: mo-Pendulum-v1
     num_envs: 16
     total_timesteps: 100000
+  HUMANOID:
+    gym_id: mo-Humanoid-v4
+    num_envs: 16
+    total_timesteps: 500000
 
 Dylam:
   LUNARLANDER:
@@ -43,3 +47,14 @@ Dylam:
     num_rewards: 3
     r_max: [0, 0, 0]
     r_min: [-100, -100, -100]
+  HUMANOID:
+    gym_id: mo-Humanoid-v4
+    num_envs: 16
+    total_timesteps: 500000
+    stratified: True
+    dylam: True
+    num_rewards: 3
+    r_max: [1000, 0, 1000]
+    r_min: [0, -1000, 0]
+    dylam_rb: 100
+    dylam_tau: 0.9999

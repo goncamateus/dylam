@@ -23,7 +23,7 @@ register(
 )
 
 register(
-    id="mo-VSS-v0",
-    entry_point="envs.vss:VSS",
-    max_episode_steps=1200,
+    id="mo-Humanoid-v4",
+    entry_point="envs.humanoid:Humanoid",
+    max_episode_steps=1000,
 )
