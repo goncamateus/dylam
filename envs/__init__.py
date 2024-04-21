@@ -27,3 +27,9 @@ register(
     entry_point="envs.humanoid:Humanoid",
     max_episode_steps=1000,
 )
+
+register(
+    id="mo-VSS-v0",
+    entry_point="envs.vss:VSSStratEnv",
+    max_episode_steps=1200,
+)
