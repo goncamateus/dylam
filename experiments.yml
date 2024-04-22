@@ -62,3 +62,12 @@ Dylam:
     r_min: [0, -1000, 0]
     dylam_rb: 100
     dylam_tau: 0.9999
+  VSS:
+    gym_id: mo-VSS-v0
+    num_envs: 16
+    total_timesteps: 1000000
+    stratified: True
+    dylam: True
+    num_rewards: 4
+    r_max: [1200, 100, -200, 1]
+    r_min: [0, -100, -1200, -1]
