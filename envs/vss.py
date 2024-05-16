@@ -75,7 +75,7 @@ class VSSStratEnv(VSSEnv):
                 self.cumulative_reward_info["Original_reward"] += (
                     w_move * move_reward * 1.98
                     + w_ball_grad * grad_ball_potential * 1.63
-                    + w_energy * energy_penalty * 92.15338
+                    + w_energy * energy_penalty * (92.15338 * 1200)
                 )
 
         return reward, goal
@@ -124,5 +124,5 @@ class VSSStratEnv(VSSEnv):
 
         en_penalty_1 = abs(self.sent_commands[0].v_wheel0)
         en_penalty_2 = abs(self.sent_commands[0].v_wheel1)
-        energy_penalty = -(en_penalty_1 + en_penalty_2) / 92.15338
+        energy_penalty = -(en_penalty_1 + en_penalty_2) / (92.15338 * 1200)
         return energy_penalty
