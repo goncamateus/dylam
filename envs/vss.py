@@ -73,9 +73,9 @@ class VSSStratEnv(VSSEnv):
                 self.cumulative_reward_info["reward_Ball"] += grad_ball_potential
                 self.cumulative_reward_info["reward_Energy"] += energy_penalty
                 self.cumulative_reward_info["Original_reward"] += (
-                    w_move * move_reward * 1.98
-                    + w_ball_grad * grad_ball_potential * 1.63
-                    + w_energy * energy_penalty * (92.15338 * 1200)
+                    w_move * move_reward
+                    + w_ball_grad * grad_ball_potential
+                    + w_energy * energy_penalty * 92.15338
                 )
 
         return reward, goal
@@ -96,7 +96,7 @@ class VSSStratEnv(VSSEnv):
 
         ball_dist_rw = last_ball_dist - ball_dist
 
-        return ball_dist_rw / 1.63
+        return ball_dist_rw
 
     def __move_reward(self):
         assert self.last_frame is not None
@@ -117,12 +117,12 @@ class VSSStratEnv(VSSEnv):
 
         ball_dist_rw = last_ball_dist - ball_dist
 
-        return ball_dist_rw / 1.98
+        return ball_dist_rw
 
     def __energy_penalty(self):
         """Calculates the energy penalty"""
 
         en_penalty_1 = abs(self.sent_commands[0].v_wheel0)
         en_penalty_2 = abs(self.sent_commands[0].v_wheel1)
-        energy_penalty = -(en_penalty_1 + en_penalty_2) / (92.15338 * 1200)
+        energy_penalty = -(en_penalty_1 + en_penalty_2) / 92.15338
         return energy_penalty
