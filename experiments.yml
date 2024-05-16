@@ -69,5 +69,5 @@ Dylam:
     stratified: True
     dylam: True
     num_rewards: 4
-    r_max: [1200, 100, -200, 1]
-    r_min: [0, -100, -1200, -1]
+    r_max: [1, 1, 0, 1]
+    r_min: [-1, -1, -1, -1]

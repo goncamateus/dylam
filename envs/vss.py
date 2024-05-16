@@ -120,7 +120,7 @@ class VSSStratEnv(VSSEnv):
         move_reward = np.dot(robot_ball, robot_vel)
         magnitudes = vel_norm * vec_norm
         move_reward = move_reward / magnitudes if magnitudes > 0 else 0
-        return move_reward
+        return move_reward / 1.98
 
     def __energy_penalty(self):
         """Calculates the energy penalty"""
