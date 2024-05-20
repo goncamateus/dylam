@@ -11,11 +11,12 @@ import envs
 
 from pyvirtualdisplay import Display
 
+from methods.ddpg import DDPG
 from methods.sac import SAC, SACStrat
 from utils.experiment import get_experiment, make_env
 from utils.experiment import parse_args
 from utils.experiment import setup_run
-from utils.logger import SACLogger
+from utils.logger import DDPGLogger, SACLogger, WandbResultLogger
 
 
 def train(args, exp_name, logger: SACLogger):
@@ -30,7 +31,8 @@ def train(args, exp_name, logger: SACLogger):
             hidden_dim=args.hidden_dim,
         )
     else:
-        agent = SAC(args, envs.single_observation_space, envs.single_action_space)
+        method = SAC if args.method == "sac" else DDPG
+        agent = method(args, envs.single_observation_space, envs.single_action_space)
 
     obs, _ = envs.reset()
     for global_step in range(args.total_timesteps):
