@@ -13,6 +13,7 @@ from methods.networks.raw.discrete import CategoricalPolicy, DiscreteQNetwork
 from methods.networks.targets import TargetCritic
 
 from utils.buffer import ReplayBuffer, StratLastRewards
+from utils.ou_noise import OrnsteinUhlenbeckNoise as OUNoise
 
 
 class SAC(nn.Module):
@@ -35,12 +36,16 @@ class SAC(nn.Module):
         self.action_space = action_space
         self.observation_space = observation_space
         self.continuous_actions = not isinstance(action_space, gym.spaces.Discrete)
+        self.ou = None
         if self.with_image:
             self.num_inputs = observation_space.shape
         else:
             self.num_inputs = np.array(observation_space.shape).prod()
         if self.continuous_actions:
             self.num_actions = np.array(action_space.shape).prod()
+            if args.ou_noise:
+                self.ou = OUNoise(sigma=0.2, min_value=action_space.high, max_value=action_space.low)
+                self.ou.reset()
         else:
             self.num_actions = action_space.n
         self.reward_scaling = args.reward_scaling
@@ -146,7 +151,10 @@ class SAC(nn.Module):
 
     def get_action(self, state):
         state = torch.Tensor(state).to(self.device)
-        return self.actor.get_action(state)
+        action = self.actor.get_action(state)
+        if self.ou is not None:
+            action = self.ou(action)
+        return action
 
     def update_critic(
         self, state_batch, action_batch, reward_batch, next_state_batch, done_batch

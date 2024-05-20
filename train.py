@@ -43,6 +43,9 @@ def train(args, exp_name, logger: SACLogger):
 
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
         logger.log_episode(infos, rewards)
+        if terminations.any() or truncations.any():
+            if agent.ou:
+                agent.ou.reset()
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `terminal_observation`
         real_next_obs = next_obs.copy()

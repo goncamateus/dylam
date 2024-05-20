@@ -24,8 +24,6 @@ from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
 from mo_gymnasium.utils import MOMaxAndSkipObservation
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 
-from utils.wrappers import NormalizeMOReward, NormalizeReward
-
 
 def strtobool(value: str) -> bool:
     value = value.lower()
@@ -104,6 +102,7 @@ def base_hyperparams():
         "r_max": [1],
         "r_min": [0],
         "hidden_dim": 256,
+        "ou_noise": False,
     }
     return hyper_params
 
