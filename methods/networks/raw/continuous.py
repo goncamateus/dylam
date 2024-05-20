@@ -105,3 +105,26 @@ class GaussianPolicy(nn.Module):
         self.action_scale = self.action_scale.to(device)
         self.action_bias = self.action_bias.to(device)
         return super(GaussianPolicy, self).to(device)
+
+
+class MLPPolicy(nn.Module):
+    def __init__(self, num_inputs, num_actions, hidden_dim=256):
+        super(MLPPolicy, self).__init__()
+
+        self.mlp = nn.Sequential(
+            nn.Linear(num_inputs, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, num_actions),
+        )
+
+        self.apply(xavier_init)
+
+    def forward(self, state):
+        action = self.mlp(state)
+        return action
+
+    def get_action(self, state):
+        action = self.forward(state)
+        return action.detach().cpu().numpy()
