@@ -11,9 +11,9 @@ import wandb
 
 import envs
 
-from stable_baselines3.common.atari_wrappers import (
-    MaxAndSkipEnv,
-)
+# from stable_baselines3.common.atari_wrappers import (
+#     MaxAndSkipEnv,
+# )
 from gymnasium.wrappers import (
     FrameStack,
     GrayScaleObservation,
@@ -54,8 +54,8 @@ def make_env(args, idx, run_name):
                 env = JoypadSpace(env, SIMPLE_MOVEMENT)
             if args.stratified:
                 env = MOMaxAndSkipObservation(env, skip=4)
-            else:
-                env = MaxAndSkipEnv(env, skip=4)
+            # else:
+            #     env = MaxAndSkipEnv(env, skip=4)
             env = ResizeObservation(env, (84, 84))
             env = GrayScaleObservation(env)
             env = FrameStack(env, 4)
