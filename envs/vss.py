@@ -1,7 +1,7 @@
 import numpy as np
 
 from gymnasium.spaces import Box
-from rsoccer_gym.vss.env_vss.vss_gym import VSSEnv, Frame, Robot, Ball, KDTree
+from rsoccer_gym.vss.env_vss.vss_gym import VSSEnv
 
 
 class VSSStratEnv(VSSEnv):
@@ -67,9 +67,9 @@ class VSSStratEnv(VSSEnv):
 
                 reward[:-1] += np.array(
                     [
-                        move_reward,
-                        grad_ball_potential,
-                        energy_penalty,
+                        w_move * move_reward,
+                        w_ball_grad * grad_ball_potential,
+                        w_energy * energy_penalty,
                     ]
                 )
 
@@ -129,45 +129,3 @@ class VSSStratEnv(VSSEnv):
         en_penalty_2 = abs(self.sent_commands[0].v_wheel1)
         energy_penalty = -(en_penalty_1 + en_penalty_2) / 92.15338
         return energy_penalty
-
-    def _get_initial_positions_frame(self):
-        """Returns the position of each robot and ball for the initial frame"""
-        field_half_length = self.field.length / 2
-        field_half_width = self.field.width / 2
-
-        def x():
-            return np.random.uniform(-field_half_length + 0.1, field_half_length - 0.1)
-
-        def y():
-            return np.random.uniform(-field_half_width + 0.1, field_half_width - 0.1)
-
-        def theta():
-            return np.random.uniform(0, 360)
-
-        pos_frame: Frame = Frame()
-
-        pos_frame.ball = Ball(x=0, y=0)
-
-        min_dist = 0.1
-
-        places = KDTree()
-        places.insert((0, 0))
-        pos_frame.robots_blue[0] = Robot(x=-0.2, y=0, theta=0)
-
-        for i in range(1, self.n_robots_blue):
-            pos = (x(), y())
-            while places.get_nearest(pos)[1] < min_dist:
-                pos = (x(), y())
-
-            places.insert(pos)
-            pos_frame.robots_blue[i] = Robot(x=pos[0], y=pos[1], theta=theta())
-
-        for i in range(self.n_robots_yellow):
-            pos = (x(), y())
-            while places.get_nearest(pos)[1] < min_dist:
-                pos = (x(), y())
-
-            places.insert(pos)
-            pos_frame.robots_yellow[i] = Robot(x=pos[0], y=pos[1], theta=theta())
-
-        return pos_frame
