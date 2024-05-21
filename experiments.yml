@@ -17,6 +17,7 @@ Baseline:
     total_timesteps: 500000
   VSS:
     gym_id: mo-VSS-v0
+    method: "ddpg"
     num_envs: 16
     total_timesteps: 1000000
 

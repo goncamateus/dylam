@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 from torch.optim import Adam
 from methods.networks.image.discrete import ImageCategoricalPolicy, ImageQNetwork
-from methods.networks.raw.continuous import GaussianPolicy, QNetwork
+from methods.networks.raw.continuous import GaussianPolicy, DoubleQNetwork
 from methods.networks.raw.discrete import CategoricalPolicy, DiscreteQNetwork
 from methods.networks.targets import TargetCritic
 
@@ -117,7 +117,7 @@ class SAC(nn.Module):
                     epsilon=epsilon,
                     action_space=action_space,
                 )
-                critic = QNetwork(
+                critic = DoubleQNetwork(
                     self.num_inputs,
                     self.num_actions,
                     hidden_dim=hidden_dim,

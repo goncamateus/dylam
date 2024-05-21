@@ -1,5 +1,5 @@
 import copy
-from methods.networks.raw.continuous import QNetwork
+from methods.networks.raw.continuous import DoubleQNetwork, QNetwork
 
 
 class TargetNet:
@@ -30,6 +30,7 @@ class TargetCritic(TargetNet):
         output = (
             self.target_model(S, A)
             if isinstance(self.model, QNetwork)
+            or isinstance(self.model, DoubleQNetwork)
             else self.target_model(S)
         )
         return output

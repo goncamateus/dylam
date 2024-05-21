@@ -10,18 +10,7 @@ from methods.networks.utils import xavier_init
 class QNetwork(nn.Module):
     def __init__(self, num_inputs, num_actions, num_outputs=1, hidden_dim=256):
         super(QNetwork, self).__init__()
-
-        # Q1 architecture
-        self.q1 = nn.Sequential(
-            nn.Linear(num_inputs + num_actions, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, num_outputs),
-        )
-
-        # Q2 architecture
-        self.q2 = nn.Sequential(
+        self.q = nn.Sequential(
             nn.Linear(num_inputs + num_actions, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
@@ -33,8 +22,23 @@ class QNetwork(nn.Module):
 
     def forward(self, state, action):
         xu = torch.cat([state.clone(), action.clone()], 1)
-        x1 = self.q1(xu)
-        x2 = self.q2(xu)
+        x1 = self.q(xu)
+        return x1
+
+
+class DoubleQNetwork(nn.Module):
+    def __init__(self, num_inputs, num_actions, num_outputs=1, hidden_dim=256):
+        super(DoubleQNetwork, self).__init__()
+
+        # Q1 architecture
+        self.q1 = QNetwork(num_inputs, num_actions, num_outputs, hidden_dim)
+
+        # Q2 architecture
+        self.q2 = QNetwork(num_inputs, num_actions, num_outputs, hidden_dim)
+
+    def forward(self, state, action):
+        x1 = self.q1(state, action)
+        x2 = self.q2(state, action)
         return x1, x2
 
 
