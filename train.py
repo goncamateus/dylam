@@ -95,8 +95,6 @@ def train(args, exp_name, logger: SACLogger):
 def main(params):
     gym_name = params.gym_id.split("-")[1]
     exp_name = f"{gym_name}-{params.setup}_{int(time.time())}"
-    _display = Display(visible=0, size=(1400, 900))
-    _display.start()
     logger = (
         SACLogger(exp_name, params)
         if params.method == "sac"
