@@ -66,7 +66,11 @@ class VSSStratEnv(VSSEnv):
                 energy_penalty = self.__energy_penalty()
 
                 reward[:-1] += np.array(
-                    [move_reward, grad_ball_potential, energy_penalty]
+                    [
+                        w_move * move_reward,
+                        w_ball_grad * grad_ball_potential,
+                        w_energy * energy_penalty * 92.15338,
+                    ]
                 )
 
                 self.cumulative_reward_info["reward_Move"] += move_reward

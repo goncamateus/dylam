@@ -29,19 +29,20 @@ class DDPG(nn.Module):
         self.hidden_dim = hidden_dim
         self.action_space = action_space
         self.observation_space = observation_space
-        self.replay_size = args.replay_size
         self.gamma = args.gamma
-        self.lr_actor = args.learning_rate
-        self.lr_critic = args.learning_rate
+        self.lr_actor = args.policy_lr
+        self.lr_critic = args.q_lr
         self.reward_scaling = args.reward_scaling
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
         )
         self.num_inputs = np.array(observation_space.shape).prod()
         self.num_actions = np.array(action_space.shape).prod()
-        self.noises = [OUNoise(sigma=0.2)]*args.num_envs
+        self.noises = [
+            OUNoise(mu=np.zeros(action_space.shape), sigma=0.2)
+        ] * args.num_envs
         [noise.reset() for noise in self.noises]
-        self.actor, self.critic = self.get_networks(action_space, hidden_dim)
+        self.actor, self.critic = self.get_networks(hidden_dim)
         self.critic_target = TargetCritic(self.critic)
         self.actor_optim = Adam(self.actor.parameters(), lr=args.policy_lr)
         self.critic_optim = Adam(self.critic.parameters(), lr=args.q_lr)
@@ -81,8 +82,8 @@ class DDPG(nn.Module):
             qf_next_target = self.critic_target(next_state_batch, next_state_action)
             qf_next_target[done_batch] = 0.0
             next_q_value = reward_batch + self.gamma * qf_next_target
-            qf = self.critic(state_batch, action_batch)
 
+        qf = self.critic(state_batch, action_batch)
         qf_loss = F.mse_loss(qf, next_q_value)
 
         self.critic_optim.zero_grad()
