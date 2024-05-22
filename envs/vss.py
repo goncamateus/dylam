@@ -67,9 +67,9 @@ class VSSStratEnv(VSSEnv):
 
                 reward[:-1] += np.array(
                     [
-                        w_move * move_reward,
-                        w_ball_grad * grad_ball_potential,
-                        w_energy * energy_penalty,
+                        move_reward,
+                        grad_ball_potential,
+                        energy_penalty,
                     ]
                 )
 
@@ -103,24 +103,27 @@ class VSSStratEnv(VSSEnv):
         return ball_dist_rw / 0.03
 
     def __move_reward(self):
-        assert self.last_frame is not None
+        """Calculate Move to ball reward
+        Cosine between the robot vel vector and the vector robot -> ball.
+        This indicates rather the robot is moving towards the ball or not.
+        """
 
-        # Calculate previous ball dist
-        last_ball = self.last_frame.ball
-        last_robot = self.last_frame.robots_blue[0]
-        last_ball_pos = np.array([last_ball.x, last_ball.y])
-        last_robot_pos = np.array([last_robot.x, last_robot.y])
-        last_ball_dist = np.linalg.norm(last_robot_pos - last_ball_pos)
+        ball = np.array([self.frame.ball.x, self.frame.ball.y])
+        robot = np.array([self.frame.robots_blue[0].x, self.frame.robots_blue[0].y])
+        robot_vel = np.array(
+            [self.frame.robots_blue[0].v_x, self.frame.robots_blue[0].v_y]
+        )
+        vel_norm = np.linalg.norm(robot_vel)
+        vel_norm = vel_norm if not np.isclose(vel_norm, 0, atol=1e-2) else 0
 
-        # Calculate new ball dist
-        ball = self.frame.ball
-        robot = self.frame.robots_blue[0]
-        ball_pos = np.array([ball.x, ball.y])
-        robot_pos = np.array([robot.x, robot.y])
-        ball_dist = np.linalg.norm(robot_pos - ball_pos)
+        robot_ball = ball - robot
+        vec_norm = np.linalg.norm(robot_ball)
+        vec_norm = vec_norm if not np.isclose(vec_norm, 0, atol=1e-2) else 0
 
-        ball_dist_rw = last_ball_dist - ball_dist
-        return ball_dist_rw / 0.03
+        move_reward = np.dot(robot_ball, robot_vel)
+        magnitudes = vel_norm * vec_norm
+        move_reward = move_reward / magnitudes if magnitudes > 0 else 0
+        return move_reward
 
     def __energy_penalty(self):
         """Calculates the energy penalty"""
