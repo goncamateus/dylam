@@ -42,6 +42,7 @@ class DDPG(nn.Module):
             OUNoise(mu=np.zeros(action_space.shape), sigma=0.2)
         ] * args.num_envs
         [noise.reset() for noise in self.noises]
+        self.update_counter = 0
         self.actor, self.critic = self.get_networks(hidden_dim)
         self.critic_target = TargetCritic(self.critic)
         self.actor_optim = Adam(self.actor.parameters(), lr=args.policy_lr)
@@ -103,7 +104,11 @@ class DDPG(nn.Module):
         self.actor_optim.zero_grad()
         policy_loss.backward()
         self.actor_optim.step()
-
+        self.update_counter += 1
+        if self.update_counter % 1500 == 0:
+            for i in range(len(self.noises)):
+                self.noises[i].sigma *= 0.99
+            self.update_counter = 0
         return policy_loss
 
     def update(self, batch_size, update_actor=False):
