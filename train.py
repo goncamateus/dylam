@@ -9,14 +9,11 @@ import wandb
 
 import envs
 
-from pyvirtualdisplay import Display
-
-from methods.ddpg import DDPG
 from methods.sac import SAC, SACStrat
 from utils.experiment import get_experiment, make_env
 from utils.experiment import parse_args
 from utils.experiment import setup_run
-from utils.logger import DDPGLogger, SACLogger, WandbResultLogger
+from utils.logger import SACLogger
 
 
 def train(args, exp_name, logger: SACLogger):
@@ -31,8 +28,7 @@ def train(args, exp_name, logger: SACLogger):
             hidden_dim=args.hidden_dim,
         )
     else:
-        method = SAC if args.method == "sac" else DDPG
-        agent = method(args, envs.single_observation_space, envs.single_action_space)
+        agent = SAC(args, envs.single_observation_space, envs.single_action_space)
 
     obs, _ = envs.reset()
     for global_step in range(args.total_timesteps):
@@ -45,10 +41,6 @@ def train(args, exp_name, logger: SACLogger):
 
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
         logger.log_episode(infos, rewards)
-        if args.method == "ddpg":
-            for idx in range(args.num_envs):
-                if terminations[idx] or truncations[idx]:
-                    agent.noises[idx].reset()
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `terminal_observation`
         real_next_obs = next_obs.copy()
@@ -70,16 +62,13 @@ def train(args, exp_name, logger: SACLogger):
                 agent.critic_target.sync(args.tau)
 
             if global_step % 100 == 0:
-                if args.method == "sac":
-                    loss_dict = {
-                        "policy_loss": losses[0],
-                        "qf1_loss": losses[1],
-                        "qf2_loss": losses[2],
-                        "alpha": agent.alpha,
-                        "alpha_loss": losses[3],
-                    }
-                else:
-                    loss_dict = {"policy_loss": losses[0], "qf_loss": losses[1]}
+                loss_dict = {
+                    "policy_loss": losses[0],
+                    "qf1_loss": losses[1],
+                    "qf2_loss": losses[2],
+                    "alpha": agent.alpha,
+                    "alpha_loss": losses[3],
+                }
                 logger.log_losses(loss_dict)
                 if args.dylam:
                     logger.log_lambdas(agent.lambdas)
@@ -95,11 +84,7 @@ def train(args, exp_name, logger: SACLogger):
 def main(params):
     gym_name = params.gym_id.split("-")[1]
     exp_name = f"{gym_name}-{params.setup}_{int(time.time())}"
-    logger = (
-        SACLogger(exp_name, params)
-        if params.method == "sac"
-        else DDPGLogger(exp_name, params)
-    )
+    logger = SACLogger(exp_name, params)
     setup_run(params)
     train(params, exp_name, logger)
 

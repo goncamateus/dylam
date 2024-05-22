@@ -102,8 +102,6 @@ def base_hyperparams():
         "r_max": [1],
         "r_min": [0],
         "hidden_dim": 256,
-        "ou_noise": False,
-        "method": "sac",
     }
     return hyper_params
 
