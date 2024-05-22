@@ -13,7 +13,6 @@ from methods.networks.raw.discrete import CategoricalPolicy, DiscreteQNetwork
 from methods.networks.targets import TargetCritic
 
 from utils.buffer import ReplayBuffer, StratLastRewards
-from utils.ou_noise import OrnsteinUhlenbeckNoise as OUNoise
 
 
 class SAC(nn.Module):
@@ -332,7 +331,7 @@ class SACStrat(SAC):
                     epsilon=epsilon,
                     action_space=action_space,
                 )
-                critic = QNetwork(
+                critic = DoubleQNetwork(
                     self.num_inputs,
                     self.num_actions,
                     hidden_dim=hidden_dim,
