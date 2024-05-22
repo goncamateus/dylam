@@ -17,7 +17,6 @@ Baseline:
     total_timesteps: 500000
   VSS:
     gym_id: mo-VSS-v0
-    method: "ddpg"
     num_envs: 16
     total_timesteps: 1000000
 
@@ -70,5 +69,5 @@ Dylam:
     stratified: True
     dylam: True
     num_rewards: 4
-    r_max: [1.98, 1.63, -240, 1]
-    r_min: [-1, -1, -1200, -1]
+    r_max: [800, 40, -240, 1]
+    r_min: [0, -40, -1200, -1]
