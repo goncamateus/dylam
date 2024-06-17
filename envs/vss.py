@@ -39,22 +39,21 @@ class VSSStratEnv(VSSEnv):
     def _calculate_reward_and_done(self):
         reward = np.zeros(4, dtype=np.float32)
         goal = False
-        w_move = 0.018
-        w_ball_grad = 0.068
-        w_energy = 0.002
-        w_goal = 0.911
+        w_move = 0.2
+        w_ball_grad = 0.8
+        w_energy = 2e-4
         # Check if goal ocurred
         if self.frame.ball.x > (self.field.length / 2):
             self.cumulative_reward_info["reward_Goal"] += 1
             self.cumulative_reward_info["reward_Goal_blue"] += 1
-            self.cumulative_reward_info["Original_reward"] += 1 * w_goal
-            reward[-1] = 1
+            self.cumulative_reward_info["Original_reward"] += 1 * 10
+            reward[-1] = 10
             goal = True
         elif self.frame.ball.x < -(self.field.length / 2):
             self.cumulative_reward_info["reward_Goal"] -= 1
             self.cumulative_reward_info["reward_Goal_yellow"] += 1
-            self.cumulative_reward_info["Original_reward"] += 1 * w_goal
-            reward[-1] = -1
+            self.cumulative_reward_info["Original_reward"] += 1 * 10
+            reward[-1] = -10
             goal = True
         else:
             if self.last_frame is not None:
@@ -67,9 +66,9 @@ class VSSStratEnv(VSSEnv):
 
                 reward[:-1] += np.array(
                     [
-                        move_reward,
-                        grad_ball_potential,
-                        energy_penalty,
+                        w_move * move_reward,
+                        w_ball_grad * grad_ball_potential,
+                        w_energy * energy_penalty,
                     ]
                 )
 
@@ -85,25 +84,37 @@ class VSSStratEnv(VSSEnv):
         return reward, goal
 
     def __ball_grad(self):
-        assert self.last_frame is not None
+        """Calculate ball potential gradient
+        Difference of potential of the ball in time_step seconds.
+        """
+        # Calculate ball potential
+        length_cm = self.field.length * 100
+        half_lenght = (self.field.length / 2.0) + self.field.goal_depth
 
-        # Calculate previous ball dist
-        last_ball = self.last_frame.ball
-        last_ball_pos = np.array([last_ball.x, last_ball.y])
-        goal_pos = np.array([self.field.length / 2, 0])
-        last_ball_dist = np.linalg.norm(goal_pos - last_ball_pos)
+        # distance to defence
+        dx_d = (half_lenght + self.frame.ball.x) * 100
+        # distance to attack
+        dx_a = (half_lenght - self.frame.ball.x) * 100
+        dy = (self.frame.ball.y) * 100
 
-        # Calculate new ball dist
-        ball = self.frame.ball
-        ball_pos = np.array([ball.x, ball.y])
-        ball_dist = np.linalg.norm(goal_pos - ball_pos)
+        dist_1 = -np.sqrt(dx_a**2 + 2 * dy**2)
+        dist_2 = np.sqrt(dx_d**2 + 2 * dy**2)
+        ball_potential = ((dist_1 + dist_2) / length_cm - 1) / 2
 
-        ball_dist_rw = last_ball_dist - ball_dist
+        grad_ball_potential = 0
+        # Calculate ball potential gradient
+        # = actual_potential - previous_potential
+        if self.previous_ball_potential is not None:
+            diff = ball_potential - self.previous_ball_potential
+            grad_ball_potential = np.clip(diff * 3 / self.time_step, -5.0, 5.0)
 
-        return ball_dist_rw / 0.03
+        self.previous_ball_potential = ball_potential
+
+        return grad_ball_potential
 
     def __move_reward(self):
         """Calculate Move to ball reward
+
         Cosine between the robot vel vector and the vector robot -> ball.
         This indicates rather the robot is moving towards the ball or not.
         """
@@ -113,16 +124,12 @@ class VSSStratEnv(VSSEnv):
         robot_vel = np.array(
             [self.frame.robots_blue[0].v_x, self.frame.robots_blue[0].v_y]
         )
-        vel_norm = np.linalg.norm(robot_vel)
-        vel_norm = vel_norm if not np.isclose(vel_norm, 0, atol=1e-2) else 0
-
         robot_ball = ball - robot
-        vec_norm = np.linalg.norm(robot_ball)
-        vec_norm = vec_norm if not np.isclose(vec_norm, 0, atol=1e-2) else 0
+        robot_ball = robot_ball / np.linalg.norm(robot_ball)
 
         move_reward = np.dot(robot_ball, robot_vel)
-        magnitudes = vel_norm * vec_norm
-        move_reward = move_reward / magnitudes if magnitudes > 0 else 0
+
+        move_reward = np.clip(move_reward / 0.4, -5.0, 5.0)
         return move_reward
 
     def __energy_penalty(self):
@@ -130,5 +137,5 @@ class VSSStratEnv(VSSEnv):
 
         en_penalty_1 = abs(self.sent_commands[0].v_wheel0)
         en_penalty_2 = abs(self.sent_commands[0].v_wheel1)
-        energy_penalty = -(en_penalty_1 + en_penalty_2) / 92.15338
+        energy_penalty = -(en_penalty_1 + en_penalty_2)
         return energy_penalty
