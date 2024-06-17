@@ -102,6 +102,9 @@ def base_hyperparams():
         "r_max": [1],
         "r_min": [0],
         "hidden_dim": 256,
+        "sigma_decay": 100,
+        "sigma_min": 0,
+        "update_frequency": 1,
     }
     return hyper_params
 

@@ -51,7 +51,10 @@ def train(args, exp_name, logger: SACLogger):
         obs = next_obs
 
         # ALGO LOGIC: training.
-        if global_step > args.learning_starts:
+        if (
+            global_step > args.learning_starts
+            and global_step % args.update_frequency == 0
+        ):
             if args.dylam:
                 agent.add_episode_rewards(rewards, terminations, truncations)
                 agent.update_lambdas()

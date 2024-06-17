@@ -14,6 +14,7 @@ from utils.experiment import get_experiment, make_env
 from utils.experiment import parse_args
 from utils.experiment import setup_run
 from utils.logger import DDPGLogger
+from utils.ou_noise import OUNoise
 
 
 def train(args, exp_name, logger: DDPGLogger):
@@ -29,18 +30,25 @@ def train(args, exp_name, logger: DDPGLogger):
         )
     else:
         agent = DDPG(args, envs.single_observation_space, envs.single_action_space)
-
+    ou_noise = [
+        OUNoise(envs.single_action_space.shape[0], sigma=0.8)
+        for _ in range(args.num_envs)
+    ]
     obs, _ = envs.reset()
+    for noise in ou_noise:
+        noise.reset()
     for global_step in range(args.total_timesteps):
-        if global_step < args.learning_starts:
-            actions = np.array(
-                [envs.single_action_space.sample() for _ in range(args.num_envs)]
-            )
-        else:
+        actions = np.zeros((args.num_envs, envs.single_action_space.shape[0]))
+        if global_step > args.learning_starts:
             actions = agent.get_action(obs)
+        for i, noise in enumerate(ou_noise):
+            actions[i] = np.clip(actions[i] + noise.sample(), -1, 1)
 
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
         logger.log_episode(infos, rewards)
+        for i in range(args.num_envs):
+            if terminations[i] or truncations[i]:
+                ou_noise[i].reset()
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `terminal_observation`
         real_next_obs = next_obs.copy()
@@ -51,7 +59,10 @@ def train(args, exp_name, logger: DDPGLogger):
         obs = next_obs
 
         # ALGO LOGIC: training.
-        if global_step > args.learning_starts:
+        if (
+            global_step > args.learning_starts
+            and global_step % args.update_frequency == 0
+        ):
             if args.dylam:
                 agent.add_episode_rewards(rewards, terminations, truncations)
                 agent.update_lambdas()
@@ -69,6 +80,10 @@ def train(args, exp_name, logger: DDPGLogger):
                 logger.log_losses(loss_dict)
                 if args.dylam:
                     logger.log_lambdas(agent.lambdas)
+            if global_step % args.sigma_decay == 0:
+                for i, noise in enumerate(ou_noise):
+                    noise.sigma = max(args.sigma_min, noise.sigma * 0.99)
+                logger.log_sigma(ou_noise[0].sigma)
 
         logger.push(global_step)
         if global_step % 9999 == 0:

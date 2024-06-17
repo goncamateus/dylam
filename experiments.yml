@@ -19,6 +19,8 @@ Baseline:
     gym_id: mo-VSS-v0
     num_envs: 16
     total_timesteps: 1000000
+    sigma_decay: 3000
+    sigma_min: 0.15
 
 Dylam:
   LUNARLANDER:

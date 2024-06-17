@@ -92,3 +92,6 @@ class DDPGLogger(WandbResultLogger):
         )
         if losses["policy_loss"] is not None:
             self.log.update({"losses/policy_loss": losses["policy_loss"].item()})
+
+    def log_sigma(self, sigma):
+        self.log.update({"Charts/Noise-sigma": sigma})
