@@ -70,6 +70,7 @@ def train(args, exp_name, logger: DDPGLogger):
             losses = agent.update(args.batch_size, update_actor)
 
             if global_step % args.target_network_frequency == 0:
+                agent.actor_target.sync(args.tau)
                 agent.critic_target.sync(args.tau)
 
             if global_step % 100 == 0:

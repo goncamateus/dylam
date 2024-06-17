@@ -34,3 +34,9 @@ class TargetCritic(TargetNet):
             else self.target_model(S)
         )
         return output
+
+
+class TargetActor(TargetNet):
+    def __call__(self, S):
+        output = self.target_model(S)
+        return output

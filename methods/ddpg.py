@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 from torch.optim import Adam
 from methods.networks.raw.continuous import MLPPolicy, QNetwork
-from methods.networks.targets import TargetCritic
+from methods.networks.targets import TargetActor, TargetCritic
 
 from utils.buffer import ReplayBuffer, StratLastRewards
 
@@ -36,6 +36,7 @@ class DDPG(nn.Module):
             action_space,
             hidden_dim,
         )
+        self.actor_target = TargetActor(self.actor)
         self.critic_target = TargetCritic(self.critic)
         self.actor_optim = Adam(self.actor.parameters(), lr=args.policy_lr)
         self.critic_optim = Adam(self.critic.parameters(), lr=args.q_lr)
@@ -78,7 +79,7 @@ class DDPG(nn.Module):
         self, state_batch, action_batch, reward_batch, next_state_batch, done_batch
     ):
         with torch.no_grad():
-            next_action = self.actor(next_state_batch)
+            next_action = self.actor_target(next_state_batch)
             qf_next_target = self.critic_target(next_state_batch, next_action)
             qf_next_target[done_batch] = 0.0
             next_q_value = reward_batch + self.gamma * qf_next_target
@@ -185,7 +186,7 @@ class DDPGStrat(DDPG):
         qf_pi = torch.einsum("ij,j->i", qf_pi, self.lambdas).view(-1, 1)
 
         # Jπ = 𝔼st∼D,εt∼N[− Q(st,f(εt;st))]
-        policy_loss = - qf_pi.mean()
+        policy_loss = -qf_pi.mean()
 
         self.actor_optim.zero_grad()
         policy_loss.backward()
