@@ -17,18 +17,18 @@ Baseline:
     total_timesteps: 500000
   VSS:
     gym_id: mo-VSS-v0
-    num_envs: 3
-    total_timesteps: 1000000
-    sigma_decay: 3000
+    num_envs: 20
+    total_timesteps: 500000
+    sigma_decay: 150
     sigma_min: 0.15
-    learning_starts: 100000
+    learning_starts: 5000
     tau: 0.001
     policy_frequency: 1
     policy_lr: 0.0001
     q_lr: 0.0001
     batch_size: 256
     gamma: 0.95
-    update_frequency: 20
+    update_frequency: 1
 
 Dylam:
   LUNARLANDER:
