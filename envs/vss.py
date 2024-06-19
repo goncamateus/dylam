@@ -45,21 +45,26 @@ class VSSStratEnv(VSSEnv):
     def _calculate_reward_and_done(self):
         reward = np.zeros(4, dtype=np.float32)
         goal = False
-        w_move = 0.2
-        w_ball_grad = 0.8
-        w_energy = 2e-4
+        ori_w_move = 0.2
+        ori_w_ball_grad = 0.8
+        ori_w_energy = 2e-4
+        ori_w_goal = 10
+        w_move = 0.018
+        w_ball_grad = 0.068
+        w_energy = 0.002
+        w_goal = 0.911
         # Check if goal ocurred
         if self.frame.ball.x > (self.field.length / 2):
             self.cumulative_reward_info["reward_Goal"] += 1
             self.cumulative_reward_info["reward_Goal_blue"] += 1
-            self.cumulative_reward_info["Original_reward"] += 1 * 10
-            reward[-1] = 10
+            self.cumulative_reward_info["Original_reward"] += 1 * ori_w_goal
+            reward[-1] = w_goal
             goal = True
         elif self.frame.ball.x < -(self.field.length / 2):
             self.cumulative_reward_info["reward_Goal"] -= 1
             self.cumulative_reward_info["reward_Goal_yellow"] += 1
-            self.cumulative_reward_info["Original_reward"] += 1 * 10
-            reward[-1] = -10
+            self.cumulative_reward_info["Original_reward"] += 1 * ori_w_goal
+            reward[-1] = -w_goal
             goal = True
         else:
             if self.last_frame is not None:
@@ -72,9 +77,9 @@ class VSSStratEnv(VSSEnv):
 
                 reward[:-1] += np.array(
                     [
-                        w_move * move_reward / 0.4,
-                        w_ball_grad * grad_ball_potential * 3 / self.time_step,
-                        w_energy * energy_penalty,
+                        w_move * move_reward / 1.2,
+                        w_ball_grad * grad_ball_potential / 0.02,
+                        w_energy * energy_penalty / 92,
                     ]
                 )
 
@@ -92,9 +97,9 @@ class VSSStratEnv(VSSEnv):
                     self.cumulative_reward_info["reward_Range/Energy"], energy_penalty
                 )
                 self.cumulative_reward_info["Original_reward"] += (
-                    w_move * move_reward / 0.4
-                    + w_ball_grad * grad_ball_potential * 3 / self.time_step
-                    + w_energy * energy_penalty
+                    ori_w_move * move_reward / 0.4
+                    + ori_w_ball_grad * grad_ball_potential * 3 / self.time_step
+                    + ori_w_energy * energy_penalty
                 )
 
         return reward, goal
