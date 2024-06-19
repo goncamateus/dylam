@@ -17,6 +17,9 @@ class VSSStratEnv(VSSEnv):
             "reward_Ball": 0,
             "reward_Goal_blue": 0,
             "reward_Goal_yellow": 0,
+            "reward_Range/Move": 0,
+            "reward_Range/Ball": 0,
+            "reward_Range/Energy": 0,
             "Original_reward": 0,
         }
 
@@ -28,6 +31,9 @@ class VSSStratEnv(VSSEnv):
             "reward_Ball": 0,
             "reward_Goal_blue": 0,
             "reward_Goal_yellow": 0,
+            "reward_Range/Move": 0,
+            "reward_Range/Ball": 0,
+            "reward_Range/Energy": 0,
             "Original_reward": 0,
         }
         return super().reset(seed=seed, options=options)
@@ -75,6 +81,16 @@ class VSSStratEnv(VSSEnv):
                 self.cumulative_reward_info["reward_Move"] += move_reward
                 self.cumulative_reward_info["reward_Ball"] += grad_ball_potential
                 self.cumulative_reward_info["reward_Energy"] += energy_penalty
+                self.cumulative_reward_info["reward_Range/Move"] = max(
+                    self.cumulative_reward_info["reward_Range/Move"], move_reward
+                )
+                self.cumulative_reward_info["reward_Range/Ball"] = max(
+                    self.cumulative_reward_info["reward_Range/Ball"],
+                    grad_ball_potential,
+                )
+                self.cumulative_reward_info["reward_Range/Energy"] = min(
+                    self.cumulative_reward_info["reward_Range/Energy"], energy_penalty
+                )
                 self.cumulative_reward_info["Original_reward"] += (
                     w_move * move_reward / 0.4
                     + w_ball_grad * grad_ball_potential * 3 / self.time_step
@@ -106,7 +122,6 @@ class VSSStratEnv(VSSEnv):
         # = actual_potential - previous_potential
         if self.previous_ball_potential is not None:
             grad_ball_potential = ball_potential - self.previous_ball_potential
-            # grad_ball_potential = np.clip(diff * 3 / self.time_step, -5.0, 5.0)
 
         self.previous_ball_potential = ball_potential
 
@@ -129,7 +144,6 @@ class VSSStratEnv(VSSEnv):
 
         move_reward = np.dot(robot_ball, robot_vel)
 
-        # move_reward = np.clip(move_reward / 0.4, -5.0, 5.0)
         return move_reward
 
     def __energy_penalty(self):
