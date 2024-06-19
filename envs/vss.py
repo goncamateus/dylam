@@ -17,9 +17,9 @@ class VSSStratEnv(VSSEnv):
             "reward_Ball": 0,
             "reward_Goal_blue": 0,
             "reward_Goal_yellow": 0,
-            "reward_Range/Move": 0,
-            "reward_Range/Ball": 0,
-            "reward_Range/Energy": 0,
+            "reward_Weighted/Move": 0,
+            "reward_Weighted/Ball": 0,
+            "reward_Weighted/Energy": 0,
             "Original_reward": 0,
         }
 
@@ -31,9 +31,9 @@ class VSSStratEnv(VSSEnv):
             "reward_Ball": 0,
             "reward_Goal_blue": 0,
             "reward_Goal_yellow": 0,
-            "reward_Range/Move": 0,
-            "reward_Range/Ball": 0,
-            "reward_Range/Energy": 0,
+            "reward_Weighted/Move": 0,
+            "reward_Weighted/Ball": 0,
+            "reward_Weighted/Energy": 0,
             "Original_reward": 0,
         }
         return super().reset(seed=seed, options=options)
@@ -45,25 +45,21 @@ class VSSStratEnv(VSSEnv):
     def _calculate_reward_and_done(self):
         reward = np.zeros(4, dtype=np.float32)
         goal = False
-        ori_w_move = 0.2
-        ori_w_ball_grad = 0.8
-        ori_w_energy = 2e-4
-        ori_w_goal = 10
-        w_move = 0.018
-        w_ball_grad = 0.068
+        w_move = 0.248
+        w_ball_grad = 0.25
         w_energy = 0.002
-        w_goal = 0.911
+        w_goal = 0.5
         # Check if goal ocurred
         if self.frame.ball.x > (self.field.length / 2):
             self.cumulative_reward_info["reward_Goal"] += 1
             self.cumulative_reward_info["reward_Goal_blue"] += 1
-            self.cumulative_reward_info["Original_reward"] += 1 * ori_w_goal
+            self.cumulative_reward_info["Original_reward"] += 1 * w_goal
             reward[-1] = w_goal
             goal = True
         elif self.frame.ball.x < -(self.field.length / 2):
             self.cumulative_reward_info["reward_Goal"] -= 1
             self.cumulative_reward_info["reward_Goal_yellow"] += 1
-            self.cumulative_reward_info["Original_reward"] += 1 * ori_w_goal
+            self.cumulative_reward_info["Original_reward"] += 1 * w_goal
             reward[-1] = -w_goal
             goal = True
         else:
@@ -77,29 +73,22 @@ class VSSStratEnv(VSSEnv):
 
                 reward[:-1] += np.array(
                     [
-                        w_move * move_reward / 1.2,
-                        w_ball_grad * grad_ball_potential / 0.02,
-                        w_energy * energy_penalty / 92,
+                        w_move * move_reward,
+                        w_ball_grad * grad_ball_potential,
+                        w_energy * energy_penalty,
                     ]
                 )
 
                 self.cumulative_reward_info["reward_Move"] += move_reward
                 self.cumulative_reward_info["reward_Ball"] += grad_ball_potential
                 self.cumulative_reward_info["reward_Energy"] += energy_penalty
-                self.cumulative_reward_info["reward_Range/Move"] = max(
-                    self.cumulative_reward_info["reward_Range/Move"], move_reward
-                )
-                self.cumulative_reward_info["reward_Range/Ball"] = max(
-                    self.cumulative_reward_info["reward_Range/Ball"],
-                    grad_ball_potential,
-                )
-                self.cumulative_reward_info["reward_Range/Energy"] = min(
-                    self.cumulative_reward_info["reward_Range/Energy"], energy_penalty
-                )
+                self.cumulative_reward_info["reward_Weighted/Move"] += reward[0]
+                self.cumulative_reward_info["reward_Weighted/Ball"] += reward[1]
+                self.cumulative_reward_info["reward_Weighted/Energy"] += reward[2]
                 self.cumulative_reward_info["Original_reward"] += (
-                    ori_w_move * move_reward / 0.4
-                    + ori_w_ball_grad * grad_ball_potential * 3 / self.time_step
-                    + ori_w_energy * energy_penalty
+                    w_move * move_reward
+                    + w_ball_grad * grad_ball_potential
+                    + w_energy * energy_penalty
                 )
 
         return reward, goal
@@ -130,7 +119,7 @@ class VSSStratEnv(VSSEnv):
 
         self.previous_ball_potential = ball_potential
 
-        return grad_ball_potential
+        return grad_ball_potential / 0.02
 
     def __move_reward(self):
         """Calculate Move to ball reward
@@ -149,7 +138,7 @@ class VSSStratEnv(VSSEnv):
 
         move_reward = np.dot(robot_ball, robot_vel)
 
-        return move_reward
+        return move_reward / 1.2
 
     def __energy_penalty(self):
         """Calculates the energy penalty"""
@@ -157,4 +146,4 @@ class VSSStratEnv(VSSEnv):
         en_penalty_1 = abs(self.sent_commands[0].v_wheel0)
         en_penalty_2 = abs(self.sent_commands[0].v_wheel1)
         energy_penalty = -(en_penalty_1 + en_penalty_2)
-        return energy_penalty
+        return energy_penalty / 92
