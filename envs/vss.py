@@ -45,10 +45,10 @@ class VSSStratEnv(VSSEnv):
     def _calculate_reward_and_done(self):
         reward = np.zeros(4, dtype=np.float32)
         goal = False
-        w_move = 0.248
-        w_ball_grad = 0.25
+        w_move = 1/20
+        w_ball_grad = 1
         w_energy = 0.002
-        w_goal = 0.5
+        w_goal = 10
         # Check if goal ocurred
         if self.frame.ball.x > (self.field.length / 2):
             self.cumulative_reward_info["reward_Goal"] += 1
