@@ -17,9 +17,9 @@ class VSSStratEnv(VSSEnv):
             "reward_Ball": 0,
             "reward_Goal_blue": 0,
             "reward_Goal_yellow": 0,
-            "reward_Weighted/Move": 0,
-            "reward_Weighted/Ball": 0,
-            "reward_Weighted/Energy": 0,
+            "reward_Range/Move": 0,
+            "reward_Range/Ball": 0,
+            "reward_Range/Energy": 0,
             "Original_reward": 0,
         }
 
@@ -31,9 +31,9 @@ class VSSStratEnv(VSSEnv):
             "reward_Ball": 0,
             "reward_Goal_blue": 0,
             "reward_Goal_yellow": 0,
-            "reward_Weighted/Move": 0,
-            "reward_Weighted/Ball": 0,
-            "reward_Weighted/Energy": 0,
+            "reward_Range/Move": 0,
+            "reward_Range/Ball": 0,
+            "reward_Range/Energy": 0,
             "Original_reward": 0,
         }
         return super().reset(seed=seed, options=options)
@@ -47,7 +47,7 @@ class VSSStratEnv(VSSEnv):
         goal = False
         w_move = 0.6
         w_ball_grad = 2.4
-        w_energy = 2e-4 * 92
+        w_energy = 0.0184
         w_goal = 10
         # Check if goal ocurred
         if self.frame.ball.x > (self.field.length / 2):
@@ -82,9 +82,16 @@ class VSSStratEnv(VSSEnv):
                 self.cumulative_reward_info["reward_Move"] += move_reward
                 self.cumulative_reward_info["reward_Ball"] += grad_ball_potential
                 self.cumulative_reward_info["reward_Energy"] += energy_penalty
-                self.cumulative_reward_info["reward_Weighted/Move"] += reward[0]
-                self.cumulative_reward_info["reward_Weighted/Ball"] += reward[1]
-                self.cumulative_reward_info["reward_Weighted/Energy"] += reward[2]
+                self.cumulative_reward_info["reward_Range/Move"] = max(
+                    self.cumulative_reward_info["reward_Range/Move"], move_reward
+                )
+                self.cumulative_reward_info["reward_Range/Ball"] = max(
+                    self.cumulative_reward_info["reward_Range/Ball"],
+                    grad_ball_potential,
+                )
+                self.cumulative_reward_info["reward_Range/Energy"] = max(
+                    self.cumulative_reward_info["reward_Range/Energy"], energy_penalty
+                )
                 self.cumulative_reward_info["Original_reward"] += (
                     w_move * move_reward
                     + w_ball_grad * grad_ball_potential
