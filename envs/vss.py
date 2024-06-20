@@ -46,7 +46,7 @@ class VSSStratEnv(VSSEnv):
         reward = np.zeros(4, dtype=np.float32)
         goal = False
         w_move = 0.6
-        w_ball_grad = 2.4
+        w_ball_grad = 3
         w_energy = 0.0184
         w_goal = 10
         # Check if goal ocurred
@@ -128,7 +128,7 @@ class VSSStratEnv(VSSEnv):
 
         self.previous_ball_potential = ball_potential
 
-        return grad_ball_potential
+        return grad_ball_potential / 0.8
 
     def __move_reward(self):
         """Calculate Move to ball reward
