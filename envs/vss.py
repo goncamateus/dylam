@@ -73,25 +73,15 @@ class VSSStratEnv(VSSEnv):
 
                 reward[:-1] += np.array(
                     [
-                        w_move * move_reward,
-                        w_ball_grad * grad_ball_potential,
-                        w_energy * energy_penalty,
+                        move_reward,
+                        grad_ball_potential,
+                        energy_penalty,
                     ]
                 )
 
                 self.cumulative_reward_info["reward_Move"] += move_reward
                 self.cumulative_reward_info["reward_Ball"] += grad_ball_potential
                 self.cumulative_reward_info["reward_Energy"] += energy_penalty
-                self.cumulative_reward_info["reward_Range/Move"] = max(
-                    self.cumulative_reward_info["reward_Range/Move"], move_reward
-                )
-                self.cumulative_reward_info["reward_Range/Ball"] = max(
-                    self.cumulative_reward_info["reward_Range/Ball"],
-                    grad_ball_potential,
-                )
-                self.cumulative_reward_info["reward_Range/Energy"] = max(
-                    self.cumulative_reward_info["reward_Range/Energy"], energy_penalty
-                )
                 self.cumulative_reward_info["Original_reward"] += (
                     w_move * move_reward
                     + w_ball_grad * grad_ball_potential
