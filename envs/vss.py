@@ -17,9 +17,6 @@ class VSSStratEnv(VSSEnv):
             "reward_Ball": 0,
             "reward_Goal_blue": 0,
             "reward_Goal_yellow": 0,
-            "reward_Range/Move": 0,
-            "reward_Range/Ball": 0,
-            "reward_Range/Energy": 0,
             "Original_reward": 0,
         }
 
@@ -31,9 +28,6 @@ class VSSStratEnv(VSSEnv):
             "reward_Ball": 0,
             "reward_Goal_blue": 0,
             "reward_Goal_yellow": 0,
-            "reward_Range/Move": 0,
-            "reward_Range/Ball": 0,
-            "reward_Range/Energy": 0,
             "Original_reward": 0,
         }
         return super().reset(seed=seed, options=options)
