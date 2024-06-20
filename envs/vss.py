@@ -45,9 +45,9 @@ class VSSStratEnv(VSSEnv):
     def _calculate_reward_and_done(self):
         reward = np.zeros(4, dtype=np.float32)
         goal = False
-        w_move = 1/20
-        w_ball_grad = 1
-        w_energy = 0.002
+        w_move = 0.6
+        w_ball_grad = 2.4
+        w_energy = 2e-4 * 92
         w_goal = 10
         # Check if goal ocurred
         if self.frame.ball.x > (self.field.length / 2):
@@ -115,11 +115,13 @@ class VSSStratEnv(VSSEnv):
         # Calculate ball potential gradient
         # = actual_potential - previous_potential
         if self.previous_ball_potential is not None:
-            grad_ball_potential = ball_potential - self.previous_ball_potential
+            grad_ball_potential = (
+                ball_potential - self.previous_ball_potential
+            ) / self.time_step
 
         self.previous_ball_potential = ball_potential
 
-        return grad_ball_potential / 0.02
+        return grad_ball_potential
 
     def __move_reward(self):
         """Calculate Move to ball reward
