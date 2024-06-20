@@ -74,10 +74,20 @@ Dylam:
     dylam_tau: 0.9999
   VSS:
     gym_id: mo-VSS-v0
-    num_envs: 16
-    total_timesteps: 1000000
+    num_envs: 20
+    total_timesteps: 500000
+    sigma_decay: 150
+    sigma_min: 0.15
+    learning_starts: 5000
+    tau: 0.001
+    policy_frequency: 1
+    policy_lr: 0.0001
+    q_lr: 0.0001
+    batch_size: 256
+    gamma: 0.95
+    update_frequency: 1
     stratified: True
     dylam: True
     num_rewards: 4
-    r_max: [800, 40, -240, 1]
-    r_min: [0, -40, -1200, -1]
+    r_max: [100, 40, -0, 1]
+    r_min: [0, -40, -600, -1]
