@@ -33,7 +33,6 @@ class DDPG(nn.Module):
             "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
         )
         self.actor, self.critic = self.get_networks(
-            action_space,
             hidden_dim,
         )
         self.actor_target = TargetActor(self.actor)
@@ -46,7 +45,6 @@ class DDPG(nn.Module):
 
     def get_networks(
         self,
-        action_space,
         hidden_dim=256,
     ):
         actor = MLPPolicy(
@@ -180,21 +178,14 @@ class DDPGStrat(DDPG):
 
     def update_actor(self, state_batch):
         pi = self.actor(state_batch)
-
         qf_pi = self.critic(state_batch, pi)
-
         qf_pi = torch.einsum("ij,j->i", qf_pi, self.lambdas).view(-1, 1)
-
-        # Jπ = 𝔼st∼D,εt∼N[− Q(st,f(εt;st))]
         policy_loss = -qf_pi.mean()
-
         self.actor_optim.zero_grad()
         policy_loss.backward()
         self.actor_optim.step()
 
-        alpha_loss = self.update_alpha(state_batch)
-
-        return policy_loss, alpha_loss
+        return policy_loss
 
     def update_lambdas(self):
         if self.last_episode_rewards.can_do():
