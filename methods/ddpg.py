@@ -66,6 +66,7 @@ class DDPG(nn.Module):
         self.actor.to(device)
         self.critic.to(device)
         self.critic_target.target_model.to(device)
+        self.actor_target.target_model.to(device)
         return super(DDPG, self).to(device)
 
     def get_action(self, state):
