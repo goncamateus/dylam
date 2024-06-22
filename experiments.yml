@@ -22,7 +22,7 @@ Baseline:
     sigma_decay: 150
     sigma_min: 0.15
     learning_starts: 5000
-    tau: 0.001
+    tau: 0.999
     policy_frequency: 1
     policy_lr: 0.0001
     q_lr: 0.0001
@@ -79,7 +79,7 @@ Dylam:
     sigma_decay: 150
     sigma_min: 0.15
     learning_starts: 5000
-    tau: 0.001
+    tau: 0.999
     policy_frequency: 1
     policy_lr: 0.0001
     q_lr: 0.0001
@@ -89,7 +89,8 @@ Dylam:
     stratified: True
     dylam: True
     num_rewards: 4
-    r_max: [150, 30, -0, 1]
-    r_min: [0, -30, -600, -1]
+    r_max: [1, 1, -0.15, 1]
+    r_min: [0, 0, -1, 0]
     dylam_rb: 100
     dylam_tau: 0.9999
+    reward_scaling: 100
