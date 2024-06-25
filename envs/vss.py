@@ -48,13 +48,13 @@ class VSSStratEnv(VSSEnv):
             self.cumulative_reward_info["reward_Goal"] += 1
             self.cumulative_reward_info["reward_Goal_blue"] += 1
             self.cumulative_reward_info["Original_reward"] += 1 * w_goal
-            reward[-1] = 1
+            reward[-1] = 1 * w_goal
             goal = True
         elif self.frame.ball.x < -(self.field.length / 2):
             self.cumulative_reward_info["reward_Goal"] -= 1
             self.cumulative_reward_info["reward_Goal_yellow"] += 1
             self.cumulative_reward_info["Original_reward"] += 1 * w_goal
-            reward[-1] = -1
+            reward[-1] = -1 * w_goal
             goal = True
         else:
             if self.last_frame is not None:
@@ -67,9 +67,9 @@ class VSSStratEnv(VSSEnv):
 
                 reward[:-1] += np.array(
                     [
-                        move_reward/150,
-                        grad_ball_potential/40,
-                        energy_penalty/1200,
+                        w_move * move_reward,
+                        w_ball_grad * grad_ball_potential,
+                        w_energy * energy_penalty,
                     ]
                 )
 
