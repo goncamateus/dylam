@@ -75,6 +75,13 @@ class SACLogger(WandbResultLogger):
             self.log.update({"losses/policy_loss": losses["policy_loss"].item()})
             if losses["alpha_loss"] is not None:
                 self.log.update({"losses/alpha_loss": losses["alpha_loss"].item()})
+        if "ori_qf1_loss" in losses:
+            self.log.update(
+                {
+                    "losses/Original_Value1_loss": losses["ori_qf1_loss"].item(),
+                    "losses/Original_Value2_loss": losses["ori_qf2_loss"].item(),
+                }
+            )
 
 
 class DDPGLogger(WandbResultLogger):
