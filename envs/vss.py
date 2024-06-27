@@ -67,9 +67,9 @@ class VSSStratEnv(VSSEnv):
 
                 reward[:-1] += np.array(
                     [
-                        w_move * move_reward,
-                        w_ball_grad * grad_ball_potential,
-                        w_energy * energy_penalty,
+                        move_reward,
+                        grad_ball_potential,
+                        energy_penalty,
                     ]
                 )
 

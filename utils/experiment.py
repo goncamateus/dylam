@@ -105,6 +105,7 @@ def base_hyperparams():
         "sigma_decay": 100,
         "sigma_min": 0,
         "update_frequency": 1,
+        "ori_lambdas": [1],
     }
     return hyper_params
 

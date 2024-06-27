@@ -72,6 +72,9 @@ def train(args, exp_name, logger: SACLogger):
                     "alpha": agent.alpha,
                     "alpha_loss": losses[3],
                 }
+                if args.dylam:
+                    loss_dict["ori_qf1_loss"] = losses[4]
+                    loss_dict["ori_qf2_loss"] = losses[5]
                 logger.log_losses(loss_dict)
                 if args.dylam:
                     logger.log_lambdas(agent.lambdas)

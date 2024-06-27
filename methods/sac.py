@@ -294,6 +294,10 @@ class SACStrat(SAC):
         self.episode_rewards = np.zeros((args.num_envs, args.num_rewards))
         self.last_reward_mean = None
         self.last_episode_rewards = StratLastRewards(args.dylam_rb, self.num_rewards)
+        self.ori_critic = DoubleQNetwork(self.num_inputs, self.num_actions)
+        self.ori_critic_target = TargetCritic(self.ori_critic)
+        self.ori_critic_optim = Adam(self.ori_critic.parameters(), lr=args.q_lr)
+        self.ori_lambdas = torch.Tensor(args.ori_lambdas).to(self.device)
 
     def get_networks(
         self,
@@ -352,6 +356,79 @@ class SACStrat(SAC):
                 )
         return actor, critic
 
+    def update_critic(
+        self, state_batch, action_batch, reward_batch, next_state_batch, done_batch
+    ):
+        with torch.no_grad():
+            next_state_action, next_state_log_pi, next_state_action_probs = (
+                self.actor.sample(next_state_batch)
+            )
+            qf1_next_target, qf2_next_target = self.critic_target(
+                next_state_batch, next_state_action
+            )
+            if not self.continuous_actions:
+                next_state_log_pi = next_state_log_pi.unsqueeze(2)
+                next_state_action_probs = next_state_action_probs.unsqueeze(2)
+
+            min_qf_next_target = torch.min(qf1_next_target, qf2_next_target)
+            min_qf_next_target = min_qf_next_target - self.alpha * next_state_log_pi
+            min_qf_next_target *= (
+                1 if self.continuous_actions else next_state_action_probs
+            )
+
+            min_qf_next_target[done_batch] = 0.0
+            if not self.continuous_actions:
+                min_qf_next_target = min_qf_next_target.sum(dim=1)
+            next_q_value = reward_batch + self.gamma * min_qf_next_target
+
+            # Original Q-function
+            ORI_qf1_next_target, ORI_qf2_next_target = self.ori_critic_target(
+                next_state_batch, next_state_action
+            )
+            ORI_min_qf_next_target = torch.min(ORI_qf1_next_target, ORI_qf2_next_target)
+            ORI_min_qf_next_target = (
+                ORI_min_qf_next_target - self.alpha * next_state_log_pi
+            )
+            ORI_min_qf_next_target *= (
+                1 if self.continuous_actions else next_state_action_probs
+            )
+            ORI_min_qf_next_target[done_batch] = 0.0
+            if not self.continuous_actions:
+                ORI_min_qf_next_target = ORI_min_qf_next_target.sum(dim=1)
+            reward_batch = (reward_batch * self.ori_lambdas).sum(dim=1).unsqueeze(1)
+            ORI_next_q_value = reward_batch + self.gamma * ORI_min_qf_next_target
+
+        # Two Q-functions to mitigate
+        # positive bias in the policy improvement step
+        if self.continuous_actions:
+            qf1, qf2 = self.critic(state_batch, action_batch)
+            ORI_qf1, ORI_qf2 = self.ori_critic(state_batch, action_batch)
+        else:
+            qf1, qf2 = self.critic(state_batch)
+            indices = action_batch.squeeze(1)
+            qf1 = qf1[torch.arange(qf1.size(0)), indices, :]
+            qf2 = qf2[torch.arange(qf2.size(0)), indices, :]
+        # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
+        qf1_loss = F.mse_loss(qf1, next_q_value)
+        ORI_qf1_loss = F.mse_loss(ORI_qf1, ORI_next_q_value)
+        # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
+        qf2_loss = F.mse_loss(qf2, next_q_value)
+        ORI_qf2_loss = F.mse_loss(ORI_qf2, ORI_next_q_value)
+
+        # Minimize the loss between two Q-functions
+        qf_loss = qf1_loss + qf2_loss
+        ORI_qf_loss = ORI_qf1_loss + ORI_qf2_loss
+
+        self.critic_optim.zero_grad()
+        qf_loss.backward()
+        self.critic_optim.step()
+
+        self.ori_critic_optim.zero_grad()
+        ORI_qf_loss.backward()
+        self.ori_critic_optim.step()
+
+        return qf1_loss, qf2_loss, ORI_qf1_loss, ORI_qf2_loss
+
     def update_actor(self, state_batch):
         pi, log_pi, action_probs = self.actor.sample(state_batch)
 
@@ -381,6 +458,26 @@ class SACStrat(SAC):
         alpha_loss = self.update_alpha(state_batch)
 
         return policy_loss, alpha_loss
+
+    def update(self, batch_size, update_actor=False):
+        (
+            state_batch,
+            action_batch,
+            reward_batch,
+            next_state_batch,
+            done_batch,
+        ) = self.replay_buffer.sample(batch_size, continuous=self.continuous_actions)
+
+        reward_batch = reward_batch * self.reward_scaling
+        qf1_loss, qf2_loss, ORI_qf1_loss, ORI_qf2_loss = self.update_critic(
+            state_batch, action_batch, reward_batch, next_state_batch, done_batch
+        )
+        policy_loss = None
+        alpha_loss = None
+        if update_actor:
+            policy_loss, alpha_loss = self.update_actor(state_batch)
+
+        return policy_loss, qf1_loss, qf2_loss, alpha_loss, ORI_qf1_loss, ORI_qf2_loss
 
     def update_lambdas(self):
         if self.last_episode_rewards.can_do():
