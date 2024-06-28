@@ -294,8 +294,11 @@ class SACStrat(SAC):
         self.episode_rewards = np.zeros((args.num_envs, args.num_rewards))
         self.last_reward_mean = None
         self.last_episode_rewards = StratLastRewards(args.dylam_rb, self.num_rewards)
-        self.ori_critic = DoubleQNetwork(self.num_inputs, self.num_actions)
+        self.ori_critic = DoubleQNetwork(self.num_inputs, self.num_actions).to(
+            self.device
+        )
         self.ori_critic_target = TargetCritic(self.ori_critic)
+        self.ori_critic_target.target_model.to(self.device)
         self.ori_critic_optim = Adam(self.ori_critic.parameters(), lr=args.q_lr)
         self.ori_lambdas = torch.Tensor(args.ori_lambdas).to(self.device)
 
