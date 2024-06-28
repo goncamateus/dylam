@@ -89,9 +89,9 @@ class GaussianPolicy(nn.Module):
     def forward(self, state):
         x1 = F.relu(self.linear1(state))
         x2 = F.relu(self.linear2(x1))
-        x3 = F.relu(self.linear2(x2))
-        x4 = F.relu(self.linear2(x3))
-        x5 = F.relu(self.linear2(x4))
+        x3 = F.relu(self.linear3(x2))
+        x4 = F.relu(self.linear4(x3))
+        x5 = F.relu(self.linear5(x4))
         mean = self.mean_linear(x5)
         log_std = self.log_std_linear(x5)
         log_std = torch.clamp(log_std, min=self.log_sig_min, max=self.log_sig_max)
