@@ -13,7 +13,7 @@ class QNetwork(nn.Module):
         self.q = nn.Sequential(
             nn.Linear(num_inputs + num_actions, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim*2, hidden_dim*2),
+            nn.Linear(hidden_dim, hidden_dim*2),
             nn.ReLU(),
             nn.Linear(hidden_dim*2, hidden_dim*4),
             nn.ReLU(),
