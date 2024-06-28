@@ -13,7 +13,13 @@ class QNetwork(nn.Module):
         self.q = nn.Sequential(
             nn.Linear(num_inputs + num_actions, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
+            nn.Linear(hidden_dim*2, hidden_dim*2),
+            nn.ReLU(),
+            nn.Linear(hidden_dim*2, hidden_dim*4),
+            nn.ReLU(),
+            nn.Linear(hidden_dim*4, hidden_dim*2),
+            nn.ReLU(),
+            nn.Linear(hidden_dim*2, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, num_outputs),
         )
@@ -58,7 +64,10 @@ class GaussianPolicy(nn.Module):
         self.log_sig_max = log_sig_max
         self.epsilon = epsilon
         self.linear1 = nn.Linear(num_inputs, hidden_dim)
-        self.linear2 = nn.Linear(hidden_dim, hidden_dim)
+        self.linear2 = nn.Linear(hidden_dim, hidden_dim*2)
+        self.linear3 = nn.Linear(hidden_dim*2, hidden_dim*4)
+        self.linear4 = nn.Linear(hidden_dim*4, hidden_dim*2)
+        self.linear5 = nn.Linear(hidden_dim*2, hidden_dim)
 
         self.mean_linear = nn.Linear(hidden_dim, num_actions)
         self.log_std_linear = nn.Linear(hidden_dim, num_actions)
@@ -80,8 +89,11 @@ class GaussianPolicy(nn.Module):
     def forward(self, state):
         x1 = F.relu(self.linear1(state))
         x2 = F.relu(self.linear2(x1))
-        mean = self.mean_linear(x2)
-        log_std = self.log_std_linear(x2)
+        x3 = F.relu(self.linear2(x2))
+        x4 = F.relu(self.linear2(x3))
+        x5 = F.relu(self.linear2(x4))
+        mean = self.mean_linear(x5)
+        log_std = self.log_std_linear(x5)
         log_std = torch.clamp(log_std, min=self.log_sig_min, max=self.log_sig_max)
         return mean, log_std
 
