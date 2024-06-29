@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --ntasks=1
-#SBATCH --mem 24G
-#SBATCH -c 32
+#SBATCH --mem 32G
+#SBATCH -c 16
 #SBATCH --gpus=1
-#SBATCH -p short
+#SBATCH -p long
 #SBATCH --mail-type=FAIL,END,ARRAY_TASKS
 #SBATCH --mail-user=mgm4@cin.ufpe.br
 
