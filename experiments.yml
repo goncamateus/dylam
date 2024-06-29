@@ -93,6 +93,5 @@ Dylam:
     num_rewards: 4
     r_max: [150, 40, -400, 1]
     r_min: [0, 0, -600, 0]
-    ori_lambdas: [0.6, 3, 0.0184, 10]
     dylam_rb: 100
     dylam_tau: 0.9999
