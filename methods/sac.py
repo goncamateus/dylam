@@ -64,7 +64,7 @@ class SAC(nn.Module):
             self.num_actions,
             log_sig_min=self.log_sig_min,
             log_sig_max=self.log_sig_max,
-            n_hidden=self.n_hidden,
+            n_hidden=1,
             epsilon=self.epsilon,
             action_space=self.action_space,
         )
