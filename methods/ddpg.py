@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from torch.optim import Adam
-from methods.networks.raw.continuous import MLPPolicy, QNetwork
+from methods.networks.architectures import MLPPolicy, QNetwork
 from methods.networks.targets import TargetActor, TargetCritic
 
 from utils.buffer import ReplayBuffer, StratLastRewards
@@ -19,11 +19,10 @@ class DDPG(nn.Module):
         args,
         observation_space,
         action_space,
-        hidden_dim=256,
     ):
         super(DDPG, self).__init__()
         self.gamma = args.gamma
-        self.hidden_dim = hidden_dim
+        self.n_hidden = args.n_hidden
         self.action_space = action_space
         self.observation_space = observation_space
         self.num_inputs = np.array(observation_space.shape).prod()
@@ -32,9 +31,7 @@ class DDPG(nn.Module):
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
         )
-        self.actor, self.critic = self.get_networks(
-            hidden_dim,
-        )
+        self.actor, self.critic = self.get_networks()
         self.actor_target = TargetActor(self.actor)
         self.critic_target = TargetCritic(self.critic)
         self.actor_optim = Adam(self.actor.parameters(), lr=args.policy_lr)
@@ -43,19 +40,16 @@ class DDPG(nn.Module):
         self.replay_buffer = self.get_replay_buffer(args.buffer_size)
         self.to(self.device)
 
-    def get_networks(
-        self,
-        hidden_dim=256,
-    ):
+    def get_networks(self):
         actor = MLPPolicy(
             self.num_inputs,
             self.num_actions,
-            hidden_dim=hidden_dim,
+            n_hidden=self.n_hidden,
         )
         critic = QNetwork(
             self.num_inputs,
             self.num_actions,
-            hidden_dim=hidden_dim,
+            n_hidden=self.n_hidden,
         )
         return actor, critic
 

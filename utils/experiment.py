@@ -11,19 +11,6 @@ import wandb
 
 import envs
 
-# from stable_baselines3.common.atari_wrappers import (
-#     MaxAndSkipEnv,
-# )
-from gymnasium.wrappers import (
-    FrameStack,
-    GrayScaleObservation,
-    ResizeObservation,
-    TimeLimit,
-)
-from mo_gymnasium.envs.mario.joypad_space import JoypadSpace
-from mo_gymnasium.utils import MOMaxAndSkipObservation
-from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
-
 
 def strtobool(value: str) -> bool:
     value = value.lower()
@@ -49,17 +36,6 @@ def make_env(args, idx, run_name):
         else:
             env = mogym.LinearReward(env)
             env = gym.wrappers.RecordEpisodeStatistics(env)
-        if args.with_image:
-            if "SuperMario" in args.gym_id:
-                env = JoypadSpace(env, SIMPLE_MOVEMENT)
-            if args.stratified:
-                env = MOMaxAndSkipObservation(env, skip=4)
-            # else:
-            #     env = MaxAndSkipEnv(env, skip=4)
-            env = ResizeObservation(env, (84, 84))
-            env = GrayScaleObservation(env)
-            env = FrameStack(env, 4)
-            env = TimeLimit(env, max_episode_steps=1000)
         env.action_space.seed(args.seed)
         return env
 
@@ -68,7 +44,6 @@ def make_env(args, idx, run_name):
 
 def base_hyperparams():
     hyper_params = {
-        "with_image": False,
         "stratified": False,
         "seed": 0,
         "total_timesteps": 1000000,
@@ -101,7 +76,7 @@ def base_hyperparams():
         "lambdas": [1],
         "r_max": [1],
         "r_min": [0],
-        "hidden_dim": 256,
+        "n_hidden": 1,
         "sigma_decay": 100,
         "sigma_min": 0,
         "update_frequency": 1,

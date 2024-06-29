@@ -1,5 +1,5 @@
 import copy
-from methods.networks.raw.continuous import DoubleQNetwork, QNetwork
+from methods.networks.architectures import DoubleQNetwork, QNetwork
 
 
 class TargetNet:
