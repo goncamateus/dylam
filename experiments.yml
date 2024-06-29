@@ -19,8 +19,6 @@ Baseline:
     gym_id: mo-VSS-v0
     num_envs: 20
     total_timesteps: 500000
-    sigma_decay: 150
-    sigma_min: 0.15
     learning_starts: 5000
     tau: 0.999
     policy_frequency: 1
@@ -77,8 +75,6 @@ Dylam:
     gym_id: mo-VSS-v0
     num_envs: 20
     total_timesteps: 500000
-    sigma_decay: 150
-    sigma_min: 0.15
     learning_starts: 5000
     tau: 0.999
     policy_frequency: 1

@@ -82,23 +82,3 @@ class SACLogger(WandbResultLogger):
                     "losses/Original_Value2_loss": losses["ori_qf2_loss"].item(),
                 }
             )
-
-
-class DDPGLogger(WandbResultLogger):
-
-    def __init__(self, name, params):
-        params.method = "ddpg"
-        super().__init__(name, params)
-
-    def log_losses(self, losses):
-        self.log.update(
-            {
-                "losses/Value_loss": losses["qf_loss"].item(),
-                "losses/policy_loss": losses["policy_loss"].item(),
-            }
-        )
-        if losses["policy_loss"] is not None:
-            self.log.update({"losses/policy_loss": losses["policy_loss"].item()})
-
-    def log_sigma(self, sigma):
-        self.log.update({"Charts/Noise-sigma": sigma})
