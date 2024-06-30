@@ -82,9 +82,9 @@ Dylam:
     stratified: True
     dylam: True
     num_rewards: 2
-    r_max: [800, -600]
+    r_max: [800, -650]
     r_min: [0, -720]
-    dylam_rb: 100
+    dylam_rb: 500
     dylam_tau: 0.9999
   VSS:
     gym_id: mo-VSS-v0
