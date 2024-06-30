@@ -53,5 +53,4 @@ class HalfCheetah(HalfCheetahEnv, EzPickle):
         self.cumulative_reward_info["Original_reward"] += (
             reward * np.array([max_run, min_ctrl])
         ).sum()
-        reward = reward * np.array([max_run, min_ctrl])
         return observation, reward, terminated, truncated, self.cumulative_reward_info
