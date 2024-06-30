@@ -15,6 +15,8 @@ class HalfCheetah(HalfCheetahEnv, EzPickle):
         self.cumulative_reward_info = {
             "reward_run": 0,
             "reward_ctrl": 0,
+            "reward_Range/run": 0,
+            "reward_Range/ctrl": 0,
             "Original_reward": 0,
         }
 
@@ -22,6 +24,8 @@ class HalfCheetah(HalfCheetahEnv, EzPickle):
         self.cumulative_reward_info = {
             "reward_run": 0,
             "reward_ctrl": 0,
+            "reward_Range/run": 0,
+            "reward_Range/ctrl": 0,
             "Original_reward": 0,
         }
         return super().reset(**kwargs)
@@ -38,6 +42,14 @@ class HalfCheetah(HalfCheetahEnv, EzPickle):
             reward[0] / self._forward_reward_weight
         )
         self.cumulative_reward_info["reward_ctrl"] += reward[1] / self._ctrl_cost_weight
+        self.cumulative_reward_info["reward_Range/run"] = max(
+            self.cumulative_reward_info["reward_Range/run"],
+            reward[0] / self._forward_reward_weight,
+        )
+        self.cumulative_reward_info["reward_Range/ctrl"] = min(
+            self.cumulative_reward_info["reward_Range/ctrl"],
+            reward[1] / self._ctrl_cost_weight,
+        )
         self.cumulative_reward_info["Original_reward"] += (
             reward * np.array([self._forward_reward_weight, self._ctrl_cost_weight])
         ).sum()
