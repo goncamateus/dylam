@@ -34,24 +34,24 @@ class HalfCheetah(HalfCheetahEnv, EzPickle):
         observation, _, terminated, truncated, info = super().step(action)
         reward = np.zeros(2)
         # Forward reward
-        reward[0] = info["reward_run"]
+        max_run = 16 * self._forward_reward_weight
+        reward[0] = info["reward_run"] / max_run
         # Control reward
-        reward[1] = info["reward_ctrl"]
+        min_ctrl = 6 * self._ctrl_cost_weight
+        reward[1] = info["reward_ctrl"] / min_ctrl
 
-        self.cumulative_reward_info["reward_run"] += (
-            reward[0] / self._forward_reward_weight
-        )
-        self.cumulative_reward_info["reward_ctrl"] += reward[1] / self._ctrl_cost_weight
+        self.cumulative_reward_info["reward_run"] += reward[0]
+        self.cumulative_reward_info["reward_ctrl"] += reward[1]
         self.cumulative_reward_info["reward_Range/run"] = max(
             self.cumulative_reward_info["reward_Range/run"],
-            reward[0] / self._forward_reward_weight,
+            reward[0],
         )
         self.cumulative_reward_info["reward_Range/ctrl"] = min(
             self.cumulative_reward_info["reward_Range/ctrl"],
-            reward[1] / self._ctrl_cost_weight,
+            reward[1],
         )
         self.cumulative_reward_info["Original_reward"] += (
-            reward * np.array([self._forward_reward_weight, self._ctrl_cost_weight])
+            reward * np.array([max_run, min_ctrl])
         ).sum()
-
+        reward = reward * np.array([max_run, min_ctrl])
         return observation, reward, terminated, truncated, self.cumulative_reward_info
