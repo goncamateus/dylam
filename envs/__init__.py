@@ -29,6 +29,12 @@ register(
 )
 
 register(
+    id="mo-HalfCheetah-v4",
+    entry_point="envs.half_cheetah:HalfCheetah",
+    max_episode_steps=1000,
+)
+
+register(
     id="mo-VSS-v0",
     entry_point="envs.vss:VSSStratEnv",
     max_episode_steps=1200,
