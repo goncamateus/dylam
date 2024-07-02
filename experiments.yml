@@ -2,7 +2,7 @@ Baseline:
   LUNARLANDER:
     gym_id: mo-LunarLanderContinuous-v2
     num_envs: 16
-    total_timesteps: 200000
+    total_timesteps: 100000
   HOPPER:
     gym_id: mo-Hopper-v4
     num_envs: 16
@@ -37,11 +37,11 @@ Dylam:
   LUNARLANDER:
     gym_id: mo-LunarLanderContinuous-v2
     num_envs: 16
-    total_timesteps: 200000
+    total_timesteps: 100000
     stratified: True
     dylam: True
     num_rewards: 4
-    r_max: [1000, -0, 0, 1]
+    r_max: [1000, -100, -20, 1]
     r_min: [-1000, -1000, -1000, -1]
     dylam_rb: 100
   HOPPER:
@@ -84,8 +84,8 @@ Dylam:
     stratified: True
     dylam: True
     num_rewards: 2
-    r_max: [800, -650]
-    r_min: [0, -720]
+    r_max: [800, -200]
+    r_min: [0, -800]
     dylam_rb: 500
     dylam_tau: 0.9999
   VSS:
