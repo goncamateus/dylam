@@ -49,14 +49,14 @@ def train(args, exp_name, logger: SACLogger):
         agent.replay_buffer.add(obs, actions, rewards, real_next_obs, terminations)
         obs = next_obs
 
+        if args.dylam:
+            agent.add_episode_rewards(rewards, terminations, truncations)
+            agent.update_lambdas()
         # ALGO LOGIC: training.
         if (
             global_step > args.learning_starts
             and global_step % args.update_frequency == 0
         ):
-            if args.dylam:
-                agent.add_episode_rewards(rewards, terminations, truncations)
-                agent.update_lambdas()
             update_actor = global_step % args.policy_frequency == 0
             losses = agent.update(args.batch_size, update_actor)
 
