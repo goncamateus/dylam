@@ -12,6 +12,6 @@ module load Python3.10 Xvfb freeglut glew
 source $HOME/doc/$1/bin/activate
 which python
 cd $HOME/doc/dylam
-
+export MUJOCO_GL=osmesa
 # Run the script
 python train.py --env $2 --setup $3 --capture-video --video-freq 20 --track
