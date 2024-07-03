@@ -18,6 +18,8 @@ class HalfCheetah(HalfCheetahEnv, EzPickle):
             "reward_Final_position": 0,
             "Original_reward": 0,
         }
+        self.max_run = 16 * self._forward_reward_weight
+        self.min_ctrl = 6 * self._ctrl_cost_weight
 
     def reset(self, **kwargs):
         self.cumulative_reward_info = {
@@ -32,16 +34,47 @@ class HalfCheetah(HalfCheetahEnv, EzPickle):
         observation, _, terminated, truncated, info = super().step(action)
         reward = np.zeros(2)
         # Forward reward
-        max_run = 16 * self._forward_reward_weight
-        reward[0] = info["reward_run"] / max_run
+        reward[0] = info["reward_run"] / self.max_run
         # Control reward
-        min_ctrl = 6 * self._ctrl_cost_weight
-        reward[1] = info["reward_ctrl"] / min_ctrl
+        reward[1] = info["reward_ctrl"] / self.min_ctrl
 
         self.cumulative_reward_info["reward_run"] += reward[0]
         self.cumulative_reward_info["reward_ctrl"] += reward[1]
         self.cumulative_reward_info["Original_reward"] += (
-            reward * np.array([max_run, min_ctrl])
+            reward * np.array([self.max_run, self.min_ctrl])
         ).sum()
         self.cumulative_reward_info["reward_Final_position"] = info["x_position"]
+        return observation, reward, terminated, truncated, self.cumulative_reward_info
+
+
+class HalfCheetahEfficiency(HalfCheetah):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.cumulative_reward_info["reward_efficiency"] = 0
+        self.cumulative_reward_info["reward_Range/Max_efficiency"] = 0
+        self.cumulative_reward_info["reward_Range/Min_efficiency"] = 0
+
+    def reset(self, **kwargs):
+        res = super().reset(**kwargs)
+        self.cumulative_reward_info["reward_efficiency"] = 0
+        self.cumulative_reward_info["reward_Range/Max_efficiency"] = 0
+        self.cumulative_reward_info["reward_Range/Min_efficiency"] = 0
+        return res
+
+    def step(self, action):
+        observation, reward, terminated, truncated, _ = super().step(action)
+        reward_efficiency = (
+            self.cumulative_reward_info["reward_run"]
+            / self.cumulative_reward_info["reward_ctrl"]
+        )
+        self.cumulative_reward_info["reward_Range/Max_efficiency"] = max(
+            self.cumulative_reward_info["reward_Range/Max_efficiency"],
+            reward_efficiency,
+        )
+        self.cumulative_reward_info["reward_Range/Min_efficiency"] = min(
+            self.cumulative_reward_info["reward_Range/Min_efficiency"],
+            reward_efficiency,
+        )
+        self.cumulative_reward_info["reward_efficiency"] += reward_efficiency
         return observation, reward, terminated, truncated, self.cumulative_reward_info

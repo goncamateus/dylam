@@ -88,6 +88,17 @@ Dylam:
     r_min: [0, -800]
     dylam_rb: 500
     dylam_tau: 0.9999
+  HALFCHEETAHEF:
+    gym_id: mo-HalfCheetahEF-v4
+    num_envs: 16
+    total_timesteps: 500000
+    stratified: True
+    dylam: True
+    num_rewards: 2
+    r_max: [800, -200]
+    r_min: [0, -800]
+    dylam_rb: 500
+    dylam_tau: 0.9999
   VSS:
     gym_id: mo-VSS-v0
     num_envs: 20

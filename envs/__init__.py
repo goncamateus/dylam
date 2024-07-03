@@ -15,7 +15,6 @@ register(
     max_episode_steps=1000,
 )
 
-
 register(
     id="mo-Pendulum-v1",
     entry_point="envs.pendulum:Pendulum",
@@ -31,6 +30,12 @@ register(
 register(
     id="mo-HalfCheetah-v4",
     entry_point="envs.half_cheetah:HalfCheetah",
+    max_episode_steps=1000,
+)
+
+register(
+    id="mo-HalfCheetahEF-v4",
+    entry_point="envs.half_cheetah:HalfCheetahEfficiency",
     max_episode_steps=1000,
 )
 
