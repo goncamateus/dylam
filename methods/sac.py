@@ -181,8 +181,8 @@ class SAC(nn.Module):
         torch.save(self.critic.state_dict(), path + "critic.pt")
 
     def load(self, path):
-        self.actor.load_state_dict(torch.load(path + "actor.pt"))
-        self.critic.load_state_dict(torch.load(path + "critic.pt"))
+        self.actor.load_state_dict(torch.load(path + "actor.pt", map_location=self.device))
+        self.critic.load_state_dict(torch.load(path + "critic.pt", map_location=self.device))
         self.actor.eval()
         self.critic.eval()
 
