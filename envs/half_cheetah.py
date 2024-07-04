@@ -65,15 +65,10 @@ class HalfCheetahEfficiency(HalfCheetah):
 
     def step(self, action):
         observation, reward, terminated, truncated, _ = super().step(action)
-        delta_s = reward[0] / (16 * self.dt)
-        reward_efficiency = delta_s / -reward[1]
-        self.cumulative_reward_info["reward_Range/Max_efficiency"] = max(
-            self.cumulative_reward_info["reward_Range/Max_efficiency"],
-            reward_efficiency,
-        )
-        self.cumulative_reward_info["reward_Range/Min_efficiency"] = min(
-            self.cumulative_reward_info["reward_Range/Min_efficiency"],
-            reward_efficiency,
-        )
+        speed = reward[0]
+        cost = -reward[1]
+        reward_efficiency = speed / cost
+        reward_efficiency = reward_efficiency / 2.55
+        reward[1] = reward_efficiency
         self.cumulative_reward_info["reward_efficiency"] += reward_efficiency
         return observation, reward, terminated, truncated, self.cumulative_reward_info
