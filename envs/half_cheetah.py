@@ -19,7 +19,7 @@ class HalfCheetah(HalfCheetahEnv, EzPickle):
             "Original_reward": 0,
         }
         self.max_run = 16 * self._forward_reward_weight
-        self.min_ctrl = 6 * self._ctrl_cost_weight
+        self.min_ctrl = self.action_space.shape[0] * self._ctrl_cost_weight
 
     def reset(self, **kwargs):
         self.cumulative_reward_info = {
@@ -51,6 +51,7 @@ class HalfCheetahEfficiency(HalfCheetah):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.max_efficency = 40
         self.cumulative_reward_info["reward_efficiency"] = 0
         self.cumulative_reward_info["reward_Range/Max_efficiency"] = 0
         self.cumulative_reward_info["reward_Range/Min_efficiency"] = 0
@@ -65,7 +66,7 @@ class HalfCheetahEfficiency(HalfCheetah):
     def step(self, action):
         observation, reward, terminated, truncated, _ = super().step(action)
         delta_s = reward[0] / (16 * self.dt)
-        reward_efficiency = delta_s / (-reward[1] * 6) / 80
+        reward_efficiency = delta_s / -reward[1]
         self.cumulative_reward_info["reward_Range/Max_efficiency"] = max(
             self.cumulative_reward_info["reward_Range/Max_efficiency"],
             reward_efficiency,
