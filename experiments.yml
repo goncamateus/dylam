@@ -19,6 +19,10 @@ Baseline:
     gym_id: mo-HalfCheetah-v4
     num_envs: 16
     total_timesteps: 500000
+  HALFCHEETAHEF:
+    gym_id: mo-HalfCheetahEF-v4
+    num_envs: 16
+    total_timesteps: 500000
   VSS:
     gym_id: mo-VSS-v0
     num_envs: 20
