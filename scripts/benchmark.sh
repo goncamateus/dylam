@@ -12,6 +12,9 @@ python train.py --env hopper --setup dylam --capture-video --video-freq 20 --tra
 # Humanoid
 python train.py --env humanoid --setup baseline --capture-video --video-freq 20 --track
 python train.py --env humanoid --setup dylam --capture-video --video-freq 20 --track
+# HalfCheetah
+python train.py --env halfcheetah --setup baseline --capture-video --video-freq 20 --track
+python train.py --env halfcheetah --setup dylam --capture-video --video-freq 20 --track
 # VSS
 python train.py --env vss --setup baseline --capture-video --video-freq 20 --track
 python train.py --env vss --setup dylam --capture-video --video-freq 20 --track
