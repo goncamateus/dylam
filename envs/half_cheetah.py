@@ -70,6 +70,7 @@ class HalfCheetahEfficiency(HalfCheetah):
         else:
             reward_efficiency = speed / cost
             reward_efficiency = reward_efficiency / self.max_efficency
+            reward_efficiency = np.clip(reward_efficiency, -1, 1)
         reward[1] = reward_efficiency
         self.cumulative_reward_info["reward_efficiency"] += reward_efficiency
         return observation, reward, terminated, truncated, self.cumulative_reward_info
