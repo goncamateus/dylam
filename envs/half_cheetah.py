@@ -63,8 +63,13 @@ class HalfCheetahEfficiency(HalfCheetah):
         observation, reward, terminated, truncated, _ = super().step(action)
         speed = reward[0]
         cost = -reward[1]
-        reward_efficiency = speed / cost
-        reward_efficiency = reward_efficiency / self.max_efficency
+        if np.isclose(speed, 0, atol=1e-3):
+            speed = 0
+        if np.isclose(cost, 0, atol=1e-3):
+            reward_efficiency = 1
+        else:
+            reward_efficiency = speed / cost
+            reward_efficiency = reward_efficiency / self.max_efficency
         reward[1] = reward_efficiency
         self.cumulative_reward_info["reward_efficiency"] += reward_efficiency
         return observation, reward, terminated, truncated, self.cumulative_reward_info
