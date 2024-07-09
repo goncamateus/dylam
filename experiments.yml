@@ -99,8 +99,8 @@ Dylam:
     stratified: True
     dylam: True
     num_rewards: 2
-    r_max: [800, -200]
-    r_min: [0, -800]
+    r_max: [800, 800]
+    r_min: [0, 0]
     dylam_rb: 500
     dylam_tau: 0.9999
   VSS:
