@@ -44,3 +44,9 @@ register(
     entry_point="envs.vss:VSSStratEnv",
     max_episode_steps=1200,
 )
+
+register(
+    id="mo-VSSEF-v0",
+    entry_point="envs.vss:VSSEF",
+    max_episode_steps=1200,
+)

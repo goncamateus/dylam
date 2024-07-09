@@ -140,3 +140,34 @@ class VSSStratEnv(VSSEnv):
         en_penalty_2 = abs(self.sent_commands[0].v_wheel1)
         energy_penalty = -(en_penalty_1 + en_penalty_2)
         return energy_penalty / 92
+
+
+class VSSEF(VSSStratEnv):
+
+    def __init__(self, render_mode=None):
+        super().__init__(render_mode=render_mode)
+        self.cumulative_reward_info["reward_efficiency"] = 0
+
+    def reset(self, *, seed=None, options=None):
+        res = super().reset(seed=seed, options=options)
+        self.cumulative_reward_info["reward_efficiency"] = 0
+        return res
+
+    def step(self, action):
+        observation, reward, terminated, truncated, info = super().step(action)
+        efficiency_reward = self.__efficiency_reward(reward[1], -reward[2])
+        self.cumulative_reward_info["reward_efficiency"] += efficiency_reward
+        return observation, reward, terminated, truncated, self.cumulative_reward_info
+
+    def __efficiency_reward(self, move, energy):
+        """Calculate the efficiency reward
+        The efficiency reward is the sum of the ball potential and the move reward.
+        """
+        if np.isclose(move, 0, atol=1e-3):
+            move = 0
+        if np.isclose(energy, 0, atol=1e-3):
+            reward_efficiency = 1
+        else:
+            reward_efficiency = move / energy
+            reward_efficiency = reward_efficiency
+        return reward_efficiency
