@@ -147,16 +147,22 @@ class VSSEF(VSSStratEnv):
     def __init__(self, render_mode=None):
         super().__init__(render_mode=render_mode)
         self.cumulative_reward_info["reward_efficiency"] = 0
+        self.cumulative_reward_info["reward_Range/efficiency"] = 0
 
     def reset(self, *, seed=None, options=None):
         res = super().reset(seed=seed, options=options)
         self.cumulative_reward_info["reward_efficiency"] = 0
+        self.cumulative_reward_info["reward_Range/efficiency"] = 0
         return res
 
     def step(self, action):
         observation, reward, terminated, truncated, info = super().step(action)
         efficiency_reward = self.__efficiency_reward(reward[0], -reward[2])
         self.cumulative_reward_info["reward_efficiency"] += efficiency_reward
+        self.cumulative_reward_info["reward_Range/efficiency"] = max(
+            self.cumulative_reward_info["reward_Range/efficiency"],
+            efficiency_reward,
+        )
         return observation, reward, terminated, truncated, self.cumulative_reward_info
 
     def __efficiency_reward(self, move, energy):
