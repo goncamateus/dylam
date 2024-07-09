@@ -155,7 +155,7 @@ class VSSEF(VSSStratEnv):
 
     def step(self, action):
         observation, reward, terminated, truncated, info = super().step(action)
-        efficiency_reward = self.__efficiency_reward(reward[1], -reward[2])
+        efficiency_reward = self.__efficiency_reward(reward[0], -reward[2])
         self.cumulative_reward_info["reward_efficiency"] += efficiency_reward
         return observation, reward, terminated, truncated, self.cumulative_reward_info
 
