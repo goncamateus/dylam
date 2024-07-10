@@ -147,33 +147,26 @@ class VSSEF(VSSStratEnv):
     def __init__(self, render_mode=None):
         super().__init__(render_mode=render_mode)
         self.cumulative_reward_info["reward_efficiency"] = 0
-        self.cumulative_reward_info["reward_Range/efficiency"] = 0
 
     def reset(self, *, seed=None, options=None):
         res = super().reset(seed=seed, options=options)
         self.cumulative_reward_info["reward_efficiency"] = 0
-        self.cumulative_reward_info["reward_Range/efficiency"] = 0
         return res
 
     def step(self, action):
-        observation, reward, terminated, truncated, info = super().step(action)
-        efficiency_reward = self.__efficiency_reward(reward[0], -reward[2])
+        observation, reward, terminated, truncated, _ = super().step(action)
+        efficiency_reward = self.__efficiency_reward(reward[1], -reward[2])
         self.cumulative_reward_info["reward_efficiency"] += efficiency_reward
-        self.cumulative_reward_info["reward_Range/efficiency"] = max(
-            self.cumulative_reward_info["reward_Range/efficiency"],
-            efficiency_reward,
-        )
+        reward[2] = efficiency_reward
         return observation, reward, terminated, truncated, self.cumulative_reward_info
 
-    def __efficiency_reward(self, move, energy):
-        """Calculate the efficiency reward
-        The efficiency reward is the sum of the ball potential and the move reward.
-        """
-        if np.isclose(move, 0, atol=1e-3):
-            move = 0
+    def __efficiency_reward(self, ball_grad, energy):
+        if np.isclose(ball_grad, 0, atol=1e-3):
+            ball_grad = 0
         if np.isclose(energy, 0, atol=1e-3):
             reward_efficiency = 1
         else:
-            reward_efficiency = move / energy
-            reward_efficiency = reward_efficiency
+            reward_efficiency = ball_grad / energy
+            reward_efficiency = reward_efficiency / 2
+            reward_efficiency = np.clip(reward_efficiency, -1, 1)
         return reward_efficiency
