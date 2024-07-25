@@ -131,9 +131,9 @@ Dylam:
     update_frequency: 1
     stratified: True
     dylam: True
-    num_rewards: 4
-    r_max: [150, 40, -300, 1]
-    r_min: [0, 0, -600, 0]
+    num_rewards: 3
+    r_max: [150, 40, -300]
+    r_min: [0, 0, -600]
     dylam_rb: 500
     dylam_tau: 0.9999
   VSSEF:
@@ -151,8 +151,8 @@ Dylam:
     update_frequency: 1
     stratified: True
     dylam: True
-    num_rewards: 4
-    r_max: [70, 40, 30, 1]
-    r_min: [0, 0, 0, 0]
+    num_rewards: 3
+    r_max: [70, 40, 30]
+    r_min: [0, 0, 0]
     dylam_rb: 500
     dylam_tau: 0.9999

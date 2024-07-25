@@ -8,7 +8,7 @@ class VSSStratEnv(VSSEnv):
 
     def __init__(self, render_mode=None):
         super().__init__(render_mode=render_mode)
-        self.reward_dim = 4
+        self.reward_dim = 3
         self.reward_space = Box(low=-1, high=1, shape=(self.reward_dim,))
         self.cumulative_reward_info = {
             "reward_Goal": 0,
@@ -37,7 +37,7 @@ class VSSStratEnv(VSSEnv):
         return observation, reward, terminated, truncated, self.cumulative_reward_info
 
     def _calculate_reward_and_done(self):
-        reward = np.zeros(4, dtype=np.float32)
+        reward = np.zeros(3, dtype=np.float32)
         goal = False
         w_move = 0.6
         w_ball_grad = 3
@@ -48,13 +48,13 @@ class VSSStratEnv(VSSEnv):
             self.cumulative_reward_info["reward_Goal"] += 1
             self.cumulative_reward_info["reward_Goal_blue"] += 1
             self.cumulative_reward_info["Original_reward"] += 1 * w_goal
-            reward[-1] = 1
+            # reward[-1] = 1
             goal = True
         elif self.frame.ball.x < -(self.field.length / 2):
             self.cumulative_reward_info["reward_Goal"] -= 1
             self.cumulative_reward_info["reward_Goal_yellow"] += 1
             self.cumulative_reward_info["Original_reward"] += 1 * w_goal
-            reward[-1] = -1
+            # reward[-1] = -1
             goal = True
         else:
             if self.last_frame is not None:
@@ -65,7 +65,7 @@ class VSSStratEnv(VSSEnv):
                 # Calculate Energy penalty
                 energy_penalty = self.__energy_penalty()
 
-                reward[:-1] += np.array(
+                reward += np.array(
                     [
                         move_reward,
                         grad_ball_potential,
