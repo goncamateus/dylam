@@ -5,13 +5,13 @@ import mo_gymnasium as mogym
 import numpy as np
 
 from methods.sac import SAC, SACStrat
-from utils.experiment import get_experiment, make_env
+from utils.experiment import get_experiment
 from utils.experiment import parse_args
 from utils.experiment import setup_run
 
 
 def test(args):
-    env = mogym.make(args.gym_id, render_mode="human")
+    env = mogym.make(args.gym_id)
     if args.stratified:
         env = mogym.MORecordEpisodeStatistics(env)
     else:
@@ -27,7 +27,7 @@ def test(args):
         agent = SAC(args, env.observation_space, env.action_space)
 
     agent.load("models/to_test/")
-    for _ in range(10):
+    for _ in range(100):
         obs, _ = env.reset()
         done = False
         while not done:
@@ -36,7 +36,6 @@ def test(args):
             next_obs, rewards, termination, truncated, infos = env.step(actions)
             done = termination or truncated
             obs = next_obs
-        print(infos)
 
 
 def main(params):
