@@ -43,8 +43,8 @@ class QNetwork(nn.Module):
 
         self.q.add_module("output_layer", nn.Linear(256, num_outputs))
 
-    def forward(self, state, action):
-        xu = torch.cat([state.clone(), action.clone()], 1)
+    def forward(self, state, action, lambdas):
+        xu = torch.cat([state.clone(), action.clone(), lambdas.clone()], 1)
         x1 = self.q(xu)
         return x1
 
@@ -59,9 +59,11 @@ class DoubleQNetwork(nn.Module):
         # Q2 architecture
         self.q2 = QNetwork(num_inputs, num_actions, num_outputs, n_hidden)
 
-    def forward(self, state, action):
-        x1 = self.q1(state, action)
-        x2 = self.q2(state, action)
+    def forward(self, state, action, lambdas=torch.Tensor([])):
+        # In case of using GPI-LS, we need to pass the lambda values to the Q network
+        lambdas = lambdas.to(state.device)
+        x1 = self.q1(state, action, lambdas)
+        x2 = self.q2(state, action, lambdas)
         return x1, x2
 
 
@@ -129,15 +131,17 @@ class GaussianPolicy(nn.Module):
                 (action_space.high + action_space.low) / 2.0
             )
 
-    def forward(self, state):
+    def forward(self, state, lambdas):
         x = self.linears(state)
         mean = self.mean_linear(x)
         log_std = self.log_std_linear(x)
         log_std = torch.clamp(log_std, min=self.log_sig_min, max=self.log_sig_max)
         return mean, log_std
 
-    def sample(self, state):
-        mean, log_std = self.forward(state)
+    def sample(self, state, lambdas=torch.Tensor([])):
+        # In case of using GPI-LS, we need to pass the lambda values to the Q network
+        lambdas = lambdas.to(state.device)
+        mean, log_std = self.forward(state, lambdas)
         std = log_std.exp()
         normal = Normal(mean, std)
         # for reparameterization trick (mean + std * N(0,1))
@@ -152,8 +156,9 @@ class GaussianPolicy(nn.Module):
         mean = torch.tanh(mean) * self.action_scale + self.action_bias
         return action, log_prob, mean
 
-    def get_action(self, state):
-        action, _, _ = self.sample(state)
+    def get_action(self, state, lambdas=torch.Tensor([])):
+        # In case of using GPI-LS, we need to pass the lambda values to the Q network
+        action, _, _ = self.sample(state, lambdas)
         return action.detach().cpu().numpy()
 
     def to(self, device):
