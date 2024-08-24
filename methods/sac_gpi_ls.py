@@ -4,15 +4,17 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import random
 
 from torch.optim import Adam
 from methods.networks.architectures import GaussianPolicy, DoubleQNetwork
 from methods.networks.targets import TargetCritic
 
+from utils.gpi_ls import unique_tol
 from utils.buffer import ReplayBuffer
 
 
-class SAC_GPILS(nn.Module):
+class SACGPILS(nn.Module):
     def __init__(
         self,
         args,
@@ -21,7 +23,7 @@ class SAC_GPILS(nn.Module):
         log_sig_min=-5,
         log_sig_max=2,
     ):
-        super(SAC_GPILS, self).__init__()
+        super(SACGPILS, self).__init__()
         self.log_sig_min = log_sig_min
         self.log_sig_max = log_sig_max
         self.epsilon = args.epsilon
@@ -54,6 +56,10 @@ class SAC_GPILS(nn.Module):
             self.alpha_optim = Adam([self.log_alpha], lr=args.q_lr)
         else:
             self.alpha = args.alpha
+
+        self.weight_support = []
+        self.stacked_weight_support = []
+        self.max_iterations = args.total_timesteps // args.steps_per_iteration
 
         self.replay_buffer = self.get_replay_buffer(args.buffer_size)
         self.to(self.device)
@@ -89,6 +95,15 @@ class SAC_GPILS(nn.Module):
         state = torch.Tensor(state, lambdas).to(self.device)
         action = self.actor.get_action(state)
         return action
+
+    def set_weight_support(self, weight_list):
+        """Set the weight support set."""
+        weights_no_repeat = unique_tol(weight_list)
+        self.weight_support = [
+            torch.tensor(w).float().to(self.device) for w in weights_no_repeat
+        ]
+        if len(self.weight_support) > 0:
+            self.stacked_weight_support = torch.stack(self.weight_support)
 
     def update_critic(
         self,
@@ -180,17 +195,29 @@ class SAC_GPILS(nn.Module):
             next_state_batch,
             done_batch,
         ) = self.replay_buffer.sample(batch_size)
-        
+
         # TODO: create lambda batch
-        
+        if len(self.weight_support) > 1:
+            lambdas = torch.vstack(
+                [self.current_weight for _ in range(state_batch.size(0) // 2)]
+                + random.choices(self.weight_support, k=state_batch.size(0) // 2)
+            )
+        else:
+            lambdas = self.current_weight.repeat(state_batch.size(0), 1)
+
         reward_batch = reward_batch * self.reward_scaling
         qf1_loss, qf2_loss = self.update_critic(
-            state_batch, action_batch, reward_batch, next_state_batch, done_batch
+            state_batch,
+            action_batch,
+            reward_batch,
+            next_state_batch,
+            done_batch,
+            lambdas,
         )
         policy_loss = None
         alpha_loss = None
         if update_actor:
-            policy_loss, alpha_loss = self.update_actor(state_batch)
+            policy_loss, alpha_loss = self.update_actor(state_batch, lambdas)
 
         return policy_loss, qf1_loss, qf2_loss, alpha_loss
 
