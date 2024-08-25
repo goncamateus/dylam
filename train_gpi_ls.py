@@ -47,12 +47,12 @@ def train(args, exp_name, logger: SACLogger):
         agent.set_weight_support(weight_support)
         for _ in range(args.steps_per_iteration):
             global_step += 1
-            # if global_step < args.learning_starts:
-            #     actions = np.array(
-            #         [envs.single_action_space.sample() for _ in range(args.num_envs)]
-            #     )
-            # else:
-            actions = agent.get_action(obs)
+            if global_step < args.learning_starts:
+                actions = np.array(
+                    [envs.single_action_space.sample() for _ in range(args.num_envs)]
+                )
+            else:
+                actions = agent.get_action(obs)
 
             next_obs, rewards, terminations, truncations, infos = envs.step(actions)
             logger.log_episode(infos, rewards)
