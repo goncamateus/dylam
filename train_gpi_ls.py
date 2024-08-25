@@ -36,6 +36,8 @@ def train(args, exp_name, logger: SACLogger):
             gym_id=args.gym_id,
             rep_eval=args.num_eval_episodes,
         )
+        if lambdas is None:
+            break
         agent.set_current_lambdas(lambdas)
         print("Next weight vector:", lambdas)
         weight_support = (
@@ -100,7 +102,6 @@ def train(args, exp_name, logger: SACLogger):
             )
             linear_support.add_solution(returns, wcw)
 
-    logger.log_artifact()
     envs.close()
 
 
