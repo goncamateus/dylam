@@ -12,6 +12,7 @@ import envs
 
 from methods.linear_support import LinearSupport
 from methods.sac_gpi_ls import SACGPILS
+from utils.evaluation import eval_policy
 from utils.experiment import get_experiment, make_env
 from utils.experiment import parse_args
 from utils.experiment import setup_run
@@ -19,23 +20,23 @@ from utils.logger import SACLogger
 
 
 def train(args, exp_name, logger: SACLogger):
+
     envs = gym.vector.AsyncVectorEnv(
         [make_env(args, i, exp_name) for i in range(args.num_envs)]
     )
 
     agent = SACGPILS(args, envs.single_observation_space, envs.single_action_space)
     linear_support = LinearSupport(num_objectives=args.num_rewards, epsilon=None)
-
     obs, _ = envs.reset()
     global_step = 0
-    for iteration in range(1, agent.max_iterations + 1):
+    for _ in range(1, agent.max_iterations + 1):
         agent.set_weight_support(linear_support.get_weight_support())
         lambdas = linear_support.next_weight(
-            algo="gpi-ls",
-            gpi_agent=self,
-            env=eval_env,
-            rep_eval=num_eval_episodes_for_front,
+            gpi_agent=agent,
+            gym_id=args.gym_id,
+            rep_eval=args.num_eval_episodes,
         )
+        agent.set_current_lambdas(lambdas)
         print("Next weight vector:", lambdas)
         weight_support = (
             linear_support.get_weight_support()
@@ -44,14 +45,14 @@ def train(args, exp_name, logger: SACLogger):
         )
 
         agent.set_weight_support(weight_support)
-        tensor_weights = torch.tensor(weight_support, device=agent.device)
-        for step in range(args.steps_per_iteration):
-            if global_step < args.learning_starts:
-                actions = np.array(
-                    [envs.single_action_space.sample() for _ in range(args.num_envs)]
-                )
-            else:
-                actions = agent.get_action(obs)
+        for _ in range(args.steps_per_iteration):
+            global_step += 1
+            # if global_step < args.learning_starts:
+            #     actions = np.array(
+            #         [envs.single_action_space.sample() for _ in range(args.num_envs)]
+            #     )
+            # else:
+            actions = agent.get_action(obs)
 
             next_obs, rewards, terminations, truncations, infos = envs.step(actions)
             logger.log_episode(infos, rewards)
@@ -84,18 +85,20 @@ def train(args, exp_name, logger: SACLogger):
                     "alpha_loss": losses[3],
                 }
                 logger.log_losses(loss_dict)
-                if args.dylam:
-                    logger.log_lambdas(agent.lambdas)
+                logger.log_lambdas(agent.current_lambdas)
 
         logger.push(global_step)
         if global_step % 9999 == 0:
             agent.save(f"models/{exp_name}/")
 
         for wcw in weight_support:
-            n_value = policy_evaluation_mo(
-                self, eval_env, wcw, rep=num_eval_episodes_for_front
-            )[3]
-            linear_support.add_solution(n_value, wcw)
+            returns, _ = eval_policy(
+                args.gym_id,
+                agent,
+                torch.tensor(wcw).float().to(agent.device),
+                args.num_eval_episodes,
+            )
+            linear_support.add_solution(returns, wcw)
 
     logger.log_artifact()
     envs.close()
@@ -111,5 +114,6 @@ def main(params):
 
 if __name__ == "__main__":
     args = parse_args()
+    args.setup = "GPILS"
     params = get_experiment(args)
     main(params)

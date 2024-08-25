@@ -78,6 +78,8 @@ def base_hyperparams():
         "r_min": [0],
         "n_hidden": 1,
         "update_frequency": 1,
+        "num_eval_episodes": 10,
+        "steps_per_iteration": 1000,
     }
     return hyper_params
 

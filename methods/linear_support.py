@@ -1,4 +1,4 @@
-"""Linear Support implementation."""
+"""Linear Support implementation. by: https://github.com/LucasAlegre/morl-baselines"""
 
 import random
 from copy import deepcopy
@@ -7,6 +7,7 @@ import cdd
 import cvxpy as cp
 import numpy as np
 from cvxpy import SolverError
+from utils.evaluation import eval_policy
 
 
 np.set_printoptions(precision=4)
@@ -63,7 +64,7 @@ class LinearSupport:
     def next_weight(
         self,
         gpi_agent=None,
-        env=None,
+        gym_id=None,
         rep_eval=1,
     ):
         """Returns the next weight vector with highest priority.
@@ -85,10 +86,8 @@ class LinearSupport:
             for wc in W_corner:
                 if gpi_agent is None:
                     raise ValueError("GPI-LS requires passing a GPI agent.")
-                gpi_expanded_set = [
-                    policy_evaluation_mo(gpi_agent, env, wc, rep=rep_eval)[3]
-                    for wc in W_corner
-                ]
+                returns, _ = eval_policy(gym_id, gpi_agent, wc, rep_eval)
+                gpi_expanded_set = [returns * wc for wc in W_corner]
                 priority = self.gpi_ls_priority(wc, gpi_expanded_set)
 
                 if self.epsilon is None or priority >= self.epsilon:
