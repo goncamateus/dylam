@@ -91,9 +91,11 @@ class SACGPILS(nn.Module):
         self.critic_target.target_model.to(device)
         return super().to(device)
 
-    def get_action(self, state, lambdas):
-        state = torch.Tensor(state, lambdas).to(self.device)
-        action = self.actor.get_action(state)
+    def get_action(self, state, lambdas=None):
+        state = torch.Tensor(state).to(self.device)
+        lambdas = self.current_lambdas if lambdas is None else lambdas
+        lambdas = lambdas.repeat(state.size(0), 1)
+        action = self.actor.get_action(state, lambdas)
         return action
 
     def set_weight_support(self, weight_list):
@@ -105,6 +107,9 @@ class SACGPILS(nn.Module):
         if len(self.weight_support) > 0:
             self.stacked_weight_support = torch.stack(self.weight_support)
 
+    def set_current_lambdas(self, current_lambda):
+        self.current_lambdas = torch.tensor(current_lambda).float().to(self.device)
+
     def update_critic(
         self,
         state_batch,
@@ -113,7 +118,6 @@ class SACGPILS(nn.Module):
         next_state_batch,
         done_batch,
         lambdas_batch,
-        lambdas,
     ):
         with torch.no_grad():
             next_state_action, next_state_log_pi, next_state_action_probs = (
@@ -122,21 +126,17 @@ class SACGPILS(nn.Module):
             qf1_next_target, qf2_next_target = self.critic_target(
                 next_state_batch, next_state_action, lambdas_batch
             )
-            qf1_next_target = torch.einsum("ij,j->i", qf1_next_target, lambdas).view(
-                -1, 1
-            )
-            qf2_next_target = torch.einsum("ij,j->i", qf2_next_target, lambdas).view(
-                -1, 1
-            )
+
+            qf1_next_target *= lambdas_batch[0]
+            qf2_next_target *= lambdas_batch[0]
             min_qf_next_target = torch.min(qf1_next_target, qf2_next_target)
             min_qf_next_target = min_qf_next_target - self.alpha * next_state_log_pi
             min_qf_next_target[done_batch] = 0.0
             next_q_value = reward_batch + self.gamma * min_qf_next_target
+
         # Two Q-functions to mitigate
         # positive bias in the policy improvement step
         qf1, qf2 = self.critic(state_batch, action_batch, lambdas_batch)
-        qf1 = torch.einsum("ij,j->i", qf1, lambdas).view(-1, 1)
-        qf2 = torch.einsum("ij,j->i", qf2, lambdas).view(-1, 1)
 
         # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
         qf1_loss = F.mse_loss(qf1, next_q_value)
@@ -167,11 +167,11 @@ class SACGPILS(nn.Module):
 
         return alpha_loss
 
-    def update_actor(self, state_batch, lambdas_batch, lambdas):
+    def update_actor(self, state_batch, lambdas_batch):
         pi, log_pi, action_probs = self.actor.sample(state_batch, lambdas_batch)
-        qf1_pi, qf2_pi = self.critic(state_batch, pi)
-        qf1_pi = torch.einsum("ij,j->i", qf1_pi, lambdas).view(-1, 1)
-        qf2_pi = torch.einsum("ij,j->i", qf2_pi, lambdas).view(-1, 1)
+        qf1_pi, qf2_pi = self.critic(state_batch, pi, lambdas_batch)
+        qf1_pi = torch.einsum("ij,j->i", qf1_pi, lambdas_batch[0]).view(-1, 1)
+        qf2_pi = torch.einsum("ij,j->i", qf2_pi, lambdas_batch[0]).view(-1, 1)
         min_qf_pi = torch.min(qf1_pi, qf2_pi)
 
         # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
@@ -183,7 +183,7 @@ class SACGPILS(nn.Module):
         policy_loss.backward()
         self.actor_optim.step()
 
-        alpha_loss = self.update_alpha(state_batch)
+        alpha_loss = self.update_alpha(state_batch, lambdas_batch)
 
         return policy_loss, alpha_loss
 
@@ -195,29 +195,30 @@ class SACGPILS(nn.Module):
             next_state_batch,
             done_batch,
         ) = self.replay_buffer.sample(batch_size)
-
-        # TODO: create lambda batch
-        if len(self.weight_support) > 1:
-            lambdas = torch.vstack(
-                [self.current_weight for _ in range(state_batch.size(0) // 2)]
-                + random.choices(self.weight_support, k=state_batch.size(0) // 2)
-            )
-        else:
-            lambdas = self.current_weight.repeat(state_batch.size(0), 1)
-
         reward_batch = reward_batch * self.reward_scaling
+
+        lambdas_batch = self.current_lambdas.repeat(state_batch.size(0), 1)
+        if len(self.weight_support) > 1:
+            lambdas_batch = lambdas_batch[: state_batch.size(0) // 2]
+            from_support = random.choices(
+                self.weight_support, k=state_batch.size(0) // 2
+            )
+            from_support = torch.stack(from_support)
+            lambdas_batch = torch.cat([lambdas_batch, from_support])
+        lambdas_batch = lambdas_batch.to(self.device)
+
         qf1_loss, qf2_loss = self.update_critic(
             state_batch,
             action_batch,
             reward_batch,
             next_state_batch,
             done_batch,
-            lambdas,
+            lambdas_batch,
         )
         policy_loss = None
         alpha_loss = None
         if update_actor:
-            policy_loss, alpha_loss = self.update_actor(state_batch, lambdas)
+            policy_loss, alpha_loss = self.update_actor(state_batch, lambdas_batch)
 
         return policy_loss, qf1_loss, qf2_loss, alpha_loss
 

@@ -132,7 +132,8 @@ class GaussianPolicy(nn.Module):
             )
 
     def forward(self, state, lambdas):
-        x = self.linears(state)
+        _input = torch.cat([state.clone(), lambdas.clone()], 1)
+        x = self.linears(_input)
         mean = self.mean_linear(x)
         log_std = self.log_std_linear(x)
         log_std = torch.clamp(log_std, min=self.log_sig_min, max=self.log_sig_max)

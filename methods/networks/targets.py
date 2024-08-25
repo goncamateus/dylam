@@ -1,4 +1,6 @@
 import copy
+import torch
+
 from methods.networks.architectures import DoubleQNetwork, QNetwork
 
 
@@ -26,9 +28,9 @@ class TargetNet:
 
 
 class TargetCritic(TargetNet):
-    def __call__(self, S, A):
+    def __call__(self, S, A, lambdas=torch.Tensor([])):
         output = (
-            self.target_model(S, A)
+            self.target_model(S, A, lambdas)
             if isinstance(self.model, QNetwork)
             or isinstance(self.model, DoubleQNetwork)
             else self.target_model(S)

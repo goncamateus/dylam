@@ -156,3 +156,20 @@ Dylam:
     r_min: [0, 0, 0]
     dylam_rb: 500
     dylam_tau: 0.9999
+
+GPILS:
+  LUNARLANDER:
+    gym_id: mo-LunarLanderContinuous-v2
+    num_envs: 16
+    total_timesteps: 100000
+    stratified: True
+    num_rewards: 4
+    steps_per_iteration: 10000
+
+  HOPPER:
+    gym_id: mo-Hopper-v4
+    num_envs: 16
+    total_timesteps: 500000
+    stratified: True
+    num_rewards: 4
+    steps_per_iteration: 10000
