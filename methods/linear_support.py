@@ -7,6 +7,7 @@ import cdd
 import cvxpy as cp
 import numpy as np
 from cvxpy import SolverError
+import torch
 from utils.evaluation import eval_policy
 
 
@@ -86,7 +87,12 @@ class LinearSupport:
             for wc in W_corner:
                 if gpi_agent is None:
                     raise ValueError("GPI-LS requires passing a GPI agent.")
-                returns, _ = eval_policy(gym_id, gpi_agent, wc, rep_eval)
+                returns, _ = eval_policy(
+                    gym_id,
+                    gpi_agent,
+                    torch.tensor(wc).float().to(gpi_agent.device),
+                    rep_eval,
+                )
                 gpi_expanded_set = [returns * wc for wc in W_corner]
                 priority = self.gpi_ls_priority(wc, gpi_expanded_set)
 
