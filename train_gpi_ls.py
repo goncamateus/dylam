@@ -26,7 +26,7 @@ def train(args, exp_name, logger: SACLogger):
     )
 
     agent = SACGPILS(args, envs.single_observation_space, envs.single_action_space)
-    linear_support = LinearSupport(num_objectives=args.num_rewards, epsilon=None)
+    linear_support = LinearSupport(num_objectives=args.num_rewards)
     obs, _ = envs.reset()
     global_step = 0
     for _ in range(1, agent.max_iterations + 1):
@@ -67,40 +67,39 @@ def train(args, exp_name, logger: SACLogger):
             agent.replay_buffer.add(obs, actions, rewards, real_next_obs, terminations)
             obs = next_obs
 
-        # ALGO LOGIC: training.
-        if (
-            global_step > args.learning_starts
-            and global_step % args.update_frequency == 0
-        ):
-            update_actor = global_step % args.policy_frequency == 0
-            losses = agent.update(args.batch_size, update_actor)
+            # ALGO LOGIC: training.
+            if (
+                global_step > args.learning_starts
+                and global_step % args.update_frequency == 0
+            ):
+                update_actor = global_step % args.policy_frequency == 0
+                losses = agent.update(args.batch_size, update_actor)
 
-            if global_step % args.target_network_frequency == 0:
-                agent.critic_target.sync(args.tau)
+                if global_step % args.target_network_frequency == 0:
+                    agent.critic_target.sync(args.tau)
 
-            if global_step % 100 == 0:
-                loss_dict = {
-                    "policy_loss": losses[0],
-                    "qf1_loss": losses[1],
-                    "qf2_loss": losses[2],
-                    "alpha": agent.alpha,
-                    "alpha_loss": losses[3],
-                }
-                logger.log_losses(loss_dict)
-                logger.log_lambdas(agent.current_lambdas)
+                if global_step % 100 == 0:
+                    loss_dict = {
+                        "policy_loss": losses[0],
+                        "qf1_loss": losses[1],
+                        "qf2_loss": losses[2],
+                        "alpha": agent.alpha,
+                        "alpha_loss": losses[3],
+                    }
+                    logger.log_losses(loss_dict)
+                    logger.log_lambdas(agent.current_lambdas)
 
-        logger.push(global_step)
-        if global_step % 9999 == 0:
-            agent.save(f"models/{exp_name}/")
-
+            logger.push(global_step)
         for wcw in weight_support:
-            returns, _ = eval_policy(
+            returns = eval_policy(
                 args.gym_id,
                 agent,
                 torch.tensor(wcw).float().to(agent.device),
                 args.num_eval_episodes,
             )
             linear_support.add_solution(returns, wcw)
+        if global_step % 9999 == 0:
+            agent.save(f"models/{exp_name}/")
 
     envs.close()
 

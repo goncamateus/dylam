@@ -38,18 +38,15 @@ class LinearSupport:
     def __init__(
         self,
         num_objectives: int,
-        epsilon: float = 0.0,
         verbose: bool = True,
     ):
         """Initialize Linear Support.
 
         Args:
             num_objectives (int): Number of objectives
-            epsilon (float, optional): Minimum improvement per iteration. Defaults to 0.0.
-            verbose (bool): Defaults to False.
+            verbose (bool): Defaults to True.
         """
         self.num_objectives = num_objectives
-        self.epsilon = epsilon
         self.visited_weights = []  # List of already tested weight vectors
         self.ccs = []
         self.weight_support = (
@@ -62,12 +59,7 @@ class LinearSupport:
         for w in extrema_weights(self.num_objectives):
             self.queue.append((float("inf"), w))
 
-    def next_weight(
-        self,
-        gpi_agent=None,
-        gym_id=None,
-        rep_eval=1,
-    ):
+    def next_weight(self, gpi_agent, gym_id, rep_eval=1):
         """Returns the next weight vector with highest priority.
 
         Args:
@@ -84,21 +76,20 @@ class LinearSupport:
                 print("W_corner:", W_corner, "W_corner size:", len(W_corner))
 
             self.queue = []
+            gpi_expanded_set = []
             for wc in W_corner:
-                if gpi_agent is None:
-                    raise ValueError("GPI-LS requires passing a GPI agent.")
-                returns, _ = eval_policy(
-                    gym_id,
-                    gpi_agent,
-                    torch.tensor(wc).float().to(gpi_agent.device),
-                    rep_eval,
-                )
-                gpi_expanded_set = [returns * wc for wc in W_corner]
-                priority = self.gpi_ls_priority(wc, gpi_expanded_set)
-
-                if self.epsilon is None or priority >= self.epsilon:
-                    if not (any([np.allclose(wc, wv) for wv in self.visited_weights])):
-                        self.queue.append((priority, wc))
+                if not (any([np.allclose(wc, wv) for wv in self.visited_weights])):
+                    returns = eval_policy(
+                        gym_id,
+                        gpi_agent,
+                        torch.tensor(wc).float().to(gpi_agent.device),
+                        rep_eval,
+                    )
+                    gpi_expanded_set.append(returns)
+            for wc in W_corner:
+                if not (any([np.allclose(wc, wv) for wv in self.visited_weights])):
+                    priority = self.gpi_ls_priority(wc, gpi_expanded_set)
+                    self.queue.append((priority, wc))
 
             if len(self.queue) > 0:
                 # Sort in descending order of priority
@@ -106,6 +97,14 @@ class LinearSupport:
                 # If all priorities are 0, shuffle the queue to avoid repearting weights every iteration
                 if self.queue[0][0] == 0.0:
                     random.shuffle(self.queue)
+
+                if self.verbose:
+                    print(
+                        "W_corner:",
+                        self.get_corner_weights(),
+                        "W_corner size:",
+                        len(W_corner),
+                    )
 
         if self.verbose:
             print("CCS:", self.ccs, "CCS size:", len(self.ccs))
