@@ -174,12 +174,12 @@ GPILS:
     stratified: True
     num_rewards: 4
     steps_per_iteration: 10000
+    reward_scaling: 1000
 
   VSSEF:
     gym_id: mo-VSSEF-v0
     num_envs: 20
     total_timesteps: 500000
-    learning_starts: 5000
     tau: 0.999
     policy_frequency: 1
     policy_lr: 0.0001
@@ -189,7 +189,22 @@ GPILS:
     gamma: 0.95
     update_frequency: 1
     stratified: True
-    dylam: True
     num_rewards: 3
+    steps_per_iteration: 10000
+
+  HALFCHEETAH:
+    gym_id: mo-HalfCheetah-v4
+    num_envs: 16
+    total_timesteps: 500000
+    num_rewards: 2
+    steps_per_iteration: 10000
+
+  HALFCHEETAHEF:
+    gym_id: mo-HalfCheetahEF-v4
+    num_envs: 16
+    total_timesteps: 500000
+    stratified: True
+    dylam: True
+    num_rewards: 2
     steps_per_iteration: 10000
 
