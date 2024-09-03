@@ -78,7 +78,8 @@ class LinearSupport:
             self.queue = []
             gpi_expanded_set = []
             for wc in W_corner:
-                if not (any([np.allclose(wc, wv) for wv in self.visited_weights])):
+                is_visited = any([np.allclose(wc, wv) for wv in self.visited_weights])
+                if not is_visited:
                     returns = eval_policy(
                         gym_id,
                         gpi_agent,
@@ -87,7 +88,8 @@ class LinearSupport:
                     )
                     gpi_expanded_set.append(returns)
             for wc in W_corner:
-                if not (any([np.allclose(wc, wv) for wv in self.visited_weights])):
+                is_visited = any([np.allclose(wc, wv) for wv in self.visited_weights])
+                if not is_visited:
                     priority = self.gpi_ls_priority(wc, gpi_expanded_set)
                     self.queue.append((priority, wc))
 
