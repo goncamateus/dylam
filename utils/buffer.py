@@ -60,7 +60,7 @@ class StratLastRewards:
 
     def add(self, reward):
         self.rewards[self.pos] = reward
-        if self.pos == 10:
+        if self.pos == (self.size - 1):
             self._can_do = True
         self.pos = (self.pos + 1) % self.rewards.shape[0]
 

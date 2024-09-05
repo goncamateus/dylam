@@ -1,7 +1,9 @@
+import numpy as np
+
 from typing import Optional
 
-import numpy as np
 from gymnasium.envs.toy_text.taxi import TaxiEnv
+from gymnasium.envs.toy_text.utils import categorical_sample
 from gymnasium.spaces import Box, Dict
 
 
@@ -13,12 +15,7 @@ class Taxi(TaxiEnv):
 
     def __init__(self, render_mode: Optional[str] = None):
         super().__init__(render_mode=render_mode)
-        self.reward_space = Dict(
-            {
-                "decomposed": Box(-1, 1, shape=(3,)),
-                "original": Box(-1, 1, shape=()),
-            }
-        )
+        self.reward_space = Box(-1, 1, shape=(3,))
         self.reward_dim = 3
         num_states = 500
         num_rows = 5
@@ -26,6 +23,12 @@ class Taxi(TaxiEnv):
         max_row = num_rows - 1
         max_col = num_columns - 1
         num_actions = 6
+        self.cumulative_reward_info = {
+            "reward_Energy": 0,
+            "reward_Objective": 0,
+            "reward_Illegal_action": 0,
+            "Original_reward": 0,
+        }
         self.initial_state_distrib = np.zeros(num_states)
         self.P = {
             state: {action: [] for action in range(num_actions)}
@@ -88,7 +91,34 @@ class Taxi(TaxiEnv):
 
         self.initial_state_distrib /= self.initial_state_distrib.sum()
 
+    def reset(self, *args, **kwargs):
+        result = super().reset(*args, **kwargs)
+        self.cumulative_reward_info = {
+            "reward_Energy": 0,
+            "reward_Objective": 0,
+            "reward_Illegal_action": 0,
+            "Original_reward": 0,
+        }
+        return result
+
     def step(self, action):
-        state, reward, done, truncated, info = super().step(action)
-        info.update({"Original_reward": reward["original"]})
-        return state, reward["decomposed"], done, truncated, info
+        transitions = self.P[self.s][action]
+        i = categorical_sample([t[0] for t in transitions], self.np_random)
+        _, state, reward, termination = transitions[i]
+        self.s = state
+        self.lastaction = action
+
+        if self.render_mode == "human":
+            self.render()
+
+        self.cumulative_reward_info["reward_Energy"] += reward["decomposed"][0]
+        self.cumulative_reward_info["reward_Objective"] += reward["decomposed"][1]
+        self.cumulative_reward_info["reward_Illegal_action"] += reward["decomposed"][2]
+        self.cumulative_reward_info["Original_reward"] += reward["original"]
+        return (
+            int(state),
+            reward["decomposed"],
+            termination,
+            False,
+            self.cumulative_reward_info,
+        )

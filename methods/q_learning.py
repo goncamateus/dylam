@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 from utils.buffer import StratLastRewards
@@ -9,7 +10,7 @@ class QLearning:
         self.obs_size = observation_space.n
         self.action_size = action_space.n
         self.q_table = np.zeros((self.obs_size, self.action_size))
-        self.alpha = args.alpha
+        self.alpha = args.q_lr
         self.gamma = args.gamma
         self.strategy = args.strategy
         self.reward_scaling = args.reward_scaling
@@ -75,7 +76,8 @@ class QLearning:
         return action
 
     def update_policy(self, observation, action, reward, next_obs):
-        reward *= self.reward_scaling
+        reward = reward * self.reward_scaling
+
         update = reward + self.gamma * (
             self.q_table[next_obs].max() - self.q_table[observation][action]
         )
@@ -84,14 +86,21 @@ class QLearning:
         )
         self.total_count += 1
 
+    def save(self, path):
+        os.makedirs(path, exist_ok=True)
+        np.save(path + "q_table.npy", self.q_table)
+
+    def load(self, path):
+        self.q_table = np.load(path + "q_table.npy")
+
 
 class drQ(QLearning):
 
     def __init__(self, args, observation_space, action_space):
         super().__init__(args, observation_space, action_space)
         self.num_rewards = args.num_rewards
-        self.components_q = np.zeros((self.n_rewards, *self.q_table.shape))
-        self.lambdas = np.array(self.n_rewards)
+        self.components_q = np.zeros((self.num_rewards, *self.q_table.shape))
+        self.lambdas = np.ones(self.num_rewards) / self.num_rewards
 
     def update_component_tables(self, observation, action, reward, next_obs):
         def get_bootstrap_q(i):
@@ -101,19 +110,27 @@ class drQ(QLearning):
             )
             return q_value
 
-        for i in range(self.n_rewards):
+        for i in range(self.num_rewards):
             update = reward[i] + self.gamma * get_bootstrap_q(i)
             self.components_q[i][observation][action] = (
                 self.components_q[i][observation][action] + self.alpha * update
             )
 
     def update_policy(self, observation, action, reward, next_obs):
-        reward *= self.reward_scaling
+        reward = reward * self.reward_scaling
         self.update_component_tables(observation, action, reward, next_obs)
         Qs = 0
-        for i in range(self.n_rewards):
+        for i in range(self.num_rewards):
             Qs += self.lambdas[i] * self.components_q[i][observation][action]
         self.q_table[observation][action] = Qs
+
+    def save(self, path):
+        super().save(path)
+        np.save(path + "components_q.npy", self.components_q)
+
+    def load(self, path):
+        super().load(path)
+        self.components_q = np.load(path + "components_q.npy")
 
 
 class QDyLam(drQ):
@@ -123,7 +140,7 @@ class QDyLam(drQ):
         self.r_max = np.array(args.r_max)
         self.r_min = np.array(args.r_min)
         self.rew_tau = args.dylam_tau
-        self.episode_rewards = np.zeros(args.num_rewards)
+        self.episode_reward = np.zeros(args.num_rewards)
         self.last_reward_mean = None
         self.last_episode_rewards = StratLastRewards(args.dylam_rb, self.num_rewards)
 
@@ -162,17 +179,16 @@ class QDyLam(drQ):
         return action
 
     def update_policy(self, observation, action, reward, next_obs):
-        reward *= self.reward_scaling
+        reward = reward * self.reward_scaling
         self.update_component_tables(observation, action, reward, next_obs)
 
-    def add_episode_rewards(self, rewards, terminations, truncations):
+    def add_episode_reward(self, reward, termination, truncation):
         if self.num_rewards == 1:
-            rewards = rewards.reshape(-1, 1)
-        self.episode_rewards += rewards
-        for i, (term, trunc) in enumerate(zip(terminations, truncations)):
-            if term or trunc:
-                self.last_episode_rewards.add(self.episode_rewards[i])
-                self.episode_rewards[i] = np.zeros(self.num_rewards)
+            reward = reward.reshape(-1, 1)
+        self.episode_reward += reward
+        if termination or truncation:
+            self.last_episode_rewards.add(self.episode_reward)
+            self.episode_reward = np.zeros(self.num_rewards)
 
     def update_lambdas(self):
         if self.last_episode_rewards.can_do():

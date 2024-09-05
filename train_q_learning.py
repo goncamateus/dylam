@@ -6,7 +6,7 @@ import time
 import numpy as np
 
 from methods.q_learning import QLearning, drQ, QDyLam
-from utils.experiment import get_experiment, make_env
+from utils.experiment import get_experiment, q_make_env
 from utils.experiment import parse_args
 from utils.experiment import setup_run
 from utils.logger import QLogger
@@ -21,66 +21,42 @@ def get_agent_type(args):
 
 
 def train(args, exp_name, logger: QLogger):
-    env = make_env(args, 0, exp_name)()
+    env = q_make_env(args, 0, exp_name)()
     agent_type = get_agent_type(args)
     agent = agent_type(args, env.observation_space, env.action_space)
 
-    obs, _ = env.reset()
-    for global_step in range(args.total_timesteps):
+    for episode in range(args.total_episodes):
+        obs, _ = env.reset()
+        termination = False
+        truncation = False
+        while not (termination or truncation):
+            action = agent.get_action(obs)
 
-        action = agent.get_action(obs)
+            next_obs, reward, termination, truncation, info = env.step(action)
+            logger.log_episode(info, termination or truncation)
 
-        next_obs, reward, termination, truncation, info = env.step(action)
-        logger.log_episode(info, reward)
+            if args.dylam:
+                agent.add_episode_reward(reward, termination, truncation)
 
-        # TRY NOT TO MODIFY: save data to reply buffer; handle `terminal_observation`
-        real_next_obs = next_obs.copy()
-        for idx, trunc in enumerate(truncation):
-            if trunc:
-                real_next_obs[idx] = info["final_observation"][idx]
+            agent.update_policy(obs, action, reward, next_obs)
+            obs = next_obs
 
         if args.dylam:
-            agent.add_episode_rewards(reward, termination, truncation)
             agent.update_lambdas()
-        
-        agent.update_policy(obs, action, reward, next_obs)
-        obs = next_obs
-        # Falta a parte dos logs etc
-        # ALGO LOGIC: training.
-        if (
-            global_step > args.learning_starts
-            and global_step % args.update_frequency == 0
-        ):
-            update_actor = global_step % args.policy_frequency == 0
-            losses = agent.update(args.batch_size, update_actor)
+            logger.log_lambdas(agent.lambdas)
 
-            if global_step % args.target_network_frequency == 0:
-                agent.critic_target.sync(args.tau)
-
-            if global_step % 100 == 0:
-                loss_dict = {
-                    "policy_loss": losses[0],
-                    "qf1_loss": losses[1],
-                    "qf2_loss": losses[2],
-                    "alpha": agent.alpha,
-                    "alpha_loss": losses[3],
-                }
-                logger.log_losses(loss_dict)
-                if args.dylam:
-                    logger.log_lambdas(agent.lambdas)
-
-        logger.push(global_step)
-        if global_step % 9999 == 0:
+        logger.push(episode)
+        if episode % 9 == 0:
             agent.save(f"models/{exp_name}/")
 
     logger.log_artifact()
-    envs.close()
+    env.close()
 
 
 def main(params):
     gym_name = params.gym_id.split("-")[1]
     exp_name = f"{gym_name}-{params.setup}_{int(time.time())}"
-    logger = SACLogger(exp_name, params)
+    logger = QLogger(exp_name, params)
     setup_run(params)
     train(params, exp_name, logger)
 
