@@ -6,9 +6,6 @@ import time
 import gymnasium as gym
 import numpy as np
 import torch
-import wandb
-
-import envs
 
 from methods.linear_support import LinearSupport
 from methods.sac_gpi_ls import SACGPILS

@@ -69,17 +69,17 @@ class StratQLearning:
                 )
             )
         elif isinstance(observation_space, gym.spaces.Box):
-            self.obs_size = observation_space.high - observation_space.low
-            self.obs_size += 1
-            self.q_table = np.zeros((*self.obs_size, self.action_size))
+            self.n_lines = observation_space.high[0]
+            self.n_cols = observation_space.high[1]
+            self.obs_size = self.n_lines * self.n_cols
+            self.q_table = np.zeros((self.obs_size, self.action_size))
             self.components_q = np.zeros(
                 (
                     self.n_rewards,
-                    *self.obs_size,
+                    self.obs_size,
                     self.action_size,
                 )
             )
-
         self.lambdas = np.array(hyper_params.lambdas, dtype=np.float32)
         self.rb_reward = np.zeros((hyper_params.episodes_rb, self.n_rewards))
         self.rb_idx = 0
@@ -112,9 +112,14 @@ class StratQLearning:
             self.lambdas = expdQ / (np.sum(expdQ, 0) + 1e-4)
             self.last_rew_mean = rew_mean_t
 
-    def get_action(self, observation):
+    def process_observation(self, observation):
         if isinstance(self.observation_space, gym.spaces.Box):
-            observation = tuple(observation)
+            x_index = int(observation[0])
+            y_index = int(observation[1])
+            observation = x_index * self.n_cols + y_index
+        return observation
+
+    def get_action(self, observation):
         if self.drQ:
             # check if array has the same value
             if np.all(self.q_table[observation] == self.q_table[observation][0]):
@@ -153,9 +158,6 @@ class StratQLearning:
 
     def update_policy(self, observation, action, reward, next_obs):
         reward *= self.reward_scaling
-        if isinstance(self.observation_space, gym.spaces.Box):
-            observation = tuple(observation)
-            next_obs = tuple(next_obs)
         self.update_component_tables(observation, action, reward, next_obs)
         Qs = 0
         for i in range(self.n_rewards):
@@ -201,6 +203,7 @@ def main(args):
     )
     for episode in range(args.total_episodes):
         obs, info = env.reset()
+        obs = agent.process_observation(obs)
         done = False
         truncated = False
         epi_reward = 0
@@ -212,6 +215,8 @@ def main(args):
             else:
                 action = env.action_space.sample()
             next_obs, reward, done, truncated, info = env.step(action)
+            next_obs = agent.process_observation(next_obs)
+
             if "Original_reward" not in info:
                 info["Original_reward"] = reward.sum()
             cumulative_original_reward += info["Original_reward"]

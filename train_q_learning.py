@@ -3,52 +3,49 @@
 
 import time
 
-import gymnasium as gym
 import numpy as np
 
-from methods.sac import SAC, SACStrat
+from methods.q_learning import QLearning, drQ, QDyLam
 from utils.experiment import get_experiment, make_env
 from utils.experiment import parse_args
 from utils.experiment import setup_run
-from utils.logger import SACLogger
+from utils.logger import QLogger
 
 
-def train(args, exp_name, logger: SACLogger):
-    envs = gym.vector.AsyncVectorEnv(
-        [make_env(args, i, exp_name) for i in range(args.num_envs)]
-    )
+def get_agent_type(args):
     if args.stratified:
-        agent = SACStrat(
-            args,
-            envs.single_observation_space,
-            envs.single_action_space,
-        )
-    else:
-        agent = SAC(args, envs.single_observation_space, envs.single_action_space)
+        if args.dylam:
+            return QDyLam
+        return drQ
+    return QLearning
 
-    obs, _ = envs.reset()
+
+def train(args, exp_name, logger: QLogger):
+    env = make_env(args, 0, exp_name)()
+    agent_type = get_agent_type(args)
+    agent = agent_type(args, env.observation_space, env.action_space)
+
+    obs, _ = env.reset()
     for global_step in range(args.total_timesteps):
-        if global_step < args.learning_starts:
-            actions = np.array(
-                [envs.single_action_space.sample() for _ in range(args.num_envs)]
-            )
-        else:
-            actions = agent.get_action(obs)
 
-        next_obs, rewards, terminations, truncations, infos = envs.step(actions)
-        logger.log_episode(infos, rewards)
+        action = agent.get_action(obs)
+
+        next_obs, reward, termination, truncation, info = env.step(action)
+        logger.log_episode(info, reward)
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `terminal_observation`
         real_next_obs = next_obs.copy()
-        for idx, trunc in enumerate(truncations):
+        for idx, trunc in enumerate(truncation):
             if trunc:
-                real_next_obs[idx] = infos["final_observation"][idx]
-        agent.replay_buffer.add(obs, actions, rewards, real_next_obs, terminations)
-        obs = next_obs
+                real_next_obs[idx] = info["final_observation"][idx]
 
         if args.dylam:
-            agent.add_episode_rewards(rewards, terminations, truncations)
+            agent.add_episode_rewards(reward, termination, truncation)
             agent.update_lambdas()
+        
+        agent.update_policy(obs, action, reward, next_obs)
+        obs = next_obs
+        # Falta a parte dos logs etc
         # ALGO LOGIC: training.
         if (
             global_step > args.learning_starts

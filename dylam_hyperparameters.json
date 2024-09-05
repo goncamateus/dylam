@@ -10,5 +10,12 @@
         "gamma":0.9999,
         "alpha": 1e-1,
         "total_episodes": 1000
+    },
+
+    "mo-FrozenLake-v0":{
+        "lambdas": [0.5, 0.5],
+        "r_max": [20, -2],
+        "r_min": [-200, -25],
+        "num_rewards": 2
     }
 }
