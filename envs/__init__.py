@@ -50,3 +50,10 @@ register(
     entry_point="envs.vss:VSSEF",
     max_episode_steps=400,
 )
+
+
+register(
+    id="mo-Taxi-v3",
+    entry_point="envs.taxi:Taxi",
+    max_episode_steps=200,
+)

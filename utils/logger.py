@@ -1,3 +1,4 @@
+import os
 import time
 import wandb
 
@@ -19,13 +20,16 @@ class WandbResultLogger:
         )
         self.artifact = wandb.Artifact("model", type="model")
         self.log = {}
+        self._episode = 0
 
     def log_episode(self, infos, rewards):
         if "final_info" in infos:
             for info in infos["final_info"]:
                 if info:
                     if "episode" in info:
-                        print(f"episodic_return={info['Original_reward']}")
+                        print(
+                            f"Episode {self._episode}: episodic_return={info['Original_reward']}"
+                        )
                         self.log.update(
                             {
                                 "ep_info/total": info["Original_reward"],
@@ -38,6 +42,7 @@ class WandbResultLogger:
                             self.log[f"ep_info/{key.replace('reward_', '')}"] = info[
                                 key
                             ]
+                        self._episode += 1
                     break
         self.log.update({"rewards": rewards})
 
@@ -50,8 +55,7 @@ class WandbResultLogger:
         for i in range(len(lambdas)):
             self.log.update({"lambdas/component_" + str(i): lambdas[i].item()})
 
-    def log_artifact(self):
-        self.artifact.add_file(f"models/{self.run.name}/actor.pt")
+    def log_artifact(self): ...
 
     def push(self, global_step):
         self.run.log(self.log, global_step)
@@ -82,3 +86,31 @@ class SACLogger(WandbResultLogger):
                     "losses/Original_Value2_loss": losses["ori_qf2_loss"].item(),
                 }
             )
+
+    def log_artifact(self):
+        self.artifact.add_file(f"models/{self.run.name}/actor.pt")
+
+
+class QLogger(WandbResultLogger):
+    def __init__(self, name, params):
+        params.method = "Q-Learning"
+        super().__init__(name, params)
+
+    def log_episode(self, info, done):
+        if done:
+            print(f"Episode {self._episode}: episodic_return={info['Original_reward']}")
+            self.log.update(
+                {
+                    "ep_info/total": info["Original_reward"],
+                }
+            )
+            keys_to_log = [x for x in info.keys() if x.startswith("reward_")]
+            for key in keys_to_log:
+                self.log[f"ep_info/{key.replace('reward_', '')}"] = info[key]
+            self._episode += 1
+
+    def log_artifact(self):
+        if self.run.config["track"]:
+            for file in os.listdir(f"models/{self.run.name}"):
+                if file.endswith(".npy"):
+                    self.artifact.add_file(f"models/{self.run.name}/{file}")

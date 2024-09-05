@@ -42,6 +42,26 @@ def make_env(args, idx, run_name):
     return thunk
 
 
+def q_make_env(args, idx, run_name):
+    def thunk():
+        env = mogym.make(
+            args.gym_id,
+            render_mode="rgb_array" if args.capture_video and idx == 0 else None,
+        )
+        if args.capture_video and idx == 0:
+            env = gym.wrappers.RecordVideo(
+                env,
+                f"videos/{run_name}",
+                episode_trigger=lambda x: x % args.video_freq == 0,
+            )
+        if not args.stratified:
+            env = mogym.LinearReward(env)
+        env.action_space.seed(args.seed)
+        return env
+
+    return thunk
+
+
 def base_hyperparams():
     hyper_params = {
         "stratified": False,
@@ -80,6 +100,10 @@ def base_hyperparams():
         "update_frequency": 1,
         "num_eval_episodes": 10,
         "steps_per_iteration": 1000,
+        "strategy": 1,
+        "epsilon_decay_factor": 0.97,
+        "softmax_temperature": 1,
+        "total_episodes": 1000,
     }
     return hyper_params
 
