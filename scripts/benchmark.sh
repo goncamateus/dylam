@@ -1,11 +1,11 @@
 #!/bin/bash
 
-sbatch scripts/bechmark_taxi.sh dylam
-sbatch scripts/bechmark_pendulum.sh dylam
-sbatch scripts/bechmark_lunarlander.sh dylam
-sbatch scripts/bechmark_halfcheetah.sh dylam
-sbatch scripts/bechmark_hopper.sh dylam
-sbatch scripts/bechmark_humanoid.sh dylam
-sbatch scripts/bechmark_vss.sh dylam
-sbatch scripts/bechmark_halfcheetahef.sh dylam
-sbatch scripts/bechmark_vssef.sh dylam
+sbatch scripts/benchmark_taxi.sh c1
+sbatch scripts/benchmark_pendulum.sh c1
+sbatch scripts/benchmark_lunarlander.sh c1
+sbatch scripts/benchmark_halfcheetah.sh c1
+sbatch scripts/benchmark_hopper.sh c1
+sbatch scripts/benchmark_humanoid.sh c1
+sbatch scripts/benchmark_vss.sh c1
+sbatch scripts/benchmark_halfcheetahef.sh c1
+sbatch scripts/benchmark_vssef.sh c1
