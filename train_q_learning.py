@@ -25,7 +25,7 @@ def train(args, exp_name, logger: QLogger):
     agent_type = get_agent_type(args)
     agent = agent_type(args, env.observation_space, env.action_space)
 
-    for episode in range(args.total_episodes):
+    for episode in range(1, args.total_episodes + 1):
         obs, _ = env.reset()
         termination = False
         truncation = False
@@ -46,7 +46,7 @@ def train(args, exp_name, logger: QLogger):
             logger.log_lambdas(agent.lambdas)
 
         logger.push(episode)
-        if episode % 9 == 0:
+        if episode % 10 == 0:
             agent.save(f"models/{exp_name}/")
 
     logger.log_artifact()
