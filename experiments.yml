@@ -53,6 +53,10 @@ Baseline:
     gym_id: mo-Taxi-v3
     gamma: 0.9999
     q_lr: 0.1
+  MOUNTAINCAR:
+    gym_id: mo-MountainCar-v0
+    num_envs: 16
+    total_timesteps: 50000
 
 Dylam:
   LUNARLANDER:

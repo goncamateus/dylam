@@ -5,7 +5,7 @@ pyvirtualdisplay>=3.0
 moviepy >= 1.0.0
 pandas >= 2.1.4
 gymnasium[all]==0.29.1
-mo-gymnasium==1.1.0
+mo-gymnasium[all]==1.1.0
 pycddlib==2.1.7
 cvxpy==1.5.3
 numpy==1.26.4

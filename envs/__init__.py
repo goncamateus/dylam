@@ -57,3 +57,9 @@ register(
     entry_point="envs.taxi:Taxi",
     max_episode_steps=200,
 )
+
+register(
+    id="mo-MountainCar-v0",
+    entry_point="envs.mountain_car:MountainCar",
+     max_episode_steps=200,
+)

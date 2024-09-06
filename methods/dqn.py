@@ -18,6 +18,7 @@ class DQN(nn.Module):
         self.obs_size = np.array(observation_space.shape).prod()
         self.action_size = action_space.n
 
+        self.reward_scaling = args.reward_scaling
         self.gamma = args.gamma
         self.n_hidden = args.n_hidden
         self.num_rewards = args.num_rewards
@@ -49,7 +50,7 @@ class DQN(nn.Module):
 
     def get_output(self, observation):
         _ = torch.Tensor([]).to(self.device)
-        q_values = self.q_network(observation, _)
+        q_values = self.q_network(observation, _, _)
         action = torch.argmax(q_values, dim=1).cpu().numpy()
         return action
 
@@ -57,7 +58,7 @@ class DQN(nn.Module):
         if np.random.random() < 1 - self.epsilon:
             action = self.get_output(observation)
         else:
-            action = np.random.randint(self.action_size)
+            action = np.random.randint(low=0, high=self.action_size, size=(observation.shape[0],))
         return action
 
     def epsilon_greedy_decay(self, observation):
@@ -82,11 +83,12 @@ class DQN(nn.Module):
     ):
         _ = torch.Tensor([]).to(self.device)
         with torch.no_grad():
-            target_q_values = self.target_q_network(next_state_batch, _).max(dim=1)
+            target_q_values = self.target_q_network(next_state_batch, _)
+            target_q_values = target_q_values.max(dim=1)[0].unsqueeze(1)
             target_q_values[done_batch] = 0
             next_q_values = reward_batch + self.gamma * target_q_values
-        q_values = self.q_network(state_batch, _)
-        q_values = q_values.gather(1, action_batch).squeeze(1)
+        q_values = self.q_network(state_batch, _, _)
+        q_values = q_values.gather(1, action_batch)
         qf_loss = F.mse_loss(q_values, next_q_values)
 
         self.optimizer.zero_grad()
@@ -104,6 +106,7 @@ class DQN(nn.Module):
             done_batch,
         ) = self.replay_buffer.sample(batch_size)
         reward_batch = reward_batch * self.reward_scaling
+        action_batch = action_batch.long()
         qf_loss = self.update_q(
             state_batch, action_batch, reward_batch, next_state_batch, done_batch
         )
@@ -133,11 +136,11 @@ class DQNStrat(DQN):
                 n_hidden=args.n_hidden,
             )
 
-        self.q_networks = nn.ModuleList([q_net() * self.num_rewards])
+        self.q_networks = nn.ModuleList([q_net() * self.num_rewards]).to(self.device)
         self.target_q_networks = nn.ModuleList(
             [TargetCritic(net) for net in self.q_networks]
-        )
-        self.optimizer = Adam(self.q_networks.parameters(), lr=args.q_lr)
+        ).to(self.device)
+        self.optimizer = Adam(self.q_networks.parameters(), lr=args.q_lr).to(self.device)
 
         if args.dylam:
             self.lambdas = (

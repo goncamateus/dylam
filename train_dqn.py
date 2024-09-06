@@ -27,13 +27,8 @@ def train(args, exp_name, logger: DQNLogger):
         agent = DQN(args, envs.single_observation_space, envs.single_action_space)
 
     obs, _ = envs.reset()
-    for global_step in range(args.total_timesteps):
-        if global_step < args.learning_starts:
-            actions = np.array(
-                [envs.single_action_space.sample() for _ in range(args.num_envs)]
-            )
-        else:
-            actions = agent.get_action(obs)
+    for global_step in range(1, args.total_timesteps + 1):
+        actions = agent.get_action(obs)
 
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
         logger.log_episode(infos, rewards)
@@ -54,8 +49,7 @@ def train(args, exp_name, logger: DQNLogger):
             global_step > args.learning_starts
             and global_step % args.update_frequency == 0
         ):
-            update_actor = global_step % args.policy_frequency == 0
-            losses = agent.update(args.batch_size, update_actor)
+            losses = agent.update(args.batch_size)
 
             if global_step % args.target_network_frequency == 0:
                 if args.stratified:
