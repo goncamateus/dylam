@@ -58,7 +58,9 @@ class DQN(nn.Module):
         if np.random.random() < 1 - self.epsilon:
             action = self.get_output(observation)
         else:
-            action = np.random.randint(low=0, high=self.action_size, size=(observation.shape[0],))
+            action = np.random.randint(
+                low=0, high=self.action_size, size=(observation.shape[0],)
+            )
         return action
 
     def epsilon_greedy_decay(self, observation):
@@ -136,11 +138,11 @@ class DQNStrat(DQN):
                 n_hidden=args.n_hidden,
             )
 
-        self.q_networks = nn.ModuleList([q_net() * self.num_rewards]).to(self.device)
-        self.target_q_networks = nn.ModuleList(
-            [TargetCritic(net) for net in self.q_networks]
-        ).to(self.device)
-        self.optimizer = Adam(self.q_networks.parameters(), lr=args.q_lr).to(self.device)
+        self.q_networks = nn.ModuleList([q_net()] * self.num_rewards).to(self.device)
+        self.target_q_networks = [TargetCritic(net) for net in self.q_networks]
+        for target_q_net in self.target_q_networks:
+            target_q_net.target_model.to(self.device)
+        self.optimizer = Adam(self.q_networks.parameters(), lr=args.q_lr)
 
         if args.dylam:
             self.lambdas = (
@@ -161,7 +163,7 @@ class DQNStrat(DQN):
             self.num_rewards, observation.shape[0], self.action_size
         ).to(self.device)
         for i in range(self.num_rewards):
-            q_values = self.q_networks[i](observation, _)
+            q_values = self.q_networks[i](observation, _, _)
             components_values[i] = q_values * self.lambdas[i]
         q_values = components_values.sum(dim=0)
         return q_values
@@ -185,11 +187,12 @@ class DQNStrat(DQN):
             zip(self.q_networks, self.target_q_networks)
         ):
             with torch.no_grad():
-                target_q_values = target_q_net(next_state_batch, _).max(dim=1)
+                target_q_values = target_q_net(next_state_batch, _, _)
+                target_q_values = target_q_values.max(dim=1)[0]
                 target_q_values[done_batch] = 0
                 next_q_values = reward_batch[:, i] + self.gamma * target_q_values
-            q_values = q_net(state_batch, _)
-            q_values = q_values.gather(1, action_batch).squeeze(1)
+            q_values = q_net(state_batch, _, _)
+            q_values = q_values.gather(1, action_batch).squeeze()
             qf_loss = F.mse_loss(q_values, next_q_values)
             qf_losses.append(qf_loss)
 

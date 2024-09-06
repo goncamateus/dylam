@@ -176,6 +176,15 @@ Dylam:
     num_rewards: 3
     gamma: 0.9999
     q_lr: 0.1
+  MOUNTAINCAR:
+    gym_id: mo-MountainCar-v0
+    num_envs: 16
+    total_timesteps: 50000
+    stratified: True
+    dylam: True
+    num_rewards: 3
+    r_max: [-50, -10, -40]
+    r_min: [-200, -200, -200]
 
 GPILS:
   LUNARLANDER:
