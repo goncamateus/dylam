@@ -5,7 +5,7 @@ import time
 
 import numpy as np
 
-from methods.q_learning import QLearning, drQ, QDyLam
+from methods.q_learning import QLearning, DRQ, QDyLam
 from utils.experiment import get_experiment, q_make_env
 from utils.experiment import parse_args
 from utils.experiment import setup_run
@@ -16,7 +16,7 @@ def get_agent_type(args):
     if args.stratified:
         if args.dylam:
             return QDyLam
-        return drQ
+        return DRQ
     return QLearning
 
 
@@ -38,7 +38,7 @@ def train(args, exp_name, logger: QLogger):
             if args.dylam:
                 agent.add_episode_reward(reward, termination, truncation)
 
-            agent.update_policy(obs, action, reward, next_obs)
+            agent.update(obs, action, reward, next_obs)
             obs = next_obs
 
         if args.dylam:
