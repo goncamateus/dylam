@@ -114,3 +114,20 @@ class QLogger(WandbResultLogger):
             for file in os.listdir(f"models/{self.run.name}"):
                 if file.endswith(".npy"):
                     self.artifact.add_file(f"models/{self.run.name}/{file}")
+
+
+class DQNLogger(WandbResultLogger):
+    def __init__(self, name, params):
+        params.method = "dqn"
+        super().__init__(name, params)
+
+    def log_losses(self, losses):
+        if "qf_loss" in losses:
+            self.log.update({"losses/qf_loss": losses["qf_loss"]})
+
+        if "qf_loss_0" in losses:
+            for i in range(len(losses)):
+                self.log.update({f"losses/qf_loss_{i}": losses[f"qf_loss_{i}"]})
+
+    def log_artifact(self):
+        self.artifact.add_file(f"models/{self.run.name}/q_network.pt")

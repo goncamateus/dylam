@@ -15,7 +15,7 @@ from utils.buffer import ReplayBuffer, StratLastRewards
 class DQN(nn.Module):
     def __init__(self, args, observation_space, action_space):
         super(DQN, self).__init__()
-        self.obs_size = observation_space.n
+        self.obs_size = np.array(observation_space.shape).prod()
         self.action_size = action_space.n
 
         self.gamma = args.gamma
@@ -93,7 +93,7 @@ class DQN(nn.Module):
         qf_loss.backward()
         self.optimizer.step()
 
-        return qf_loss
+        return qf_loss.item()
 
     def update(self, batch_size):
         (
@@ -195,7 +195,7 @@ class DQNStrat(DQN):
             loss.backward()
         self.optimizer.step()
 
-        return qf_losses
+        return [loss.item() for loss in qf_losses]
 
     def update_lambdas(self):
         if self.last_episode_rewards.can_do():
