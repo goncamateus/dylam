@@ -2,6 +2,7 @@
 
 sbatch scripts/benchmark_taxi.sh c1
 sbatch scripts/benchmark_pendulum.sh c1
+sbatch scripts/benchmark_qlunarlander.sh c1
 sbatch scripts/benchmark_lunarlander.sh c1
 sbatch scripts/benchmark_halfcheetah.sh c1
 sbatch scripts/benchmark_hopper.sh c1
