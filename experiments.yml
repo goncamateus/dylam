@@ -57,6 +57,10 @@ Baseline:
     gym_id: mo-MountainCar-v0
     num_envs: 16
     total_timesteps: 50000
+  QLUNARLANDER:
+    gym_id: mo-LunarLander-v2
+    num_envs: 16
+    total_timesteps: 100000
 
 Dylam:
   LUNARLANDER:
@@ -185,6 +189,16 @@ Dylam:
     num_rewards: 3
     r_max: [-50, -10, -40]
     r_min: [-200, -200, -200]
+  QLUNARLANDER:
+    gym_id: mo-LunarLander-v2
+    num_envs: 16
+    total_timesteps: 100000
+    stratified: True
+    dylam: True
+    num_rewards: 4
+    r_max: [1000, -100, -20, 1]
+    r_min: [-1000, -1000, -1000, -1]
+    dylam_rb: 100
 
 GPILS:
   LUNARLANDER:

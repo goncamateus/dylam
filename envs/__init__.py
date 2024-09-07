@@ -63,3 +63,11 @@ register(
     entry_point="envs.mountain_car:MountainCar",
      max_episode_steps=200,
 )
+
+register(
+    id="mo-LunarLander-v2",
+    entry_point="envs.lunar_lander:LunarLanderStrat",
+    kwargs={"continuous": False},
+    max_episode_steps=1000,
+    reward_threshold=200,
+)
