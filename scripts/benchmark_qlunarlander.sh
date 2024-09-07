@@ -13,5 +13,10 @@ source $HOME/doc/c1/bin/activate
 which python
 cd $HOME/doc/dylam
 export MUJOCO_GL=osmesa
-# Run the script
-python train_dqn.py --env $1 --setup $2 --capture-video --video-freq 20 --track
+for method in "baseline" "dylam"
+do
+    for i in {1..5}:
+    do
+        python train.py --env qlunarlander --setup ${method} --capture-video --video-freq 49 --track
+    done
+done
