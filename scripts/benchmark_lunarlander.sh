@@ -17,6 +17,6 @@ for method in "baseline" "dylam"
 do
     for i in {1..5}:
     do
-        python train.py --env lunarlander --setup ${method} --capture-video --video-freq 49 --track
+        python train.py --env qlunarlander --setup ${method} --capture-video --video-freq 49 --track
     done
 done
