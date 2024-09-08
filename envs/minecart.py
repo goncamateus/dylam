@@ -27,4 +27,4 @@ class MinecartEnv(Minecart):
         self.cumulative_info["reward_Second_minerium"] += reward[1]
         self.cumulative_info["reward_Fuel"] += reward[2]
         self.cumulative_info["reward_Original"] += reward.sum()
-        return obs, reward, termination, truncation, info
+        return obs, reward, termination, truncation, self.cumulative_info
