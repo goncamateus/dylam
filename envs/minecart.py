@@ -8,7 +8,7 @@ class MinecartEnv(Minecart):
             "reward_First_minerium": 0,
             "reward_Second_minerium": 0,
             "reward_Fuel": 0,
-            "reward_Original": 0,
+            "Original_reward": 0,
         }
 
     def reset(self, *args, **kwargs):
@@ -17,7 +17,7 @@ class MinecartEnv(Minecart):
             "reward_First_minerium": 0,
             "reward_Second_minerium": 0,
             "reward_Fuel": 0,
-            "reward_Original": 0,
+            "Original_reward": 0,
         }
         return obs, info
 
@@ -26,5 +26,5 @@ class MinecartEnv(Minecart):
         self.cumulative_info["reward_First_minerium"] += reward[0]
         self.cumulative_info["reward_Second_minerium"] += reward[1]
         self.cumulative_info["reward_Fuel"] += reward[2]
-        self.cumulative_info["reward_Original"] += reward.sum()
+        self.cumulative_info["Original_reward"] += reward.sum()
         return obs, reward, termination, truncation, self.cumulative_info
