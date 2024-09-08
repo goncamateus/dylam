@@ -27,6 +27,8 @@ class WandbResultLogger:
             for info in infos["final_info"]:
                 if info:
                     if "episode" in info:
+                        if "Original_reward" not in info:
+                            info["Original_reward"] = info["episode"]["r"]
                         print(
                             f"Episode {self._episode}: episodic_return={info['Original_reward']}"
                         )

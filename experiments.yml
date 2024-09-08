@@ -61,6 +61,10 @@ Baseline:
     gym_id: mo-LunarLander-v2
     num_envs: 16
     total_timesteps: 100000
+  MINECART:
+    gym_id: mo-Minecart-v0
+    num_envs: 16
+    total_timesteps: 500000
 
 Dylam:
   LUNARLANDER:
