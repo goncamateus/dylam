@@ -3,26 +3,32 @@ Baseline:
     gym_id: mo-LunarLanderContinuous-v2
     num_envs: 16
     total_timesteps: 100000
+
   HOPPER:
     gym_id: mo-Hopper-v4
     num_envs: 16
     total_timesteps: 500000
+
   PENDULUM:
     gym_id: mo-Pendulum-v1
     num_envs: 16
     total_timesteps: 50000
+
   HUMANOID:
     gym_id: mo-Humanoid-v4
     num_envs: 16
     total_timesteps: 500000
+
   HALFCHEETAH:
     gym_id: mo-HalfCheetah-v4
     num_envs: 16
     total_timesteps: 500000
+
   HALFCHEETAHEF:
     gym_id: mo-HalfCheetahEF-v4
     num_envs: 16
     total_timesteps: 500000
+
   VSS:
     gym_id: mo-VSS-v0
     num_envs: 20
@@ -36,6 +42,7 @@ Baseline:
     n_hidden: 4
     gamma: 0.95
     update_frequency: 1
+
   VSSEF:
     gym_id: mo-VSSEF-v0
     num_envs: 20
@@ -49,22 +56,28 @@ Baseline:
     n_hidden: 4
     gamma: 0.95
     update_frequency: 1
+
   TAXI:
     gym_id: mo-Taxi-v3
     gamma: 0.9999
     q_lr: 0.1
-  MOUNTAINCAR:
-    gym_id: mo-MountainCar-v0
-    num_envs: 16
-    total_timesteps: 50000
+    epsilon: 0.8
+
   QLUNARLANDER:
     gym_id: mo-LunarLander-v2
     num_envs: 16
     total_timesteps: 100000
+    epsilon: 0.8
+
   MINECART:
     gym_id: mo-Minecart-v0
     num_envs: 16
-    total_timesteps: 500000
+    total_timesteps: 200000
+    gamma: 0.98
+    target_network_frequency: 200
+    tau: 0.00001
+    epsilon: 1.0
+    epsilon_decay_factor: 0.99997
 
 Dylam:
   LUNARLANDER:
@@ -77,6 +90,7 @@ Dylam:
     r_max: [1000, -100, -20, 1]
     r_min: [-1000, -1000, -1000, -1]
     dylam_rb: 100
+
   HOPPER:
     gym_id: mo-Hopper-v4
     num_envs: 16
@@ -88,6 +102,7 @@ Dylam:
     r_min: [0, -200, -250, 0]
     dylam_rb: 100
     dylam_tau: 0.9999
+
   PENDULUM:
     gym_id: mo-Pendulum-v1
     num_envs: 16
@@ -99,6 +114,7 @@ Dylam:
     r_min: [-100, -100, -100]
     dylam_rb: 100
     dylam_tau: 0.9999
+
   HUMANOID:
     gym_id: mo-Humanoid-v4
     num_envs: 16
@@ -110,6 +126,7 @@ Dylam:
     r_min: [0, -1000, 0]
     dylam_rb: 100
     dylam_tau: 0.9999
+
   HALFCHEETAH:
     gym_id: mo-HalfCheetah-v4
     num_envs: 16
@@ -121,6 +138,7 @@ Dylam:
     r_min: [0, -800]
     dylam_rb: 500
     dylam_tau: 0.9999
+
   HALFCHEETAHEF:
     gym_id: mo-HalfCheetahEF-v4
     num_envs: 16
@@ -132,6 +150,7 @@ Dylam:
     r_min: [0, 0]
     dylam_rb: 500
     dylam_tau: 0.9999
+
   VSS:
     gym_id: mo-VSS-v0
     num_envs: 20
@@ -152,6 +171,7 @@ Dylam:
     r_min: [0, 0, -600]
     dylam_rb: 500
     dylam_tau: 0.9999
+
   VSSEF:
     gym_id: mo-VSSEF-v0
     num_envs: 20
@@ -172,46 +192,47 @@ Dylam:
     r_min: [0, 0, 0]
     dylam_rb: 500
     dylam_tau: 0.9999
+
   TAXI:
     gym_id: mo-Taxi-v3
+    gamma: 0.9999
+    q_lr: 0.1
+    epsilon: 0.8
     stratified: True
+    num_rewards: 3
     dylam: True
     lambdas: [0.3333, 0.3333, 0.3333]
     r_max: [0, 1, 0]
     r_min: [-200, 0, -10]
     dylam_tau: 0.995
     dylam_rb: 10
-    num_rewards: 3
-    gamma: 0.9999
-    q_lr: 0.1
-  MOUNTAINCAR:
-    gym_id: mo-MountainCar-v0
-    num_envs: 16
-    total_timesteps: 50000
-    stratified: True
-    dylam: True
-    num_rewards: 3
-    r_max: [-50, -10, -40]
-    r_min: [-200, -200, -200]
+
   QLUNARLANDER:
     gym_id: mo-LunarLander-v2
     num_envs: 16
     total_timesteps: 100000
+    epsilon: 0.8
     stratified: True
     dylam: True
     num_rewards: 4
     r_max: [1000, -100, -20, 1]
     r_min: [-1000, -1000, -1000, -1]
     dylam_rb: 100
+
   MINECART:
     gym_id: mo-Minecart-v0
     num_envs: 16
-    total_timesteps: 500000
+    total_timesteps: 200000
+    gamma: 0.98
+    target_network_frequency: 200
+    tau: 0.00001
+    epsilon: 1.0
+    epsilon_decay_factor: 0.99997
     stratified: True
     dylam: True
     num_rewards: 3
-    r_max: [1, 1, 0]
-    r_min: [0, 0, -70]
+    r_max: [1.5, 1.5, 0]
+    r_min: [0, 0, -20]
 
 GPILS:
   LUNARLANDER:
@@ -267,8 +288,9 @@ GPILS:
 Drq:
   TAXI:
     gym_id: mo-Taxi-v3
-    stratified: True
-    lambdas: [0.3333, 0.3333, 0.3333]
-    num_rewards: 3
+    epsilon: 0.8
     gamma: 0.9999
     q_lr: 0.1
+    stratified: True
+    num_rewards: 3
+    lambdas: [0.3333, 0.3333, 0.3333]

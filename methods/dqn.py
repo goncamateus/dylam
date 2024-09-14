@@ -36,7 +36,7 @@ class DQN(nn.Module):
         self.target_q_network = TargetCritic(self.q_network)
         self.optimizer = Adam(self.q_network.parameters(), lr=args.q_lr)
 
-        self.epsilon = 0.8
+        self.epsilon = args.epsilon
         self.epsilon_decay_factor = args.epsilon_decay_factor
         self.epsilon_min = 0.05
 

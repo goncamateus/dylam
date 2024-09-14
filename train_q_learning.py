@@ -21,7 +21,7 @@ def get_agent_type(args):
 
 
 def train(args, exp_name, logger: QLogger):
-    env = q_make_env(args, 0, exp_name)()
+    env = q_make_env(args, exp_name)
     agent_type = get_agent_type(args)
     agent = agent_type(args, env.observation_space, env.action_space)
 
