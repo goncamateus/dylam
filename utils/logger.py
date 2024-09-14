@@ -27,6 +27,8 @@ class WandbResultLogger:
             for info in infos["final_info"]:
                 if info:
                     if "episode" in info:
+                        if "Original_reward" not in info:
+                            info["Original_reward"] = info["episode"]["r"]
                         print(
                             f"Episode {self._episode}: episodic_return={info['Original_reward']}"
                         )
@@ -114,3 +116,20 @@ class QLogger(WandbResultLogger):
             for file in os.listdir(f"models/{self.run.name}"):
                 if file.endswith(".npy"):
                     self.artifact.add_file(f"models/{self.run.name}/{file}")
+
+
+class DQNLogger(WandbResultLogger):
+    def __init__(self, name, params):
+        params.method = "dqn"
+        super().__init__(name, params)
+
+    def log_losses(self, losses):
+        if "qf_loss" in losses:
+            self.log.update({"losses/qf_loss": losses["qf_loss"]})
+
+        if "qf_loss_0" in losses:
+            for i in range(len(losses)):
+                self.log.update({f"losses/qf_loss_{i}": losses[f"qf_loss_{i}"]})
+
+    def log_artifact(self):
+        self.artifact.add_file(f"models/{self.run.name}/q_network.pt")

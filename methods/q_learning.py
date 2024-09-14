@@ -6,7 +6,6 @@ from utils.buffer import StratLastRewards
 
 class QLearning:
     def __init__(self, args, observation_space, action_space):
-        # alpha=1e-1, gamma=0.99, strategy=0
         self.obs_size = observation_space.n
         self.action_size = action_space.n
         self.q_table = np.zeros((self.obs_size, self.action_size))
@@ -75,7 +74,7 @@ class QLearning:
         self.n_counter[observation][action] += 1
         return action
 
-    def update_policy(self, observation, action, reward, next_obs):
+    def update(self, observation, action, reward, next_obs):
         reward = reward * self.reward_scaling
 
         update = reward + self.gamma * (
@@ -94,7 +93,7 @@ class QLearning:
         self.q_table = np.load(path + "q_table.npy")
 
 
-class drQ(QLearning):
+class DRQ(QLearning):
 
     def __init__(self, args, observation_space, action_space):
         super().__init__(args, observation_space, action_space)
@@ -116,7 +115,7 @@ class drQ(QLearning):
                 self.components_q[i][observation][action] + self.alpha * update
             )
 
-    def update_policy(self, observation, action, reward, next_obs):
+    def update(self, observation, action, reward, next_obs):
         reward = reward * self.reward_scaling
         self.update_component_tables(observation, action, reward, next_obs)
         Qs = 0
@@ -133,7 +132,7 @@ class drQ(QLearning):
         self.components_q = np.load(path + "components_q.npy")
 
 
-class QDyLam(drQ):
+class QDyLam(DRQ):
 
     def __init__(self, args, observation_space, action_space):
         super().__init__(args, observation_space, action_space)
@@ -178,7 +177,7 @@ class QDyLam(drQ):
         self.n_counter[observation][action] += 1
         return action
 
-    def update_policy(self, observation, action, reward, next_obs):
+    def update(self, observation, action, reward, next_obs):
         reward = reward * self.reward_scaling
         self.update_component_tables(observation, action, reward, next_obs)
 

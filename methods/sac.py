@@ -196,7 +196,6 @@ class SACStrat(SAC):
         log_sig_min=-5,
         log_sig_max=2,
     ):
-        self.is_dylam = args.dylam
         super().__init__(
             args, observation_space, action_space, log_sig_min, log_sig_max
         )

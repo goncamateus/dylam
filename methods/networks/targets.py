@@ -29,6 +29,7 @@ class TargetNet:
 
 class TargetCritic(TargetNet):
     def __call__(self, S, A, lambdas=torch.Tensor([])):
+        lambdas = lambdas.to(S.device)
         output = (
             self.target_model(S, A, lambdas)
             if isinstance(self.model, QNetwork)
