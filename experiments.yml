@@ -59,6 +59,7 @@ Baseline:
 
   TAXI:
     gym_id: mo-Taxi-v3
+    total_episodes: 2000
     gamma: 0.9999
     q_lr: 0.1
     epsilon: 0.8
@@ -195,6 +196,7 @@ Dylam:
 
   TAXI:
     gym_id: mo-Taxi-v3
+    total_episodes: 2000
     gamma: 0.9999
     q_lr: 0.1
     epsilon: 0.8
@@ -288,6 +290,7 @@ GPILS:
 Drq:
   TAXI:
     gym_id: mo-Taxi-v3
+    total_episodes: 2000
     epsilon: 0.8
     gamma: 0.9999
     q_lr: 0.1
