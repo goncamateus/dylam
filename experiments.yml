@@ -204,7 +204,7 @@ Dylam:
     num_rewards: 3
     dylam: True
     lambdas: [0.3333, 0.3333, 0.3333]
-    r_max: [0, 1, 0]
+    r_max: [-20, 1, 0]
     r_min: [-200, 0, -10]
     dylam_tau: 0.995
     dylam_rb: 10
