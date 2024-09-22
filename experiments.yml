@@ -220,6 +220,7 @@ Dylam:
     r_max: [1000, -100, -20, 1]
     r_min: [-1000, -1000, -1000, -1]
     dylam_rb: 100
+    dylam_tau: 0.9999
 
   MINECART:
     gym_id: mo-Minecart-v0
