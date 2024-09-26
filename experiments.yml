@@ -168,8 +168,8 @@ Dylam:
     stratified: True
     dylam: True
     num_rewards: 3
-    r_max: [150, 40, -300]
-    r_min: [0, 0, -600]
+    r_max: [150, 40, -100]
+    r_min: [0, 0, -300]
     dylam_rb: 500
     dylam_tau: 0.9999
 
