@@ -181,8 +181,12 @@ class SAC(nn.Module):
         torch.save(self.critic.state_dict(), path + "critic.pt")
 
     def load(self, path):
-        self.actor.load_state_dict(torch.load(path + "actor.pt", map_location=self.device))
-        self.critic.load_state_dict(torch.load(path + "critic.pt", map_location=self.device))
+        self.actor.load_state_dict(
+            torch.load(path + "actor.pt", map_location=self.device)
+        )
+        self.critic.load_state_dict(
+            torch.load(path + "critic.pt", map_location=self.device)
+        )
         self.actor.eval()
         self.critic.eval()
 
@@ -199,12 +203,7 @@ class SACStrat(SAC):
         super().__init__(
             args, observation_space, action_space, log_sig_min, log_sig_max
         )
-        if args.dylam:
-            self.lambdas = (
-                torch.ones(args.num_rewards).to(self.device) / args.num_rewards
-            )
-        else:
-            self.lambdas = torch.ones(args.num_rewards).to(self.device)
+        self.lambdas = torch.ones(args.num_rewards).to(self.device) / args.num_rewards
         self.r_max = torch.Tensor(args.r_max).to(self.device)
         self.r_min = torch.Tensor(args.r_min).to(self.device)
         self.rew_tau = args.dylam_tau

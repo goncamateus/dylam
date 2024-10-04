@@ -13,7 +13,7 @@ source $HOME/doc/$1/bin/activate
 which python
 cd $HOME/doc/dylam
 export MUJOCO_GL=osmesa
-for method in "baseline" "dylam"
+for method in "baseline" "dylam" "drq"
 do
     for i in {1..5}:
     do
