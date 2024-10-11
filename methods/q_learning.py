@@ -77,13 +77,14 @@ class QLearning:
     def update(self, observation, action, reward, next_obs):
         reward = reward * self.reward_scaling
 
-        update = reward + self.gamma * (
+        update_value = reward + self.gamma * (
             self.q_table[next_obs].max() - self.q_table[observation][action]
         )
         self.q_table[observation][action] = (
-            self.q_table[observation][action] + self.alpha * update
+            self.q_table[observation][action] + self.alpha * update_value
         )
         self.total_count += 1
+        return update_value
 
     def save(self, path):
         os.makedirs(path, exist_ok=True)
@@ -109,19 +110,25 @@ class DRQ(QLearning):
             )
             return q_value
 
+        values = np.zeros(self.num_rewards)
         for i in range(self.num_rewards):
-            update = reward[i] + self.gamma * get_bootstrap_q(i)
+            update_value = reward[i] + self.gamma * get_bootstrap_q(i)
+            values[i] = update_value
             self.components_q[i][observation][action] = (
-                self.components_q[i][observation][action] + self.alpha * update
+                self.components_q[i][observation][action] + self.alpha * update_value
             )
+        return values
 
     def update(self, observation, action, reward, next_obs):
         reward = reward * self.reward_scaling
-        self.update_component_tables(observation, action, reward, next_obs)
+        update_values = self.update_component_tables(
+            observation, action, reward, next_obs
+        )
         Qs = 0
         for i in range(self.num_rewards):
             Qs += self.lambdas[i] * self.components_q[i][observation][action]
         self.q_table[observation][action] = Qs
+        return update_values
 
     def save(self, path):
         super().save(path)
@@ -179,7 +186,7 @@ class QDyLam(DRQ):
 
     def update(self, observation, action, reward, next_obs):
         reward = reward * self.reward_scaling
-        self.update_component_tables(observation, action, reward, next_obs)
+        return self.update_component_tables(observation, action, reward, next_obs)
 
     def add_episode_reward(self, reward, termination, truncation):
         if self.num_rewards == 1:

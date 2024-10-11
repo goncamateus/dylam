@@ -117,6 +117,13 @@ class QLogger(WandbResultLogger):
                 if file.endswith(".npy"):
                     self.artifact.add_file(f"models/{self.run.name}/{file}")
 
+    def log_losses(self, losses):
+        if len(losses) > 1:
+            for i in range(len(losses)):
+                self.log.update({f"losses/qf_update_{i}": losses[f"qf_update_{i}"]})
+        else:
+            self.log.update({"losses/qf_update": losses["qf_update"]})
+
 
 class DQNLogger(WandbResultLogger):
     def __init__(self, name, params):

@@ -38,7 +38,14 @@ def train(args, exp_name, logger: QLogger):
             if args.dylam:
                 agent.add_episode_reward(reward, termination, truncation)
 
-            agent.update(obs, action, reward, next_obs)
+            update_values = agent.update(obs, action, reward, next_obs)
+            loss_dict = {}
+            if args.stratified:
+                for i in range(args.num_rewards):
+                    loss_dict[f"qf_update_{i}"] = update_values[i]
+            else:
+                loss_dict["qf_update"] = update_values
+            logger.log_losses(loss_dict)
             obs = next_obs
 
         if args.dylam:
