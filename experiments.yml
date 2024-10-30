@@ -342,4 +342,28 @@ Drq:
     update_frequency: 1
     stratified: True
     num_rewards: 3
-    comp_names: ["Move", "Ball", "Energy"]
+
+Curriculum:
+  VSSEF:
+    gym_id: mo-VSSEF-v0
+    num_envs: 20
+    total_timesteps: 500000
+    learning_starts: 5000
+    tau: 0.999
+    policy_frequency: 1
+    policy_lr: 0.0001
+    q_lr: 0.0001
+    batch_size: 256
+    n_hidden: 4
+    gamma: 0.95
+    update_frequency: 1
+    stratified: True
+    dylam: True
+    num_rewards: 2
+    r_max: [40, 30]
+    r_min: [0, 0]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    ori_num_rewards: 3
+    considered_indices: [1, 2]
+    q_path: "models/pre-trained/VSSEF/critic.pt"
