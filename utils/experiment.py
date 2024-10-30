@@ -102,6 +102,9 @@ def base_hyperparams():
         "softmax_temperature": 1,
         "total_episodes": 1000,
         "comp_names": [],
+        "ori_num_rewards": 1,
+        "considered_indices": [],
+        "q_path": None,
     }
     return hyper_params
 
