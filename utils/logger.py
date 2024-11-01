@@ -71,13 +71,14 @@ class SACLogger(WandbResultLogger):
         super().__init__(name, params)
 
     def log_losses(self, losses):
-        self.log.update(
-            {
-                "losses/Value1_loss": losses["qf1_loss"].item(),
-                "losses/Value2_loss": losses["qf2_loss"].item(),
-                "losses/alpha": losses["alpha"],
-            }
-        )
+        if losses["qf1_loss"] is not None:
+            self.log.update(
+                {
+                    "losses/Value1_loss": losses["qf1_loss"].item(),
+                    "losses/Value2_loss": losses["qf2_loss"].item(),
+                    "losses/alpha": losses["alpha"],
+                }
+            )
         if losses["policy_loss"] is not None:
             self.log.update({"losses/policy_loss": losses["policy_loss"].item()})
             if losses["alpha_loss"] is not None:
