@@ -54,10 +54,11 @@ def train(args, exp_name, logger: SACLogger):
             global_step > args.learning_starts
             and global_step % args.update_frequency == 0
         ):
-            update_actor = global_step % args.policy_frequency == 0
+            update_actor = not args.train_critic
+            update_actor |= global_step % args.policy_frequency == 0
             losses = agent.update(args.batch_size, update_actor)
 
-            if global_step % args.target_network_frequency == 0:
+            if args.train_critic and global_step % args.target_network_frequency == 0:
                 agent.critic_target.sync(args.tau)
 
             if global_step % 100 == 0:

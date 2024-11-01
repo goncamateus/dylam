@@ -104,7 +104,9 @@ def base_hyperparams():
         "comp_names": [],
         "ori_num_rewards": 1,
         "considered_indices": [],
-        "q_path": None,
+        "model_path": None,
+        "train_critic": False,
+        "load_actor": False,
     }
     return hyper_params
 
