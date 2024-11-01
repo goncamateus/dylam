@@ -103,6 +103,9 @@ def base_hyperparams():
         "total_episodes": 1000,
         "ori_num_rewards": 1,
         "considered_indices": [],
+        "model_path": None,
+        "train_critic": False,
+        "load_actor": False,
         "q_path": None,
         "comp_names": [],
     }

@@ -19,7 +19,8 @@ class SACCur(SACStrat):
         super().__init__(
             args, observation_space, action_space, log_sig_min, log_sig_max
         )
-        self.load_pretrained(args.q_path)
+        self.train_critic = args.train_critic
+        self.load_pretrained(args.model_path, load_actor=args.load_actor)
 
     def get_networks(self):
         actor = GaussianPolicy(
@@ -39,11 +40,16 @@ class SACCur(SACStrat):
         )
         return actor, critic
 
-    def load_pretrained(self, q_path):
-        if q_path is not None:
-            q_dict = torch.load(q_path, weights_only=True)
+    def load_pretrained(self, model_path, load_actor=False):
+        if model_path is not None:
+            q_dict = torch.load(model_path + "/critic.pt", weights_only=True)
             self.critic.load_state_dict(q_dict)
+            if not self.train_critic:
+                self.critic.eval()
             self.critic_target = TargetCritic(self.critic)
+            if load_actor:
+                actor_dict = torch.load(model_path + "/actor.pt", weights_only=True)
+                self.actor.load_state_dict(actor_dict)
 
     def update_actor(self, state_batch):
         pi, log_pi, _ = self.actor.sample(state_batch)
@@ -64,3 +70,25 @@ class SACCur(SACStrat):
         alpha_loss = self.update_alpha(state_batch)
 
         return policy_loss, alpha_loss
+
+    def update(self, batch_size, update_actor=False):
+        (
+            state_batch,
+            action_batch,
+            reward_batch,
+            next_state_batch,
+            done_batch,
+        ) = self.replay_buffer.sample(batch_size)
+
+        qf1_loss, qf2_loss = None, None
+        if self.train_critic:
+            reward_batch = reward_batch * self.reward_scaling
+            qf1_loss, qf2_loss = self.update_critic(
+                state_batch, action_batch, reward_batch, next_state_batch, done_batch
+            )
+        policy_loss = None
+        alpha_loss = None
+        if update_actor:
+            policy_loss, alpha_loss = self.update_actor(state_batch)
+
+        return policy_loss, qf1_loss, qf2_loss, alpha_loss
