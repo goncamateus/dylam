@@ -367,5 +367,5 @@ Curriculum:
     ori_num_rewards: 3
     considered_indices: [1, 2]
     model_path: "models/pre-trained/VSSEF/"
-    train_critic: True
+    train_critic: False
     load_actor: False
