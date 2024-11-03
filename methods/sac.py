@@ -51,7 +51,7 @@ class SAC(nn.Module):
             ).item()
             self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
             self.alpha = self.log_alpha.exp().item()
-            self.alpha_optim = Adam([self.log_alpha], lr=args.q_lr)
+            self.alpha_optim = Adam([self.log_alpha], lr=args.policy_lr)
         else:
             self.alpha = args.alpha
 
