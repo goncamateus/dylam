@@ -25,7 +25,7 @@ def train(args, exp_name, logger: SACLogger):
 
     obs, _ = envs.reset()
     for global_step in range(args.total_timesteps):
-        if global_step < args.learning_starts:
+        if not args.load_actor and global_step < args.learning_starts:
             actions = np.array(
                 [envs.single_action_space.sample() for _ in range(args.num_envs)]
             )
