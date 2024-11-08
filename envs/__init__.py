@@ -77,3 +77,9 @@ register(
     entry_point="envs.minecart:MinecartEnv",
     max_episode_steps=1000,
 )
+
+register(
+    id="mo-MAVSS-v0",
+    entry_point="envs.ma_vss:MAVSS",
+    max_episode_steps=400,
+)
