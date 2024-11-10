@@ -90,6 +90,8 @@ class SACLogger(WandbResultLogger):
                     "losses/Original_Value2_loss": losses["ori_qf2_loss"].item(),
                 }
             )
+        if "learning_rate" in losses:
+            self.log.update({"losses/learning_rate": losses["learning_rate"]})
 
     def log_artifact(self):
         self.artifact.add_file(f"models/{self.run.name}/actor.pt")

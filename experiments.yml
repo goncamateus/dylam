@@ -389,4 +389,4 @@ Curriculum:
     considered_indices: [1, 2]
     model_path: "models/pre-trained/VSSEF/"
     train_critic: False
-    load_actor: False
+    load_actor: True
