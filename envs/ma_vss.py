@@ -1,8 +1,11 @@
+import random
 from gymnasium.spaces import Box
 import numpy as np
 from rsoccer_gym.Entities import Robot
 
 from envs.vss import VSSStratEnv
+from rsoccer_gym.Entities import Frame, Robot, Ball
+from rsoccer_gym.Utils import KDTree
 
 
 class MAVSS(VSSStratEnv):
@@ -10,7 +13,7 @@ class MAVSS(VSSStratEnv):
     def __init__(self, render_mode=None):
         super().__init__(render_mode=render_mode)
         self.action_space = Box(low=-1, high=1, shape=(4,))
-        self.reward_dim = 3
+        self.reward_dim = 4
         self.reward_space = Box(low=-1, high=1, shape=(self.reward_dim,))
         self.cumulative_reward_info = {
             "reward_Goal": 0,
@@ -18,14 +21,22 @@ class MAVSS(VSSStratEnv):
             "reward_Agent1/Ball": 0,
             "reward_Agent1/Energy": 0,
             "reward_Agent1/Efficiency": 0,
+            "reward_Agent1/Fault": 0,
             "reward_Agent2/Move": 0,
             "reward_Agent2/Ball": 0,
             "reward_Agent2/Energy": 0,
             "reward_Agent2/Efficiency": 0,
+            "reward_Agent2/Fault": 0,
             "reward_Goal_blue": 0,
             "reward_Goal_yellow": 0,
             "Original_reward": 0,
         }
+        self.penalty_rect = np.array(
+            [
+                [0.6, 0.35],
+                [0.75, -0.35],
+            ]
+        )
 
     def reset(self, *, seed=None, options=None):
         res = super().reset(seed=seed, options=options)
@@ -35,10 +46,12 @@ class MAVSS(VSSStratEnv):
             "reward_Agent1/Ball": 0,
             "reward_Agent1/Energy": 0,
             "reward_Agent1/Efficiency": 0,
+            "reward_Agent1/Fault": 0,
             "reward_Agent2/Move": 0,
             "reward_Agent2/Ball": 0,
             "reward_Agent2/Energy": 0,
             "reward_Agent2/Efficiency": 0,
+            "reward_Agent2/Fault": 0,
             "reward_Goal_blue": 0,
             "reward_Goal_yellow": 0,
             "Original_reward": 0,
@@ -144,9 +157,26 @@ class MAVSS(VSSStratEnv):
         energy_penalty = -(en_penalty_1 + en_penalty_2)
         return energy_penalty / 92
 
+    def _is_attack_fault(self):
+        def is_in_penalty(x, y):
+            return (
+                self.penalty_rect[0][0] < x
+                and self.penalty_rect[1][1] < y < self.penalty_rect[0][1]
+            )
+        def is_less_then_10_cm_diff(pos1, pos2):
+            return np.linalg.norm(np.array(pos1) - np.array(pos2)) < 0.25
+        pos_one = [self.frame.robots_blue[0].x, self.frame.robots_blue[0].y]
+        pos_two = [self.frame.robots_blue[1].x, self.frame.robots_blue[1].y]
+        one_in = is_in_penalty(self.frame.robots_blue[0].x, self.frame.robots_blue[0].y)
+        two_in = is_in_penalty(self.frame.robots_blue[1].x, self.frame.robots_blue[1].y)
+        ball_in = is_in_penalty(self.frame.ball.x, self.frame.ball.y)
+        together = is_less_then_10_cm_diff(pos_one, pos_two)
+        return one_in and two_in and ball_in and together
+
     def _calculate_reward_and_done(self):
-        reward = np.zeros(3, dtype=np.float32)
+        reward = np.zeros(self.reward_dim, dtype=np.float32)
         goal = False
+        fault = False
         # Check if goal ocurred
         if self.frame.ball.x > (self.field.length / 2):
             self.cumulative_reward_info["reward_Goal"] += 1
@@ -156,40 +186,43 @@ class MAVSS(VSSStratEnv):
             self.cumulative_reward_info["reward_Goal"] -= 1
             self.cumulative_reward_info["reward_Goal_yellow"] += 1
             goal = True
-        else:
-            if self.last_frame is not None:
-                # Calculate ball potential
-                grad_ball_potential = self.__ball_grad()
-                efficiencies = []
-                for i in [0, 1]:
-                    # Calculate Move ball
-                    move_reward = self.__move_reward(i)
-                    # Calculate Energy penalty
-                    energy_penalty = self.__energy_penalty(i)
-                    # Calculate efficiency reward
-                    efficiency_reward = self.__efficiency_reward(
-                        move_reward, -energy_penalty
-                    )
-                    efficiencies.append(efficiency_reward)
-                    self.cumulative_reward_info[
-                        f"reward_Agent{i+1}/Ball"
-                    ] += grad_ball_potential
-                    self.cumulative_reward_info[
-                        f"reward_Agent{i+1}/Move"
-                    ] += move_reward
-                    self.cumulative_reward_info[
-                        f"reward_Agent{i+1}/Energy"
-                    ] += energy_penalty
-                    self.cumulative_reward_info[
-                        f"reward_Agent{i+1}/Efficiency"
-                    ] += efficiency_reward
-                reward += np.array(
-                    [
-                        grad_ball_potential,
-                        efficiencies[0],
-                        efficiencies[1],
-                    ]
+        elif self._is_attack_fault():
+            fault = True
+            self.cumulative_reward_info["reward_Agent1/Fault"] = 1
+            self.cumulative_reward_info["reward_Agent2/Fault"] = 1
+            goal = True
+        if self.last_frame is not None:
+            # Calculate ball potential
+            grad_ball_potential = self.__ball_grad()
+            efficiencies = []
+            for i in [0, 1]:
+                # Calculate Move ball
+                move_reward = self.__move_reward(i)
+                # Calculate Energy penalty
+                energy_penalty = self.__energy_penalty(i)
+                # Calculate efficiency reward
+                efficiency_reward = self.__efficiency_reward(
+                    move_reward, -energy_penalty
                 )
-                self.cumulative_reward_info["Original_reward"] += np.sum(reward)
+                efficiencies.append(efficiency_reward)
+                self.cumulative_reward_info[
+                    f"reward_Agent{i+1}/Ball"
+                ] += grad_ball_potential
+                self.cumulative_reward_info[f"reward_Agent{i+1}/Move"] += move_reward
+                self.cumulative_reward_info[
+                    f"reward_Agent{i+1}/Energy"
+                ] += energy_penalty
+                self.cumulative_reward_info[
+                    f"reward_Agent{i+1}/Efficiency"
+                ] += efficiency_reward
+            reward += np.array(
+                [
+                    grad_ball_potential,
+                    efficiencies[0],
+                    efficiencies[1],
+                    -1 if fault else 0,
+                ]
+            )
+            self.cumulative_reward_info["Original_reward"] += np.sum(reward)
 
         return reward, goal

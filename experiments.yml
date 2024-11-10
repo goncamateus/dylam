@@ -205,7 +205,7 @@ Dylam:
   MAVSS:
     gym_id: mo-MAVSS-v0
     num_envs: 20
-    total_timesteps: 1200000
+    total_timesteps: 3000000
     learning_starts: 5000
     tau: 0.999
     policy_frequency: 1
@@ -217,9 +217,9 @@ Dylam:
     update_frequency: 1
     stratified: True
     dylam: True
-    num_rewards: 3
-    r_max: [40, 30, 30]
-    r_min: [0, 0, 0]
+    num_rewards: 4
+    r_max: [40, 30, 30, 0]
+    r_min: [0, 0, 0, -0.5]
     dylam_rb: 500
     dylam_tau: 0.9999
 
