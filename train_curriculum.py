@@ -69,6 +69,8 @@ def train(args, exp_name, logger: SACLogger):
                     "alpha": agent.alpha,
                     "alpha_loss": losses[3],
                 }
+                if args.load_actor:
+                    loss_dict["learning_rate"] = agent.scheduler.get_last_lr()[0]
                 logger.log_losses(loss_dict)
                 if args.dylam:
                     logger.log_lambdas(agent.lambdas)

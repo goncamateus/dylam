@@ -3,6 +3,7 @@ import torch
 from methods.networks.architectures import GaussianPolicy, DoubleQNetwork
 from methods.networks.targets import TargetCritic
 from methods.sac import SACStrat
+from torch.optim import lr_scheduler
 
 
 class SACCur(SACStrat):
@@ -20,6 +21,15 @@ class SACCur(SACStrat):
             args, observation_space, action_space, log_sig_min, log_sig_max
         )
         self.train_critic = args.train_critic
+        self.scheduler = None
+        self.scheduler_alpha = None
+        if args.load_actor:
+            self.scheduler = lr_scheduler.LinearLR(
+                self.actor_optim, start_factor=args.policy_lr, total_iters=100000
+            )
+            self.scheduler_alpha = lr_scheduler.LinearLR(
+                self.alpha_optim, start_factor=args.policy_lr, total_iters=100000
+            )
         self.load_pretrained(args.model_path, load_actor=args.load_actor)
 
     def get_networks(self):
@@ -90,5 +100,7 @@ class SACCur(SACStrat):
         alpha_loss = None
         if update_actor:
             policy_loss, alpha_loss = self.update_actor(state_batch)
-
+        if self.scheduler is not None:
+            self.scheduler.step()
+            self.scheduler_alpha.step()
         return policy_loss, qf1_loss, qf2_loss, alpha_loss
