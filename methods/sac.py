@@ -4,7 +4,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from torch.optim import Adam
 from methods.networks.architectures import GaussianPolicy, DoubleQNetwork
 from methods.networks.targets import TargetCritic
@@ -37,23 +36,7 @@ class SAC(nn.Module):
             "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
         )
         self.actor, self.critic = self.get_networks()
-        self.critic_target = TargetCritic(self.critic)
-        self.actor_optim = Adam(self.actor.parameters(), lr=args.policy_lr)
-        self.critic_optim = Adam(self.critic.parameters(), lr=args.q_lr)
-
-        # Automatic entropy tuning
-        self.target_entropy = None
-        self.log_alpha = None
-        self.alpha_optim = None
-        if args.autotune:
-            self.target_entropy = -torch.prod(
-                torch.Tensor(self.action_space.shape).to(self.device)
-            ).item()
-            self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
-            self.alpha = self.log_alpha.exp().item()
-            self.alpha_optim = Adam([self.log_alpha], lr=args.policy_lr)
-        else:
-            self.alpha = args.alpha
+        self.setup_sac_tools(args)
 
         self.replay_buffer = self.get_replay_buffer(args.buffer_size)
         self.to(self.device)
@@ -75,6 +58,31 @@ class SAC(nn.Module):
             n_hidden=self.n_hidden,
         )
         return actor, critic
+
+    @staticmethod
+    def target_critic(critic):
+        return TargetCritic(critic)
+
+    def setup_optimizers(self, args):
+        self.actor_optim = Adam(self.actor.parameters(), lr=args.policy_lr)
+        self.critic_optim = Adam(self.critic.parameters(), lr=args.q_lr)
+
+    def setup_sac_tools(self, args):
+        self.critic_target = self.target_critic(self.critic)
+        self.setup_optimizers(args)
+        # Automatic entropy tuning
+        self.target_entropy = None
+        self.log_alpha = None
+        self.alpha_optim = None
+        if args.autotune:
+            self.target_entropy = -torch.prod(
+                torch.Tensor(self.action_space.shape).to(self.device)
+            ).item()
+            self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
+            self.alpha = self.log_alpha.exp().item()
+            self.alpha_optim = Adam([self.log_alpha], lr=args.policy_lr)
+        else:
+            self.alpha = args.alpha
 
     def get_replay_buffer(self, buffer_size):
         return ReplayBuffer(buffer_size, self.device)
@@ -211,11 +219,114 @@ class SACStrat(SAC):
         self.last_reward_mean = None
         self.last_episode_rewards = StratLastRewards(args.dylam_rb, self.num_rewards)
 
+    def get_networks(self):
+        actor = GaussianPolicy(
+            self.num_inputs,
+            self.num_actions,
+            log_sig_min=self.log_sig_min,
+            log_sig_max=self.log_sig_max,
+            n_hidden=1,
+            epsilon=self.epsilon,
+            action_space=self.action_space,
+        )
+        critic = []
+        for _ in range(self.num_rewards):
+            critic.append(
+                DoubleQNetwork(
+                    self.num_inputs,
+                    self.num_actions,
+                    n_hidden=self.n_hidden,
+                )
+            )
+        return actor, critic
+
+    @staticmethod
+    def target_critic(critic):
+        return [TargetCritic(c) for c in critic]
+
+    def to(self, device):
+        self.actor.to(device)
+        for c in self.critic:
+            c.to(device)
+        for c in self.critic_target:
+            c.target_model.to(device)
+        return super(SAC, self).to(device)
+
+    def save(self, path):
+        os.makedirs(path, exist_ok=True)
+        torch.save(self.actor.state_dict(), path + "actor.pt")
+        for i, c in enumerate(self.critic):
+            torch.save(c.state_dict(), path + f"critic_{i}.pt")
+
+    def load(self, path):
+        self.actor.load_state_dict(
+            torch.load(path + "actor.pt", map_location=self.device)
+        )
+        for i, c in enumerate(self.critic):
+            c.load_state_dict(
+                torch.load(path + f"critic_{i}.pt", map_location=self.device)
+            )
+
+    def setup_optimizers(self, args):
+        self.actor_optim = Adam(self.actor.parameters(), lr=args.policy_lr)
+        self.critic_optim = [Adam(c.parameters(), lr=args.q_lr) for c in self.critic]
+
+    def update_critic(
+        self, state_batch, action_batch, reward_batch, next_state_batch, done_batch
+    ):
+        with torch.no_grad():
+            next_state_action, next_state_log_pi, next_state_action_probs = (
+                self.actor.sample(next_state_batch)
+            )
+        qf1_losses = []
+        qf2_losses = []
+        for critic_idx in range(self.num_rewards):
+            with torch.no_grad():
+                qf1_next_target, qf2_next_target = self.critic_target[critic_idx](
+                    next_state_batch, next_state_action
+                )
+                min_qf_next_target = torch.min(qf1_next_target, qf2_next_target)
+                min_qf_next_target = min_qf_next_target - self.alpha * next_state_log_pi
+                min_qf_next_target[done_batch] = 0.0
+                next_q_value = (
+                    reward_batch[:, critic_idx].reshape(-1, 1)
+                    + self.gamma * min_qf_next_target
+                )
+            # Two Q-functions to mitigate
+            # positive bias in the policy improvement step
+            qf1, qf2 = self.critic[critic_idx](state_batch, action_batch)
+
+            # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
+            qf1_loss = F.mse_loss(qf1, next_q_value)
+
+            # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
+            qf2_loss = F.mse_loss(qf2, next_q_value)
+
+            # Minimize the loss between two Q-functions
+            qf_loss = qf1_loss + qf2_loss
+            self.critic_optim[critic_idx].zero_grad()
+            qf_loss.backward()
+            self.critic_optim[critic_idx].step()
+            qf1_losses.append(qf1_loss)
+            qf2_losses.append(qf2_loss)
+
+        qf1_loss = torch.stack(qf1_losses).sum()
+        qf2_loss = torch.stack(qf2_losses).sum()
+        return qf1_loss, qf2_loss
+
     def update_actor(self, state_batch):
         pi, log_pi, _ = self.actor.sample(state_batch)
 
-        qf1_pi, qf2_pi = self.critic(state_batch, pi)
-        min_qf_pi = torch.min(qf1_pi, qf2_pi)
+        qfs1_pi = []
+        qfs2_pi = []
+        for critic_idx in range(self.num_rewards):
+            qf1_pi, qf2_pi = self.critic[critic_idx](state_batch, pi)
+            qfs1_pi.append(qf1_pi)
+            qfs2_pi.append(qf2_pi)
+        qfs1_pi = torch.stack(qfs1_pi, 1).to(self.device).squeeze()
+        qfs2_pi = torch.stack(qfs2_pi, 1).to(self.device).squeeze()
+
+        min_qf_pi = torch.min(qfs1_pi, qfs2_pi)
         min_qf_pi = torch.einsum("ij,j->i", min_qf_pi, self.lambdas).view(-1, 1)
 
         # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
