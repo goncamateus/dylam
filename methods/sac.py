@@ -310,8 +310,8 @@ class SACStrat(SAC):
             qf1_losses.append(qf1_loss)
             qf2_losses.append(qf2_loss)
 
-        qf1_loss = torch.stack(qf1_losses).sum()
-        qf2_loss = torch.stack(qf2_losses).sum()
+        qf1_loss = torch.stack(qf1_losses).mean()
+        qf2_loss = torch.stack(qf2_losses).mean()
         return qf1_loss, qf2_loss
 
     def update_actor(self, state_batch):
