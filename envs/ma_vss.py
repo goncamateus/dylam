@@ -1,19 +1,17 @@
-import random
-from gymnasium.spaces import Box
 import numpy as np
-from rsoccer_gym.Entities import Robot
 
 from envs.vss import VSSStratEnv
-from rsoccer_gym.Entities import Frame, Robot, Ball
-from rsoccer_gym.Utils import KDTree
+from gymnasium.spaces import Box
+from rsoccer_gym.Entities import Robot
 
 
 class MAVSS(VSSStratEnv):
 
-    def __init__(self, render_mode=None):
+    def __init__(self, with_fault=False, render_mode=None):
         super().__init__(render_mode=render_mode)
+        self.with_fault = with_fault
         self.action_space = Box(low=-1, high=1, shape=(4,))
-        self.reward_dim = 4
+        self.reward_dim = 5 if with_fault else 4
         self.reward_space = Box(low=-1, high=1, shape=(self.reward_dim,))
         self.cumulative_reward_info = {
             "reward_Goal": 0,
@@ -22,11 +20,13 @@ class MAVSS(VSSStratEnv):
             "reward_Agent1/Energy": 0,
             "reward_Agent1/Efficiency": 0,
             "reward_Agent1/Fault": 0,
+            "reward_Agent1/Collision": 0,
             "reward_Agent2/Move": 0,
             "reward_Agent2/Ball": 0,
             "reward_Agent2/Energy": 0,
             "reward_Agent2/Efficiency": 0,
             "reward_Agent2/Fault": 0,
+            "reward_Agent2/Collision": 0,
             "reward_Goal_blue": 0,
             "reward_Goal_yellow": 0,
             "Original_reward": 0,
@@ -47,11 +47,13 @@ class MAVSS(VSSStratEnv):
             "reward_Agent1/Energy": 0,
             "reward_Agent1/Efficiency": 0,
             "reward_Agent1/Fault": 0,
+            "reward_Agent1/Collision": 0,
             "reward_Agent2/Move": 0,
             "reward_Agent2/Ball": 0,
             "reward_Agent2/Energy": 0,
             "reward_Agent2/Efficiency": 0,
             "reward_Agent2/Fault": 0,
+            "reward_Agent2/Collision": 0,
             "reward_Goal_blue": 0,
             "reward_Goal_yellow": 0,
             "Original_reward": 0,
@@ -163,15 +165,26 @@ class MAVSS(VSSStratEnv):
                 self.penalty_rect[0][0] < x
                 and self.penalty_rect[1][1] < y < self.penalty_rect[0][1]
             )
-        def is_less_then_10_cm_diff(pos1, pos2):
+
+        def is_less_then_25_cm_diff(pos1, pos2):
             return np.linalg.norm(np.array(pos1) - np.array(pos2)) < 0.25
+
         pos_one = [self.frame.robots_blue[0].x, self.frame.robots_blue[0].y]
         pos_two = [self.frame.robots_blue[1].x, self.frame.robots_blue[1].y]
         one_in = is_in_penalty(self.frame.robots_blue[0].x, self.frame.robots_blue[0].y)
         two_in = is_in_penalty(self.frame.robots_blue[1].x, self.frame.robots_blue[1].y)
         ball_in = is_in_penalty(self.frame.ball.x, self.frame.ball.y)
-        together = is_less_then_10_cm_diff(pos_one, pos_two)
+        together = is_less_then_25_cm_diff(pos_one, pos_two)
         return one_in and two_in and ball_in and together
+
+    def _collision_penalty(self):
+        def is_less_then_20_cm_diff(pos1, pos2):
+            return np.linalg.norm(np.array(pos1) - np.array(pos2)) < 0.2
+
+        pos_one = [self.frame.robots_blue[0].x, self.frame.robots_blue[0].y]
+        pos_two = [self.frame.robots_blue[1].x, self.frame.robots_blue[1].y]
+        penalty = -int(is_less_then_20_cm_diff(pos_one, pos_two))
+        return penalty
 
     def _calculate_reward_and_done(self):
         reward = np.zeros(self.reward_dim, dtype=np.float32)
@@ -190,7 +203,8 @@ class MAVSS(VSSStratEnv):
             fault = True
             self.cumulative_reward_info["reward_Agent1/Fault"] = 1
             self.cumulative_reward_info["reward_Agent2/Fault"] = 1
-            goal = True
+            if self.with_fault:
+                goal = True
         if self.last_frame is not None:
             # Calculate ball potential
             grad_ball_potential = self.__ball_grad()
@@ -204,6 +218,8 @@ class MAVSS(VSSStratEnv):
                 efficiency_reward = self.__efficiency_reward(
                     move_reward, -energy_penalty
                 )
+                # Calculate collision penalty
+                collision_penalty = self._collision_penalty()
                 efficiencies.append(efficiency_reward)
                 self.cumulative_reward_info[
                     f"reward_Agent{i+1}/Ball"
@@ -215,14 +231,28 @@ class MAVSS(VSSStratEnv):
                 self.cumulative_reward_info[
                     f"reward_Agent{i+1}/Efficiency"
                 ] += efficiency_reward
-            reward += np.array(
-                [
-                    grad_ball_potential,
-                    efficiencies[0],
-                    efficiencies[1],
-                    -1 if fault else 0,
-                ]
-            )
+                self.cumulative_reward_info[
+                    f"reward_Agent{i+1}/Collision"
+                ] += collision_penalty
+            if self.with_fault:
+                reward += np.array(
+                    [
+                        grad_ball_potential,
+                        efficiencies[0],
+                        efficiencies[1],
+                        collision_penalty,
+                        -1 if fault else 0,
+                    ]
+                )
+            else:
+                reward += np.array(
+                    [
+                        grad_ball_potential,
+                        efficiencies[0],
+                        efficiencies[1],
+                        collision_penalty,
+                    ]
+                )
             self.cumulative_reward_info["Original_reward"] += np.sum(reward)
 
         return reward, goal

@@ -61,7 +61,6 @@ register(
 register(
     id="mo-MountainCar-v0",
     entry_point="envs.mountain_car:MountainCar",
-     max_episode_steps=200,
 )
 
 register(
@@ -81,5 +80,13 @@ register(
 register(
     id="mo-MAVSS-v0",
     entry_point="envs.ma_vss:MAVSS",
+    kwargs={"with_fault": False},
+    max_episode_steps=400,
+)
+
+register(
+    id="mo-MAVSSFault-v0",
+    entry_point="envs.ma_vss:MAVSS",
+    kwargs={"with_fault": True},
     max_episode_steps=400,
 )
