@@ -21,10 +21,13 @@ class SACCur(SACStrat):
             args, observation_space, action_space, log_sig_min, log_sig_max
         )
         self.train_critic = args.train_critic
-        self.scheduler = None
+        self.scheduler_critic = lr_scheduler.LinearLR(
+                self.critic_optim, start_factor=args.q_lr, total_iters=100000
+            )
+        self.scheduler_actor = None
         self.scheduler_alpha = None
         if args.load_actor:
-            self.scheduler = lr_scheduler.LinearLR(
+            self.scheduler_actor = lr_scheduler.LinearLR(
                 self.actor_optim, start_factor=args.policy_lr, total_iters=100000
             )
             self.scheduler_alpha = lr_scheduler.LinearLR(
@@ -96,11 +99,12 @@ class SACCur(SACStrat):
             qf1_loss, qf2_loss = self.update_critic(
                 state_batch, action_batch, reward_batch, next_state_batch, done_batch
             )
+            self.scheduler_critic.step()
         policy_loss = None
         alpha_loss = None
         if update_actor:
             policy_loss, alpha_loss = self.update_actor(state_batch)
-        if self.scheduler is not None:
-            self.scheduler.step()
+        if self.scheduler_actor is not None:
+            self.scheduler_actor.step()
             self.scheduler_alpha.step()
         return policy_loss, qf1_loss, qf2_loss, alpha_loss

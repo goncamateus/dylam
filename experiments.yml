@@ -395,8 +395,8 @@ Curriculum:
     learning_starts: 5000
     tau: 0.999
     policy_frequency: 1
-    policy_lr: 0.0001
-    q_lr: 0.000001
+    policy_lr: 0.000001
+    q_lr: 0.0000001
     batch_size: 256
     n_hidden: 4
     gamma: 0.95
@@ -411,5 +411,5 @@ Curriculum:
     ori_num_rewards: 3
     considered_indices: [1, 2]
     model_path: "models/pre-trained/VSSEF/"
-    train_critic: False
+    train_critic: True
     load_actor: True
