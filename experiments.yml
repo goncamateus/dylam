@@ -375,7 +375,7 @@ Multiagent:
     gym_id: mo-MAVSS-v0
     num_envs: 20
     total_timesteps: 1500000
-    learning_starts: 1000
+    learning_starts: 5000
     tau: 0.999
     policy_frequency: 1
     policy_lr: 0.0001
