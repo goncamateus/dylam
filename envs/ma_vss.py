@@ -10,25 +10,11 @@ class MAVSS(VSSStratEnv):
     def __init__(self, with_fault=False, render_mode=None):
         super().__init__(render_mode=render_mode)
         self.with_fault = with_fault
-        self.action_space = Dict(
-            {
-                "agent_1": Box(low=-1, high=1, shape=(2,)),
-                "agent_2": Box(low=-1, high=1, shape=(2,)),
-            }
-        )
-        self.observation_space = Dict(
-            {
-                "agent_1": Box(low=-1, high=1, shape=self.observation_space.shape),
-                "agent_2": Box(low=-1, high=1, shape=self.observation_space.shape),
-            }
-        )
-        self.reward_dim = 4 if with_fault else 3
-        self.reward_space = Dict(
-            {
-                "agent_1": Box(low=-1, high=1, shape=(self.reward_dim,)),
-                "agent_2": Box(low=-1, high=1, shape=(self.reward_dim,)),
-            },
-        )
+        self.action_space = Box(low=-1, high=1, shape=(4,))
+        obs_shape = (self.observation_space.shape[0] * 2,)
+        self.observation_space = Box(low=-1, high=1, shape=obs_shape)
+        self.reward_dim = 5 if with_fault else 4
+        self.reward_space = Box(low=-1, high=1, shape=(self.reward_dim,))
         self.cumulative_reward_info = {
             "reward_Goal": 0,
             "reward_Agent1/Move": 0,
@@ -62,10 +48,9 @@ class MAVSS(VSSStratEnv):
 
     def reset(self, *, seed=None, options=None):
         observation, info = super().reset(seed=seed, options=options)
-        observation = {
-            "agent_1": np.copy(observation),
-            "agent_2": self.rotate_observation(observation),
-        }
+        observation = np.concatenate(
+            (observation, self.rotate_observation(observation))
+        )
         self.cumulative_reward_info = {
             "reward_Goal": 0,
             "reward_Agent1/Move": 0,
@@ -87,12 +72,10 @@ class MAVSS(VSSStratEnv):
         return observation, info
 
     def step(self, actions):
-        actions = np.concatenate([actions["agent_1"], actions["agent_2"]])
         observation, reward, terminated, truncated, info = super().step(actions)
-        observation = {
-            "agent_1": np.copy(observation),
-            "agent_2": self.rotate_observation(observation),
-        }
+        observation = np.concatenate(
+            (observation, self.rotate_observation(observation))
+        )
         return observation, reward, terminated, truncated, info
 
     def _get_commands(self, actions):
@@ -222,10 +205,7 @@ class MAVSS(VSSStratEnv):
         return penalty
 
     def _calculate_reward_and_done(self):
-        reward = {
-            "agent_1": np.zeros(self.reward_dim, dtype=np.float32),
-            "agent_2": np.zeros(self.reward_dim, dtype=np.float32),
-        }
+        reward = np.zeros(self.reward_dim, dtype=np.float32)
         goal = False
         fault = False
         # Check if goal ocurred
@@ -273,37 +253,25 @@ class MAVSS(VSSStratEnv):
                     f"reward_Agent{i+1}/Collision"
                 ] += collision_penalty
             if self.with_fault:
-                reward["agent_1"] += np.array(
+                reward += np.array(
                     [
                         grad_ball_potential,
                         collision_penalty,
                         -1 if fault else 0,
                         efficiencies[0],
-                    ]
-                )
-                reward["agent_2"] += np.array(
-                    [
-                        grad_ball_potential,
-                        collision_penalty,
-                        -1 if fault else 0,
                         efficiencies[1],
                     ]
                 )
+
             else:
-                reward["agent_1"] += np.array(
+                reward += np.array(
                     [
                         grad_ball_potential,
                         collision_penalty,
                         efficiencies[0],
-                    ]
-                )
-                reward["agent_2"] += np.array(
-                    [
-                        grad_ball_potential,
-                        collision_penalty,
                         efficiencies[1],
                     ]
                 )
-            self.cumulative_reward_info["Original_reward"] += np.sum(reward["agent_1"])
+            self.cumulative_reward_info["Original_reward"] += np.sum(reward)
 
         return reward, goal

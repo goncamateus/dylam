@@ -34,28 +34,19 @@ def train(args, exp_name, logger: SACLogger):
             )
         else:
             actions = agent.get_action(obs)
-
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
-        logger.log_episode(infos, rewards["agent_1"])
+        logger.log_episode(infos, rewards)
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `terminal_observation`
         real_next_obs = next_obs.copy()
         for idx, trunc in enumerate(truncations):
             if trunc:
                 real_next_obs[idx] = infos["final_observation"][idx]
-        for i in range(1, len(envs.observation_space) + 1):
-            agent.replay_buffer.add(
-                obs[f"agent_{i}"],
-                actions[f"agent_{i}"],
-                rewards[f"agent_{i}"],
-                real_next_obs[f"agent_{i}"],
-                terminations,
-            )
+        agent.replay_buffer.add(obs, actions, rewards, real_next_obs, terminations)
         obs = next_obs
 
         if args.dylam:
-            dylam_rewards = np.append(rewards["agent_1"], rewards["agent_2"][-1])
-            agent.add_episode_rewards(dylam_rewards, terminations, truncations)
+            agent.add_episode_rewards(rewards, terminations, truncations)
             agent.update_lambdas()
         # ALGO LOGIC: training.
         if (

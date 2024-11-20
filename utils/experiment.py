@@ -1,15 +1,14 @@
 import argparse
-import random
-
-from yaml import safe_load
-
+import envs
 import gymnasium as gym
 import mo_gymnasium as mogym
 import numpy as np
+import random
 import torch
 import wandb
 
-import envs
+from utils.wrappers import MORecordEpisodeStatistics
+from yaml import safe_load
 
 
 def strtobool(value: str) -> bool:
@@ -32,7 +31,7 @@ def make_env(args, idx, run_name):
                 episode_trigger=lambda x: x % args.video_freq == 0,
             )
         if args.stratified:
-            env = mogym.MORecordEpisodeStatistics(env)
+            env = MORecordEpisodeStatistics(env)
         else:
             env = mogym.LinearReward(env)
             env = gym.wrappers.RecordEpisodeStatistics(env)
@@ -106,6 +105,9 @@ def base_hyperparams():
         "model_path": None,
         "train_critic": False,
         "load_actor": False,
+        "num_agents": 1,
+        "multiple_policies": False,
+        "agent_obs_limit": 40,
         "q_path": None,
         "comp_names": [],
     }

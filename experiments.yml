@@ -202,48 +202,6 @@ Dylam:
     dylam_tau: 0.9999
     comp_names: ["Move", "Ball", "Efficiency"]
 
-  MAVSS:
-    gym_id: mo-MAVSS-v0
-    num_envs: 20
-    total_timesteps: 1500000
-    learning_starts: 5000
-    tau: 0.999
-    policy_frequency: 1
-    policy_lr: 0.0001
-    q_lr: 0.0001
-    batch_size: 256
-    n_hidden: 4
-    gamma: 0.95
-    update_frequency: 1
-    stratified: True
-    dylam: True
-    num_rewards: 4
-    r_max: [40, 0, 30, 30]
-    r_min: [0, -400, 0, 0]
-    dylam_rb: 500
-    dylam_tau: 0.9999
-
-  MAVSSFAULT:
-    gym_id: mo-MAVSSFault-v0
-    num_envs: 20
-    total_timesteps: 3000000
-    learning_starts: 5000
-    tau: 0.999
-    policy_frequency: 1
-    policy_lr: 0.0001
-    q_lr: 0.0001
-    batch_size: 256
-    n_hidden: 4
-    gamma: 0.95
-    update_frequency: 1
-    stratified: True
-    dylam: True
-    num_rewards: 5
-    r_max: [40, 30, 30, 0, 0]
-    r_min: [0, 0, 0, -400, -1]
-    dylam_rb: 500
-    dylam_tau: 0.9999
-
   TAXI:
     gym_id: mo-Taxi-v3
     total_episodes: 2000
@@ -411,3 +369,52 @@ Curriculum:
     model_path: "models/pre-trained/VSSEF/"
     train_critic: False
     load_actor: True
+
+Multiagent:
+  MAVSS:
+    gym_id: mo-MAVSS-v0
+    num_envs: 20
+    total_timesteps: 1500000
+    learning_starts: 1000
+    tau: 0.999
+    policy_frequency: 1
+    policy_lr: 0.0001
+    q_lr: 0.0001
+    batch_size: 256
+    n_hidden: 4
+    gamma: 0.95
+    update_frequency: 1
+    stratified: True
+    dylam: True
+    num_rewards: 4
+    r_max: [40, 0, 30, 30]
+    r_min: [0, -400, 0, 0]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    num_agents: 2
+    agent_obs_limit: 40
+    multiple_policies: False
+
+  MAVSSFAULT:
+    gym_id: mo-MAVSSFault-v0
+    num_envs: 20
+    total_timesteps: 1500000
+    learning_starts: 5000
+    tau: 0.999
+    policy_frequency: 1
+    policy_lr: 0.0001
+    q_lr: 0.0001
+    batch_size: 256
+    n_hidden: 4
+    gamma: 0.95
+    update_frequency: 1
+    stratified: True
+    dylam: True
+    num_rewards: 5
+    r_max: [40, 0, 0, 30, 30]
+    r_min: [0, -400, -1, 0, 0]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    num_agents: 2
+    agent_obs_limit: 40
+    multiple_policies: False
