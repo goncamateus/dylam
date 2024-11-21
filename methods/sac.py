@@ -179,6 +179,8 @@ class SAC(nn.Module):
         os.makedirs(path, exist_ok=True)
         torch.save(self.actor.state_dict(), path + "actor.pt")
         torch.save(self.critic.state_dict(), path + "critic.pt")
+        torch.save(self.actor_optim.state_dict(), path + "actor_optim.pt")
+        torch.save(self.critic_optim.state_dict(), path + "critic_optim.pt")
 
     def load(self, path):
         self.actor.load_state_dict(
@@ -186,6 +188,12 @@ class SAC(nn.Module):
         )
         self.critic.load_state_dict(
             torch.load(path + "critic.pt", map_location=self.device)
+        )
+        self.actor_optim.load_state_dict(
+            torch.load(path + "actor_optim.pt", map_location=self.device)
+        )
+        self.critic_optim.load_state_dict(
+            torch.load(path + "critic_optim.pt", map_location=self.device)
         )
         self.actor.eval()
         self.critic.eval()

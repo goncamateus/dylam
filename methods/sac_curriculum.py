@@ -22,8 +22,8 @@ class SACCur(SACStrat):
         )
         self.train_critic = args.train_critic
         self.scheduler_critic = lr_scheduler.LinearLR(
-                self.critic_optim, start_factor=args.q_lr, total_iters=100000
-            )
+            self.critic_optim, start_factor=args.q_lr, total_iters=100000
+        )
         self.scheduler_actor = None
         self.scheduler_alpha = None
         if args.load_actor:
@@ -63,6 +63,12 @@ class SACCur(SACStrat):
             if load_actor:
                 actor_dict = torch.load(model_path + "/actor.pt", weights_only=True)
                 self.actor.load_state_dict(actor_dict)
+            self.actor_optim.load_state_dict(
+                torch.load(model_path + "/actor_optim.pt", weights_only=True)
+            )
+            self.critic_optim.load_state_dict(
+                torch.load(model_path + "/critic_optim.pt", weights_only=True)
+            )
 
     def update_actor(self, state_batch):
         pi, log_pi, _ = self.actor.sample(state_batch)
