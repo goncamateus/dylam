@@ -392,11 +392,11 @@ Curriculum:
     gym_id: mo-VSSEF-v0
     num_envs: 20
     total_timesteps: 300000
-    learning_starts: 5000
+    learning_starts: 50000
     tau: 0.999
     policy_frequency: 1
-    policy_lr: 0.000001
-    q_lr: 0.0000001
+    policy_lr: 0.0001
+    q_lr: 0.0001
     batch_size: 256
     n_hidden: 4
     gamma: 0.95
