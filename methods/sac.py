@@ -181,6 +181,9 @@ class SAC(nn.Module):
         torch.save(self.critic.state_dict(), path + "critic.pt")
         torch.save(self.actor_optim.state_dict(), path + "actor_optim.pt")
         torch.save(self.critic_optim.state_dict(), path + "critic_optim.pt")
+        if self.log_alpha is not None:
+            torch.save(self.log_alpha, path + "log_alpha.pt")
+            torch.save(self.alpha_optim.state_dict(), path + "alpha_optim.pt")
 
     def load(self, path):
         self.actor.load_state_dict(
@@ -195,6 +198,11 @@ class SAC(nn.Module):
         self.critic_optim.load_state_dict(
             torch.load(path + "critic_optim.pt", map_location=self.device)
         )
+        if self.log_alpha:
+            self.log_alpha = torch.load(path + "log_alpha.pt", map_location=self.device)
+            self.alpha_optim.load_state_dict(
+                torch.load(path + "alpha_optim.pt", map_location=self.device)
+            )
         self.actor.eval()
         self.critic.eval()
 

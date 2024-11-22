@@ -3,7 +3,6 @@ import torch
 from methods.networks.architectures import GaussianPolicy, DoubleQNetwork
 from methods.networks.targets import TargetCritic
 from methods.sac import SACStrat
-from torch.optim import lr_scheduler
 
 
 class SACCur(SACStrat):
@@ -21,19 +20,9 @@ class SACCur(SACStrat):
             args, observation_space, action_space, log_sig_min, log_sig_max
         )
         self.train_critic = args.train_critic
-        self.scheduler_critic = lr_scheduler.LinearLR(
-            self.critic_optim, start_factor=args.q_lr, total_iters=100000
+        self.load_pretrained(
+            args.model_path, load_actor=args.load_actor, autotune=args.autotune
         )
-        self.scheduler_actor = None
-        self.scheduler_alpha = None
-        if args.load_actor:
-            self.scheduler_actor = lr_scheduler.LinearLR(
-                self.actor_optim, start_factor=args.policy_lr, total_iters=100000
-            )
-            self.scheduler_alpha = lr_scheduler.LinearLR(
-                self.alpha_optim, start_factor=args.policy_lr, total_iters=100000
-            )
-        self.load_pretrained(args.model_path, load_actor=args.load_actor)
 
     def get_networks(self):
         actor = GaussianPolicy(
@@ -53,7 +42,7 @@ class SACCur(SACStrat):
         )
         return actor, critic
 
-    def load_pretrained(self, model_path, load_actor=False):
+    def load_pretrained(self, model_path, load_actor=False, autotune=True):
         if model_path is not None:
             q_dict = torch.load(model_path + "/critic.pt", weights_only=True)
             self.critic.load_state_dict(q_dict)
@@ -63,9 +52,15 @@ class SACCur(SACStrat):
             if load_actor:
                 actor_dict = torch.load(model_path + "/actor.pt", weights_only=True)
                 self.actor.load_state_dict(actor_dict)
-            self.actor_optim.load_state_dict(
-                torch.load(model_path + "/actor_optim.pt", weights_only=True)
-            )
+                self.actor_optim.load_state_dict(
+                    torch.load(model_path + "/actor_optim.pt", weights_only=True)
+                )
+                if autotune:
+                    self.log_alpha = torch.load(model_path + "/log_alpha.pt")
+                    self.alpha = self.log_alpha.exp()
+                    self.alpha_optim.load_state_dict(
+                        torch.load(model_path + "/alpha_optim.pt", weights_only=True)
+                    )
             self.critic_optim.load_state_dict(
                 torch.load(model_path + "/critic_optim.pt", weights_only=True)
             )
@@ -105,12 +100,8 @@ class SACCur(SACStrat):
             qf1_loss, qf2_loss = self.update_critic(
                 state_batch, action_batch, reward_batch, next_state_batch, done_batch
             )
-            self.scheduler_critic.step()
         policy_loss = None
         alpha_loss = None
         if update_actor:
             policy_loss, alpha_loss = self.update_actor(state_batch)
-        if self.scheduler_actor is not None:
-            self.scheduler_actor.step()
-            self.scheduler_alpha.step()
         return policy_loss, qf1_loss, qf2_loss, alpha_loss
