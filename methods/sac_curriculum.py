@@ -56,7 +56,9 @@ class SACCur(SACStrat):
                     torch.load(model_path + "/actor_optim.pt", weights_only=True)
                 )
                 if autotune:
-                    self.log_alpha = torch.load(model_path + "/log_alpha.pt")
+                    self.log_alpha = torch.load(
+                        model_path + "/log_alpha.pt", weights_only=True
+                    )
                     self.alpha = self.log_alpha.exp()
                     self.alpha_optim.load_state_dict(
                         torch.load(model_path + "/alpha_optim.pt", weights_only=True)
