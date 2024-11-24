@@ -28,7 +28,6 @@ class SACMA(nn.Module):
         self.gamma = args.gamma
         self.n_hidden = args.n_hidden
         self.num_rewards = args.num_rewards
-        self.multiple_policies = args.multiple_policies
         self.num_agents = args.num_agents
         self.action_space = action_space
         self.observation_space = observation_space
@@ -48,15 +47,10 @@ class SACMA(nn.Module):
 
     def set_optimizers(self, args):
         self.critic_optim = Adam(self.critic.parameters(), lr=args.q_lr)
-        if self.multiple_policies:
-            self.actor_optim = {
-                f"agent_{i}": Adam(
-                    self.actor[f"agent_{i}"].parameters(), lr=args.policy_lr
-                )
-                for i in range(1, self.num_agents + 1)
-            }
-        else:
-            self.actor_optim = Adam(self.actor.parameters(), lr=args.policy_lr)
+        self.actor_optim = {
+            f"agent_{i}": Adam(self.actor[f"agent_{i}"].parameters(), lr=args.policy_lr)
+            for i in range(1, self.num_agents + 1)
+        }
 
     def set_sac_tools(self, args):
         self.target_entropy = None
@@ -66,43 +60,24 @@ class SACMA(nn.Module):
             self.target_entropy = -torch.prod(
                 torch.Tensor((self.num_actions,)).to(self.device)
             ).item()
-            if args.multiple_policies:
-                self.log_alpha = {
-                    f"agent_{i}": torch.zeros(1, requires_grad=True, device=self.device)
-                    for i in range(1, self.num_agents + 1)
-                }
-                self.alpha = {
-                    f"agent_{i}": self.log_alpha[f"agent_{i}"].exp().item()
-                    for i in range(1, self.num_agents + 1)
-                }
-                self.alpha_optim = {
-                    f"agent_{i}": Adam(
-                        [self.log_alpha[f"agent_{i}"]], lr=args.policy_lr
-                    )
-                    for i in range(1, self.num_agents + 1)
-                }
-            else:
-                self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
-                self.alpha = self.log_alpha.exp().item()
-                self.alpha_optim = Adam([self.log_alpha], lr=args.policy_lr)
+            self.log_alpha = {
+                f"agent_{i}": torch.zeros(1, requires_grad=True, device=self.device)
+                for i in range(1, self.num_agents + 1)
+            }
+            self.alpha = {
+                f"agent_{i}": self.log_alpha[f"agent_{i}"].exp().item()
+                for i in range(1, self.num_agents + 1)
+            }
+            self.alpha_optim = {
+                f"agent_{i}": Adam([self.log_alpha[f"agent_{i}"]], lr=args.policy_lr)
+                for i in range(1, self.num_agents + 1)
+            }
         else:
             self.alpha = args.alpha
 
     def get_networks(self):
-        if self.multiple_policies:
-            actor = {
-                f"agent_{i}": GaussianPolicy(
-                    self.num_inputs,
-                    self.num_actions,
-                    log_sig_min=self.log_sig_min,
-                    log_sig_max=self.log_sig_max,
-                    n_hidden=1,
-                    epsilon=self.epsilon,
-                )
-                for i in range(1, self.num_agents + 1)
-            }
-        else:
-            actor = GaussianPolicy(
+        actor = {
+            f"agent_{i}": GaussianPolicy(
                 self.num_inputs,
                 self.num_actions,
                 log_sig_min=self.log_sig_min,
@@ -110,6 +85,8 @@ class SACMA(nn.Module):
                 n_hidden=1,
                 epsilon=self.epsilon,
             )
+            for i in range(1, self.num_agents + 1)
+        }
         critic = DoubleQNetwork(
             self.num_inputs,
             self.num_actions * self.num_agents,
@@ -122,11 +99,8 @@ class SACMA(nn.Module):
         return ReplayBuffer(buffer_size, self.device)
 
     def to(self, device):
-        if self.multiple_policies:
-            for actor in self.actor.values():
-                actor.to(device)
-        else:
-            self.actor.to(device)
+        for actor in self.actor.values():
+            actor.to(device)
         self.critic.to(device)
         self.critic_target.target_model.to(device)
         return super(SACMA, self).to(device)
@@ -136,15 +110,10 @@ class SACMA(nn.Module):
             torch.Tensor(state[:, : self.agent_obs_limit]).to(self.device),
             torch.Tensor(state[:, self.agent_obs_limit :]).to(self.device),
         ]
-        if self.multiple_policies:
-            actions = [
-                self.actor[f"agent_{i+1}"].get_action(states[i])
-                for i in range(len(states))
-            ]
-            actions = np.concatenate(actions, axis=1)
-        else:
-            actions = [self.actor.get_action(states[i]) for i in range(len(states))]
-            actions = np.concatenate(actions, axis=1)
+        actions = [
+            self.actor[f"agent_{i+1}"].get_action(states[i]) for i in range(len(states))
+        ]
+        actions = np.concatenate(actions, axis=1)
         return actions
 
     def update_critic(
@@ -162,36 +131,19 @@ class SACMA(nn.Module):
             next_state_action = torch.Tensor([]).to(self.device)
             next_state_log_pi = torch.Tensor([]).to(self.device)
             next_state_action_probs = torch.Tensor([]).to(self.device)
-            if self.multiple_policies:
-                for i in range(len(next_state_batch)):
-                    next_sample = self.actor[f"agent_{i + 1}"].sample(
-                        next_state_batch[i]
-                    )
-                    next_state_action = torch.cat(
-                        (next_state_action, next_sample[0]), 1
-                    )
-                    next_state_log_pi = torch.cat(
-                        (
-                            next_state_log_pi,
-                            next_sample[1] * self.alpha[f"agent_{i + 1}"],
-                        ),
-                        1,
-                    )
-                    next_state_action_probs = torch.cat(
-                        (next_state_action_probs, next_sample[2]), 1
-                    )
-            else:
-                for i in range(len(next_state_batch)):
-                    next_sample = self.actor.sample(next_state_batch[i])
-                    next_state_action = torch.cat(
-                        (next_state_action, next_sample[0]), 1
-                    )
-                    next_state_log_pi = torch.cat(
-                        (next_state_log_pi, next_sample[1] * self.alpha), 1
-                    )
-                    next_state_action_probs = torch.cat(
-                        (next_state_action_probs, next_sample[2]), 1
-                    )
+            for i in range(len(next_state_batch)):
+                next_sample = self.actor[f"agent_{i + 1}"].sample(next_state_batch[i])
+                next_state_action = torch.cat((next_state_action, next_sample[0]), 1)
+                next_state_log_pi = torch.cat(
+                    (
+                        next_state_log_pi,
+                        next_sample[1] * self.alpha[f"agent_{i + 1}"],
+                    ),
+                    1,
+                )
+                next_state_action_probs = torch.cat(
+                    (next_state_action_probs, next_sample[2]), 1
+                )
             next_state_log_pi = next_state_log_pi.sum(1, keepdim=True)
             qf1_next_target, qf2_next_target = self.critic_target(
                 next_state_batch[0], next_state_action
@@ -221,81 +173,50 @@ class SACMA(nn.Module):
     def update_alpha(self, state_batch):
         alpha_loss = None
         if self.alpha_optim is not None:
-            if self.multiple_policies:
-                losses = {}
-                for i in range(1, self.num_agents + 1):
-                    with torch.no_grad():
-                        _, log_pi, _ = self.actor[f"agent_{i}"].sample(
-                            state_batch[i - 1]
-                        )
-                    alpha_loss = (
-                        -self.log_alpha[f"agent_{i}"]
-                        * (log_pi + self.target_entropy).detach()
-                    )
-                    alpha_loss = alpha_loss.mean()
-
-                    self.alpha_optim[f"agent_{i}"].zero_grad()
-                    alpha_loss.backward()
-                    self.alpha_optim[f"agent_{i}"].step()
-                    self.alpha[f"agent_{i}"] = self.log_alpha[f"agent_{i}"].exp().item()
-                    losses[f"agent_{i}"] = alpha_loss.item()
-                alpha_loss = np.mean(list(losses.values()))
-            else:
+            losses = {}
+            for i in range(1, self.num_agents + 1):
                 with torch.no_grad():
-                    _, log_pi, _ = self.actor.sample(state_batch[0])
-                alpha_loss = -self.log_alpha * (log_pi + self.target_entropy).detach()
+                    _, log_pi, _ = self.actor[f"agent_{i}"].sample(state_batch[i - 1])
+                alpha_loss = (
+                    -self.log_alpha[f"agent_{i}"]
+                    * (log_pi + self.target_entropy).detach()
+                )
                 alpha_loss = alpha_loss.mean()
 
-                self.alpha_optim.zero_grad()
+                self.alpha_optim[f"agent_{i}"].zero_grad()
                 alpha_loss.backward()
-                self.alpha_optim.step()
-                self.alpha = self.log_alpha.exp().item()
+                self.alpha_optim[f"agent_{i}"].step()
+                self.alpha[f"agent_{i}"] = self.log_alpha[f"agent_{i}"].exp().item()
+                losses[f"agent_{i}"] = alpha_loss.item()
+            alpha_loss = np.mean(list(losses.values()))
         return alpha_loss
 
     def update_actor(self, state_batch):
-        if self.multiple_policies:
-            actions = torch.Tensor([]).to(self.device)
-            log_pi_ = []
-            for i in range(1, self.num_agents + 1):
-                pi, log_pi, action_probs = self.actor[f"agent_{i}"].sample(
-                    state_batch[i - 1]
-                )
-                actions = torch.cat((actions, pi), 1)
-                log_pi_.append(log_pi)
+        actions = torch.Tensor([]).to(self.device)
+        log_pi_ = []
+        for i in range(1, self.num_agents + 1):
+            pi, log_pi, action_probs = self.actor[f"agent_{i}"].sample(
+                state_batch[i - 1]
+            )
+            actions = torch.cat((actions, pi), 1)
+            log_pi_.append(log_pi)
 
-            qf1_pi, qf2_pi = self.critic(state_batch[0], actions)
-            min_qf_pi = torch.min(qf1_pi, qf2_pi)
+        qf1_pi, qf2_pi = self.critic(state_batch[0], actions)
+        min_qf_pi = torch.min(qf1_pi, qf2_pi)
 
-            policy_loss = 0
-            for i in range(1, self.num_agents + 1):
-                # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
-                policy_loss_ = self.alpha[f"agent_{i}"] * log_pi_[i - 1]
-                policy_loss_ = policy_loss_ - min_qf_pi
-                policy_loss_ = policy_loss_.mean()
-                policy_loss += policy_loss_
-                self.actor_optim[f"agent_{i}"].zero_grad()
-
-            policy_loss.backward()
-
-            for i in range(1, self.num_agents + 1):
-                self.actor_optim[f"agent_{i}"].step()
-        else:
-            actions = torch.Tensor([]).to(self.device)
-            for i in range(1, self.num_agents + 1):
-                pi, log_pi, action_probs = self.actor.sample(state_batch[i - 1])
-                actions = torch.cat((actions, pi), 1)
-
-            qf1_pi, qf2_pi = self.critic(state_batch[0], actions)
-            min_qf_pi = torch.min(qf1_pi, qf2_pi)
-
+        policy_loss = 0
+        for i in range(1, self.num_agents + 1):
             # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
-            policy_loss = self.alpha * log_pi
-            policy_loss = policy_loss - min_qf_pi
-            policy_loss = policy_loss.mean()
+            policy_loss_ = self.alpha[f"agent_{i}"] * log_pi_[i - 1]
+            policy_loss_ = policy_loss_ - min_qf_pi
+            policy_loss_ = policy_loss_.mean()
+            policy_loss += policy_loss_
+            self.actor_optim[f"agent_{i}"].zero_grad()
 
-            self.actor_optim.zero_grad()
-            policy_loss.backward()
-            self.actor_optim.step()
+        policy_loss.backward()
+
+        for i in range(1, self.num_agents + 1):
+            self.actor_optim[f"agent_{i}"].step()
 
         alpha_loss = self.update_alpha(state_batch)
 
@@ -338,14 +259,9 @@ class SACMA(nn.Module):
         torch.save(self.critic.state_dict(), path + "critic.pt")
 
     def load(self, path):
-        if self.multiple_policies:
-            for i in range(1, self.num_agents + 1):
-                self.actor[f"agent_{i}"].load_state_dict(
-                    torch.load(path + f"actor_agent_{i}.pt", map_location=self.device)
-                )
-        else:
-            self.actor.load_state_dict(
-                torch.load(path + "actor.pt", map_location=self.device)
+        for i in range(1, self.num_agents + 1):
+            self.actor[f"agent_{i}"].load_state_dict(
+                torch.load(path + f"actor_agent_{i}.pt", map_location=self.device)
             )
         self.critic.load_state_dict(
             torch.load(path + "critic.pt", map_location=self.device)
@@ -373,57 +289,39 @@ class SACStratMA(SACMA):
         self.last_episode_rewards = StratLastRewards(args.dylam_rb, self.num_rewards)
 
     def update_actor(self, state_batch):
-        if self.multiple_policies:
-            actions = torch.Tensor([]).to(self.device)
-            log_pi_ = []
-            for i in range(1, self.num_agents + 1):
-                pi, log_pi, action_probs = self.actor[f"agent_{i}"].sample(
-                    state_batch[i - 1]
-                )
-                actions = torch.cat((actions, pi), 1)
-                log_pi_.append(log_pi)
+        actions = torch.Tensor([]).to(self.device)
+        log_pi_ = []
+        for i in range(1, self.num_agents + 1):
+            pi, log_pi, action_probs = self.actor[f"agent_{i}"].sample(
+                state_batch[i - 1]
+            )
+            actions = torch.cat((actions, pi), 1)
+            log_pi_.append(log_pi)
 
-            qf1_pi, qf2_pi = self.critic(state_batch[0], actions)
-            min_qf_pi = torch.min(qf1_pi, qf2_pi)
-            min_qf_pi = torch.einsum("ij,j->i", min_qf_pi, self.lambdas).view(-1, 1)
+        qf1_pi, qf2_pi = self.critic(state_batch[0], actions)
+        min_qf_pi = torch.min(qf1_pi, qf2_pi)
+        min_qf_pi = torch.einsum("ij,j->i", min_qf_pi, self.lambdas).view(-1, 1)
 
-            policy_loss = 0
-            for i in range(1, self.num_agents + 1):
-                # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
-                policy_loss_ = self.alpha[f"agent_{i}"] * log_pi_[i - 1]
-                policy_loss_ = policy_loss_ - min_qf_pi
-                policy_loss_ = policy_loss_.mean()
-                policy_loss += policy_loss_
-                self.actor_optim[f"agent_{i}"].zero_grad()
-
-            policy_loss.backward()
-
-            for i in range(1, self.num_agents + 1):
-                self.actor_optim[f"agent_{i}"].step()
-        else:
-            actions = torch.Tensor([]).to(self.device)
-            for i in range(1, self.num_agents + 1):
-                pi, log_pi, action_probs = self.actor.sample(state_batch[i - 1])
-                actions = torch.cat((actions, pi), 1)
-
-            qf1_pi, qf2_pi = self.critic(state_batch[0], actions)
-            min_qf_pi = torch.min(qf1_pi, qf2_pi)
-            min_qf_pi = torch.einsum("ij,j->i", min_qf_pi, self.lambdas).view(-1, 1)
-
+        policy_loss = 0
+        for i in range(1, self.num_agents + 1):
             # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
-            policy_loss = self.alpha * log_pi
-            policy_loss = policy_loss - min_qf_pi
-            policy_loss = policy_loss.mean()
+            policy_loss_ = self.alpha[f"agent_{i}"] * log_pi_[i - 1]
+            policy_loss_ = policy_loss_ - min_qf_pi
+            policy_loss_ = policy_loss_.mean()
+            policy_loss += policy_loss_
+            self.actor_optim[f"agent_{i}"].zero_grad()
 
-            self.actor_optim.zero_grad()
-            policy_loss.backward()
-            self.actor_optim.step()
+        policy_loss.backward()
+
+        for i in range(1, self.num_agents + 1):
+            self.actor_optim[f"agent_{i}"].step()
 
         alpha_loss = self.update_alpha(state_batch)
 
         return policy_loss, alpha_loss
 
     def update_lambdas(self):
+
         if self.last_episode_rewards.can_do():
             rew_mean_t = torch.Tensor(self.last_episode_rewards.mean()).to(self.device)
             if self.last_reward_mean is not None:
