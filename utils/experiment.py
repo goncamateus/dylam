@@ -106,6 +106,7 @@ def base_hyperparams():
         "model_path": None,
         "train_critic": False,
         "load_actor": False,
+        "load_optimizers": False,
         "q_path": None,
         "comp_names": [],
     }

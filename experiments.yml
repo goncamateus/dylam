@@ -403,13 +403,14 @@ Curriculum:
     update_frequency: 1
     stratified: True
     dylam: True
-    num_rewards: 2
-    r_max: [40, 30]
-    r_min: [0, 0]
+    num_rewards: 3
+    r_max: [70, 40, 30]
+    r_min: [0, 0, 0]
     dylam_rb: 500
     dylam_tau: 0.9999
     ori_num_rewards: 3
-    considered_indices: [1, 2]
+    considered_indices: [0, 1, 2]
     model_path: "models/pre-trained/VSSEF/"
     train_critic: True
     load_actor: True
+    load_optimizers: True

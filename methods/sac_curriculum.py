@@ -16,6 +16,7 @@ class SACCur(SACStrat):
     ):
         self.considered_indices = args.considered_indices
         self.ori_num_rewards = args.ori_num_rewards
+        self.load_optimizers = args.load_optimizers
         super().__init__(
             args, observation_space, action_space, log_sig_min, log_sig_max
         )
@@ -52,20 +53,25 @@ class SACCur(SACStrat):
             if load_actor:
                 actor_dict = torch.load(model_path + "/actor.pt", weights_only=True)
                 self.actor.load_state_dict(actor_dict)
-                self.actor_optim.load_state_dict(
-                    torch.load(model_path + "/actor_optim.pt", weights_only=True)
-                )
+                if self.load_optimizers:
+                    self.actor_optim.load_state_dict(
+                        torch.load(model_path + "/actor_optim.pt", weights_only=True)
+                    )
                 if autotune:
                     self.log_alpha = torch.load(
                         model_path + "/log_alpha.pt", weights_only=True
                     )
                     self.alpha = self.log_alpha.exp()
-                    self.alpha_optim.load_state_dict(
-                        torch.load(model_path + "/alpha_optim.pt", weights_only=True)
-                    )
-            self.critic_optim.load_state_dict(
-                torch.load(model_path + "/critic_optim.pt", weights_only=True)
-            )
+                    if self.load_optimizers:
+                        self.alpha_optim.load_state_dict(
+                            torch.load(
+                                model_path + "/alpha_optim.pt", weights_only=True
+                            )
+                        )
+            if self.load_optimizers:
+                self.critic_optim.load_state_dict(
+                    torch.load(model_path + "/critic_optim.pt", weights_only=True)
+                )
 
     def update_actor(self, state_batch):
         pi, log_pi, _ = self.actor.sample(state_batch)
