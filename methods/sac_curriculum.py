@@ -78,7 +78,7 @@ class SACCur(SACStrat):
 
         qf1_pi, qf2_pi = self.critic(state_batch, pi)
         min_qf_pi = torch.min(qf1_pi, qf2_pi)[:, self.considered_indices]
-        min_qf_pi = torch.einsum("ij,j->i", min_qf_pi, self.lambdas).view(-1, 1)
+        min_qf_pi = torch.einsum("ij,j->i", min_qf_pi, self.lambdas[:self.considered_indices]).view(-1, 1)
 
         # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
         policy_loss = self.alpha * log_pi
