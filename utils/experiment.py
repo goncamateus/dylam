@@ -61,6 +61,7 @@ def q_make_env(args, run_name):
 
 def base_hyperparams():
     hyper_params = {
+        "project": "DyLam",
         "stratified": False,
         "seed": 0,
         "total_timesteps": 1000000,

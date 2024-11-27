@@ -4,13 +4,11 @@ import wandb
 
 
 class WandbResultLogger:
-    project = "DyLam"
-
     def __init__(self, name, params):
         if params.seed == 0:
             params.seed = int(time.time())
         self.run = wandb.init(
-            project=self.project,
+            project=params.project,
             name=name,
             entity="goncamateus",
             config=vars(params),
