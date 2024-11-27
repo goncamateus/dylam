@@ -46,7 +46,7 @@ def train(args, exp_name, logger: SACLogger):
 
         if args.dylam:
             agent.add_episode_rewards(
-                rewards[:, args.considered_indices], terminations, truncations
+                rewards, terminations, truncations
             )
             agent.update_lambdas()
         # ALGO LOGIC: training.

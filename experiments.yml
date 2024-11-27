@@ -410,8 +410,8 @@ Curriculum:
     dylam_rb: 500
     dylam_tau: 0.9999
     ori_num_rewards: 3
-    considered_indices: [0, 1, 2]
+    considered_indices: [1, 2]
     model_path: "models/pre-trained/VSSEF/"
-    train_critic: True
+    train_critic: False
     load_actor: True
     load_optimizers: True
