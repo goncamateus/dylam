@@ -389,6 +389,7 @@ Drq:
 
 Curriculum:
   VSSEF:
+    project: "DyLam-Curriculum"
     gym_id: mo-VSSEF-v0
     num_envs: 20
     total_timesteps: 300000
