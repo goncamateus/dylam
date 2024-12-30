@@ -49,17 +49,13 @@ RUN echo 'eval "$(pyenv init --path)"' >> /root/.bashrc
 RUN echo 'eval "$(pyenv init -)"' >> /root/.bashrc
 RUN /bin/bash -c "source /root/.bashrc"
 
-# Install Python 3.10.15 using pyenv
-RUN pyenv install 3.10.15
-RUN pyenv global 3.10.15
-
 ENV POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=1 \
     POETRY_VIRTUALENVS_CREATE=1 \
     POETRY_CACHE_DIR=/tmp/poetry_cache
 
 # Install Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN curl -sSL https://install.python-poetry.org | python -
 ENV PATH=/root/.local/bin:$PATH
 
 # install mujoco_py
@@ -68,11 +64,15 @@ RUN apt-get -y install wget unzip software-properties-common \
     libgl1-mesa-glx \
     libglew-dev \
     libosmesa6-dev \
-    patchelf
+    patchelf \
+    swig
 
 # Create a working directory
 RUN git clone https://github.com/goncamateus/dylam.git /dylam
 WORKDIR /dylam
+RUN pyenv install 3.10.15
+RUN pyenv local 3.10.15
+RUN poetry env use /root/.pyenv/shims/python
 RUN poetry install
 
 RUN cp entrypoint.sh /usr/local/bin/
