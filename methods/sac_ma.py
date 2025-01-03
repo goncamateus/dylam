@@ -248,14 +248,11 @@ class SACMA(nn.Module):
 
     def save(self, path):
         os.makedirs(path, exist_ok=True)
-        if self.multiple_policies:
-            for i in range(1, self.num_agents + 1):
-                torch.save(
-                    self.actor[f"agent_{i}"].state_dict(),
-                    path + f"actor_agent_{i}.pt",
-                )
-        else:
-            torch.save(self.actor.state_dict(), path + "actor.pt")
+        for i in range(1, self.num_agents + 1):
+            torch.save(
+                self.actor[f"agent_{i}"].state_dict(),
+                path + f"actor_agent_{i}.pt",
+            )
         torch.save(self.critic.state_dict(), path + "critic.pt")
 
     def load(self, path):
