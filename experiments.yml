@@ -342,6 +342,7 @@ Drq:
     update_frequency: 1
     stratified: True
     num_rewards: 3
+    comp_names: ["Move", "Ball", "Energy"]
 
 Curriculum:
   VSSEF:
@@ -393,6 +394,7 @@ Multiagent:
     dylam_tau: 0.9999
     num_agents: 2
     agent_obs_limit: 40
+    comp_names: ["Ball", "Collision", "Efficiency_1", "Efficiency_2"]
 
   MAVSSSINGLE:
     gym_id: mo-MAVSS-v0
@@ -417,6 +419,7 @@ Multiagent:
     num_agents: 2
     agent_obs_limit: 40
     shared_rewards: 2
+    comp_names: ["Ball", "Collision", "Efficiency_1", "Efficiency_2"]
 
   MAVSSFAULT:
     gym_id: mo-MAVSSFault-v0
@@ -440,7 +443,7 @@ Multiagent:
     dylam_tau: 0.9999
     num_agents: 2
     agent_obs_limit: 40
-    multiple_policies: False
+    comp_names: ["Ball", "Collision", "Fault", "Efficiency_1", "Efficiency_2"]
 
   MAVSSFAULTSINGLE:
     gym_id: mo-MAVSSFault-v0
@@ -465,3 +468,4 @@ Multiagent:
     num_agents: 2
     agent_obs_limit: 40
     shared_rewards: 3
+    comp_names: ["Ball", "Collision", "Fault", "Efficiency_1", "Efficiency_2"]
