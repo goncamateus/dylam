@@ -72,8 +72,8 @@ RUN git clone https://github.com/goncamateus/dylam.git /dylam
 WORKDIR /dylam
 RUN pyenv install 3.10.15
 RUN pyenv local 3.10.15
-RUN poetry env use /root/.pyenv/shims/python
-RUN poetry install
+RUN /root/.pyenv/versions/3.10.15/bin/pip install --upgrade pip
+RUN /root/.pyenv/versions/3.10.15/bin/pip install -r requirements.txt
 
 RUN cp entrypoint.sh /usr/local/bin/
 RUN chmod 777 /usr/local/bin/entrypoint.sh
