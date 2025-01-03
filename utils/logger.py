@@ -18,6 +18,7 @@ class WandbResultLogger:
             mode=None if params.track else "disabled",
             save_code=True,
         )
+        self.comp_names = params.comp_names
         self.artifact = wandb.Artifact("model", type="model")
         self.log = {}
         self._episode = 0
@@ -55,7 +56,7 @@ class WandbResultLogger:
 
     def log_lambdas(self, lambdas):
         for i in range(len(lambdas)):
-            self.log.update({"lambdas/component_" + str(i): lambdas[i].item()})
+            self.log.update({f"lambdas/{self.comp_names[i]}": lambdas[i].item()})
 
     def log_artifact(self): ...
 

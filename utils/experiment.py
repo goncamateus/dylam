@@ -101,6 +101,7 @@ def base_hyperparams():
         "epsilon_decay_factor": 0.97,
         "softmax_temperature": 1,
         "total_episodes": 1000,
+        "comp_names": [],
     }
     return hyper_params
 

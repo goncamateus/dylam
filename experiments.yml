@@ -91,6 +91,7 @@ Dylam:
     r_max: [1000, -100, -20, 1]
     r_min: [-1000, -1000, -1000, -1]
     dylam_rb: 100
+    comp_names: ["Shaping", "Power_linear", "Power_angular", "Goal"]
 
   HOPPER:
     gym_id: mo-Hopper-v4
@@ -103,6 +104,7 @@ Dylam:
     r_min: [0, -200, -250, 0]
     dylam_rb: 100
     dylam_tau: 0.9999
+    comp_names: ["Forward", "Jump", "Energy", "Healthy"]
 
   PENDULUM:
     gym_id: mo-Pendulum-v1
@@ -115,6 +117,7 @@ Dylam:
     r_min: [-100, -100, -100]
     dylam_rb: 100
     dylam_tau: 0.9999
+    comp_names: ["Theta", "Angular_vel", "Torque"]
 
   HUMANOID:
     gym_id: mo-Humanoid-v4
@@ -127,6 +130,7 @@ Dylam:
     r_min: [0, -1000, 0]
     dylam_rb: 100
     dylam_tau: 0.9999
+    comp_names: ["Forward", "Energy", "Healthy"]
 
   HALFCHEETAH:
     gym_id: mo-HalfCheetah-v4
@@ -139,6 +143,7 @@ Dylam:
     r_min: [0, -800]
     dylam_rb: 500
     dylam_tau: 0.9999
+    comp_names: ["Run", "Control"]
 
   HALFCHEETAHEF:
     gym_id: mo-HalfCheetahEF-v4
@@ -151,6 +156,7 @@ Dylam:
     r_min: [0, 0]
     dylam_rb: 500
     dylam_tau: 0.9999
+    comp_names: ["Run", "Efficiency"]
 
   VSS:
     gym_id: mo-VSS-v0
@@ -172,6 +178,7 @@ Dylam:
     r_min: [0, 0, -300]
     dylam_rb: 500
     dylam_tau: 0.9999
+    comp_names: ["Move", "Ball", "Energy"]
 
   VSSEF:
     gym_id: mo-VSSEF-v0
@@ -193,6 +200,7 @@ Dylam:
     r_min: [0, 0, 0]
     dylam_rb: 500
     dylam_tau: 0.9999
+    comp_names: ["Move", "Ball", "Efficiency"]
 
   TAXI:
     gym_id: mo-Taxi-v3
@@ -208,6 +216,7 @@ Dylam:
     r_min: [-200, 0, -10]
     dylam_tau: 0.995
     dylam_rb: 10
+    comp_names: ["Energy", "Objective", "Illegal_action"]
 
   QLUNARLANDER:
     gym_id: mo-LunarLander-v2
@@ -221,6 +230,7 @@ Dylam:
     r_min: [-1000, -1000, -1000, -1]
     dylam_rb: 100
     dylam_tau: 0.9999
+    comp_names: ["Shaping", "Power_linear", "Power_angular", "Goal"]
 
   MINECART:
     gym_id: mo-Minecart-v0
@@ -236,6 +246,7 @@ Dylam:
     num_rewards: 3
     r_max: [1.5, 1.5, 0]
     r_min: [0, 0, -20]
+    comp_names: ["First_minerium", "Second_minerium", "Fuel"]
 
 GPILS:
   LUNARLANDER:
@@ -297,6 +308,7 @@ Drq:
     q_lr: 0.1
     stratified: True
     num_rewards: 3
+    comp_names: ["Energy", "Objective", "Illegal_action"]
 
   QLUNARLANDER:
     gym_id: mo-LunarLander-v2
@@ -305,6 +317,7 @@ Drq:
     epsilon: 0.8
     stratified: True
     num_rewards: 4
+    comp_names: ["Shaping", "Power_linear", "Power_angular", "Goal"]
 
   HALFCHEETAH:
     gym_id: mo-HalfCheetah-v4
@@ -312,6 +325,7 @@ Drq:
     total_timesteps: 500000
     stratified: True
     num_rewards: 2
+    comp_names: ["Run", "Control"]
 
   VSS:
     gym_id: mo-VSS-v0
@@ -328,3 +342,4 @@ Drq:
     update_frequency: 1
     stratified: True
     num_rewards: 3
+    comp_names: ["Move", "Ball", "Energy"]
