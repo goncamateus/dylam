@@ -7,7 +7,10 @@ This repository contains the code for the paper "[DyLam: A Dynamic Reward Weight
 To install the dependencies:
 
 ```bash
-pip install -r requirements.txt
+pip install pipx
+pipx install uv
+uv venv
+uv pip install .
 ```
 
 Then, run the container:
