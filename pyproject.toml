@@ -22,3 +22,10 @@ build-backend = "hatchling.build"
 
 [tool.uv.sources]
 rsoccer-gym = { git = "https://github.com/goncamateus/rSoccer.git", rev = "dev" }
+
+[dependency-groups]
+dev = [
+    "ipython>=8.37.0",
+    "isort>=7.0.0",
+    "ruff>=0.14.9",
+]
