@@ -6,11 +6,9 @@ import time
 import gymnasium as gym
 import numpy as np
 
-from methods.sac import SAC, SACStrat
-from utils.experiment import get_experiment, make_env
-from utils.experiment import parse_args
-from utils.experiment import setup_run
-from utils.logger import SACLogger
+from dylam.methods.sac import SAC, SACStrat
+from dylam.utils.experiment import get_experiment, make_env, parse_args, setup_run
+from dylam.utils.logger import SACLogger
 
 
 def train(args, exp_name, logger: SACLogger):
@@ -36,7 +34,7 @@ def train(args, exp_name, logger: SACLogger):
             actions = agent.get_action(obs)
 
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
-        logger.log_episode(infos, rewards)
+        logger.log_episode(infos, rewards, terminations | truncations)
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `terminal_observation`
         real_next_obs = next_obs.copy()

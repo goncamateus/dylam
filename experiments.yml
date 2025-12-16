@@ -1,33 +1,40 @@
 Baseline:
-  LUNARLANDER:
-    gym_id: mo-LunarLanderContinuous-v2
-    num_envs: 16
-    total_timesteps: 100000
+  CHICKENBANANA:
+    gym_id: mo-ChickenBanana-v0
+    total_episodes: 2001
+    gamma: 0.9999
+    q_lr: 0.1
+    epsilon: 1
+    epsilon_decay_factor: 0.9988
 
-  HOPPER:
-    gym_id: mo-Hopper-v4
-    num_envs: 16
-    total_timesteps: 500000
+  TAXI:
+    gym_id: mo-Taxi-v3
+    total_episodes: 2001
+    gamma: 0.9999
+    q_lr: 0.1
+    epsilon: 0.8
 
-  PENDULUM:
-    gym_id: mo-Pendulum-v1
+  MINECART:
+    gym_id: mo-Minecart-v0
     num_envs: 16
-    total_timesteps: 50000
-
-  HUMANOID:
-    gym_id: mo-Humanoid-v4
-    num_envs: 16
-    total_timesteps: 500000
+    total_timesteps: 200000
+    gamma: 0.98
+    target_network_frequency: 200
+    tau: 0.00001
+    epsilon: 1.0
+    epsilon_decay_factor: 0.99997
 
   HALFCHEETAH:
     gym_id: mo-HalfCheetah-v4
     num_envs: 16
     total_timesteps: 500000
 
-  HALFCHEETAHEF:
-    gym_id: mo-HalfCheetahEF-v4
+  LUNARLANDER:
+    gym_id: mo-LunarLander-v2
     num_envs: 16
-    total_timesteps: 500000
+    total_timesteps: 10000
+    epsilon: 0.8
+    learning_rate: 0.00025
 
   VSS:
     gym_id: mo-VSS-v0
@@ -43,8 +50,108 @@ Baseline:
     gamma: 0.95
     update_frequency: 1
 
-  VSSEF:
-    gym_id: mo-VSSEF-v0
+Decq:
+  CHICKENBANANA:
+    gym_id: mo-ChickenBanana-v0
+    total_episodes: 2001
+    gamma: 0.9999
+    q_lr: 0.1
+    epsilon: 1
+    epsilon_decay_factor: 0.9988
+    stratified: True
+    realistic: False
+    num_rewards: 3
+    comp_names: ["Objective", "Banana", "Chicken"]
+
+  TAXI:
+    gym_id: mo-Taxi-v3
+    total_episodes: 2001
+    epsilon: 0.8
+    gamma: 0.9999
+    q_lr: 0.1
+    stratified: True
+    realistic: False
+    num_rewards: 3
+    comp_names: ["Energy", "Objective", "Illegal_action"]
+
+  MINECART:
+    gym_id: mo-Minecart-v0
+    num_envs: 16
+    total_timesteps: 201000
+    gamma: 0.98
+    target_network_frequency: 200
+    tau: 0.00001
+    epsilon: 1.0
+    epsilon_decay_factor: 0.99997
+    stratified: True
+    realistic: False
+    num_rewards: 3
+    comp_names: ["First_minerium", "Second_minerium", "Fuel"]
+  
+  LUNARLANDER:
+    gym_id: mo-LunarLander-v2
+    num_envs: 16
+    total_timesteps: 100200
+    epsilon: 0.8
+    stratified: True
+    realistic: False
+    num_rewards: 4
+    comp_names: ["Shaping", "Power_linear", "Power_angular", "Goal"]
+
+Drq:
+  CHICKENBANANA:
+    gym_id: mo-ChickenBanana-v0
+    total_episodes: 2001
+    gamma: 0.9999
+    q_lr: 0.1
+    epsilon: 1
+    epsilon_decay_factor: 0.9988
+    stratified: True
+    num_rewards: 3
+    comp_names: ["Objective", "Banana", "Chicken"]
+
+  TAXI:
+    gym_id: mo-Taxi-v3
+    total_episodes: 2000
+    epsilon: 0.8
+    gamma: 0.9999
+    q_lr: 0.1
+    stratified: True
+    num_rewards: 3
+    comp_names: ["Energy", "Objective", "Illegal_action"]
+
+  MINECART:
+    gym_id: mo-Minecart-v0
+    num_envs: 16
+    total_timesteps: 200000
+    gamma: 0.98
+    target_network_frequency: 200
+    tau: 0.00001
+    epsilon: 1.0
+    epsilon_decay_factor: 0.99997
+    stratified: True
+    num_rewards: 3
+    comp_names: ["First_minerium", "Second_minerium", "Fuel"]
+
+  HALFCHEETAH:
+    gym_id: mo-HalfCheetah-v4
+    num_envs: 16
+    total_timesteps: 500000
+    stratified: True
+    num_rewards: 2
+    comp_names: ["Run", "Control"]
+  
+  LUNARLANDER:
+    gym_id: mo-LunarLander-v2
+    num_envs: 16
+    total_timesteps: 100000
+    epsilon: 0.8
+    stratified: True
+    num_rewards: 4
+    comp_names: ["Shaping", "Power_linear", "Power_angular", "Goal"]
+
+  VSS:
+    gym_id: mo-VSS-v0
     num_envs: 20
     total_timesteps: 500000
     learning_starts: 5000
@@ -56,81 +163,54 @@ Baseline:
     n_hidden: 4
     gamma: 0.95
     update_frequency: 1
+    stratified: True
+    normalizer: "l1"
+    num_rewards: 3
+    comp_names: ["Move", "Ball", "Energy"]
+
+Dylam:
+  CHICKENBANANA:
+    gym_id: mo-ChickenBanana-v0
+    total_episodes: 2001
+    gamma: 0.9999
+    q_lr: 0.1
+    epsilon: 1
+    epsilon_decay_factor: 0.9988
+    stratified: True
+    num_rewards: 3
+    dylam: True
+    r_max: [100, 30, 70]
+    r_min: [0, 0, 0]
+    comp_names: ["Objective", "Banana", "Chicken"]
 
   TAXI:
     gym_id: mo-Taxi-v3
     total_episodes: 2000
     gamma: 0.9999
     q_lr: 0.1
-    epsilon: 0.8
-
-  QLUNARLANDER:
-    gym_id: mo-LunarLander-v2
-    num_envs: 16
-    total_timesteps: 100000
-    epsilon: 0.8
+    stratified: True
+    num_rewards: 3
+    dylam: True
+    lambdas: [0.3333, 0.3333, 0.3333]
+    r_max: [-20, 1, 0]
+    r_min: [-200, 0, -10]
+    comp_names: ["Energy", "Objective", "Illegal_action"]
 
   MINECART:
     gym_id: mo-Minecart-v0
     num_envs: 16
-    total_timesteps: 200000
+    total_timesteps: 20000
     gamma: 0.98
     target_network_frequency: 200
     tau: 0.00001
     epsilon: 1.0
     epsilon_decay_factor: 0.99997
-
-Dylam:
-  LUNARLANDER:
-    gym_id: mo-LunarLanderContinuous-v2
-    num_envs: 16
-    total_timesteps: 100000
-    stratified: True
-    dylam: True
-    num_rewards: 4
-    r_max: [1000, -100, -20, 1]
-    r_min: [-1000, -1000, -1000, -1]
-    dylam_rb: 100
-    comp_names: ["Shaping", "Power_linear", "Power_angular", "Goal"]
-
-  HOPPER:
-    gym_id: mo-Hopper-v4
-    num_envs: 16
-    total_timesteps: 500000
-    stratified: True
-    dylam: True
-    num_rewards: 4
-    r_max: [1000, 1000, -100, 1000]
-    r_min: [0, -200, -250, 0]
-    dylam_rb: 100
-    dylam_tau: 0.9999
-    comp_names: ["Forward", "Jump", "Energy", "Healthy"]
-
-  PENDULUM:
-    gym_id: mo-Pendulum-v1
-    num_envs: 16
-    total_timesteps: 50000
     stratified: True
     dylam: True
     num_rewards: 3
-    r_max: [0, 0, 0]
-    r_min: [-100, -100, -100]
-    dylam_rb: 100
-    dylam_tau: 0.9999
-    comp_names: ["Theta", "Angular_vel", "Torque"]
-
-  HUMANOID:
-    gym_id: mo-Humanoid-v4
-    num_envs: 16
-    total_timesteps: 500000
-    stratified: True
-    dylam: True
-    num_rewards: 3
-    r_max: [1000, 0, 1000]
-    r_min: [0, -1000, 0]
-    dylam_rb: 100
-    dylam_tau: 0.9999
-    comp_names: ["Forward", "Energy", "Healthy"]
+    r_max: [1.5, 1.5, 0]
+    r_min: [0, 0, -20]
+    comp_names: ["First_minerium", "Second_minerium", "Fuel"]
 
   HALFCHEETAH:
     gym_id: mo-HalfCheetah-v4
@@ -145,80 +225,7 @@ Dylam:
     dylam_tau: 0.9999
     comp_names: ["Run", "Control"]
 
-  HALFCHEETAHEF:
-    gym_id: mo-HalfCheetahEF-v4
-    num_envs: 16
-    total_timesteps: 500000
-    stratified: True
-    dylam: True
-    num_rewards: 2
-    r_max: [800, 800]
-    r_min: [0, 0]
-    dylam_rb: 500
-    dylam_tau: 0.9999
-    comp_names: ["Run", "Efficiency"]
-
-  VSS:
-    gym_id: mo-VSS-v0
-    num_envs: 20
-    total_timesteps: 500000
-    learning_starts: 5000
-    tau: 0.999
-    policy_frequency: 1
-    policy_lr: 0.0001
-    q_lr: 0.0001
-    batch_size: 256
-    n_hidden: 4
-    gamma: 0.95
-    update_frequency: 1
-    stratified: True
-    dylam: True
-    num_rewards: 3
-    r_max: [150, 40, -100]
-    r_min: [0, 0, -300]
-    dylam_rb: 500
-    dylam_tau: 0.9999
-    comp_names: ["Move", "Ball", "Energy"]
-
-  VSSEF:
-    gym_id: mo-VSSEF-v0
-    num_envs: 20
-    total_timesteps: 500000
-    learning_starts: 5000
-    tau: 0.999
-    policy_frequency: 1
-    policy_lr: 0.0001
-    q_lr: 0.0001
-    batch_size: 256
-    n_hidden: 4
-    gamma: 0.95
-    update_frequency: 1
-    stratified: True
-    dylam: True
-    num_rewards: 3
-    r_max: [70, 40, 30]
-    r_min: [0, 0, 0]
-    dylam_rb: 500
-    dylam_tau: 0.9999
-    comp_names: ["Move", "Ball", "Efficiency"]
-
-  TAXI:
-    gym_id: mo-Taxi-v3
-    total_episodes: 2000
-    gamma: 0.9999
-    q_lr: 0.1
-    epsilon: 0.8
-    stratified: True
-    num_rewards: 3
-    dylam: True
-    lambdas: [0.3333, 0.3333, 0.3333]
-    r_max: [-20, 1, 0]
-    r_min: [-200, 0, -10]
-    dylam_tau: 0.995
-    dylam_rb: 10
-    comp_names: ["Energy", "Objective", "Illegal_action"]
-
-  QLUNARLANDER:
+  LUNARLANDER:
     gym_id: mo-LunarLander-v2
     num_envs: 16
     total_timesteps: 100000
@@ -232,101 +239,6 @@ Dylam:
     dylam_tau: 0.9999
     comp_names: ["Shaping", "Power_linear", "Power_angular", "Goal"]
 
-  MINECART:
-    gym_id: mo-Minecart-v0
-    num_envs: 16
-    total_timesteps: 200000
-    gamma: 0.98
-    target_network_frequency: 200
-    tau: 0.00001
-    epsilon: 1.0
-    epsilon_decay_factor: 0.99997
-    stratified: True
-    dylam: True
-    num_rewards: 3
-    r_max: [1.5, 1.5, 0]
-    r_min: [0, 0, -20]
-    comp_names: ["First_minerium", "Second_minerium", "Fuel"]
-
-GPILS:
-  LUNARLANDER:
-    gym_id: mo-LunarLanderContinuous-v2
-    num_envs: 16
-    total_timesteps: 100000
-    stratified: True
-    num_rewards: 4
-    steps_per_iteration: 10000
-    num_eval_episodes: 3
-
-  HOPPER:
-    gym_id: mo-Hopper-v4
-    num_envs: 16
-    total_timesteps: 500000
-    stratified: True
-    num_rewards: 4
-    steps_per_iteration: 10000
-    reward_scaling: 1000
-
-  VSSEF:
-    gym_id: mo-VSSEF-v0
-    num_envs: 20
-    total_timesteps: 500000
-    tau: 0.999
-    policy_frequency: 1
-    policy_lr: 0.0001
-    q_lr: 0.0001
-    batch_size: 256
-    n_hidden: 4
-    gamma: 0.95
-    update_frequency: 1
-    stratified: True
-    num_rewards: 3
-    steps_per_iteration: 10000
-
-  HALFCHEETAH:
-    gym_id: mo-HalfCheetah-v4
-    num_envs: 16
-    total_timesteps: 500000
-    num_rewards: 2
-    steps_per_iteration: 10000
-
-  HALFCHEETAHEF:
-    gym_id: mo-HalfCheetahEF-v4
-    num_envs: 16
-    total_timesteps: 500000
-    stratified: True
-    dylam: True
-    num_rewards: 2
-    steps_per_iteration: 10000
-
-Drq:
-  TAXI:
-    gym_id: mo-Taxi-v3
-    total_episodes: 2000
-    epsilon: 0.8
-    gamma: 0.9999
-    q_lr: 0.1
-    stratified: True
-    num_rewards: 3
-    comp_names: ["Energy", "Objective", "Illegal_action"]
-
-  QLUNARLANDER:
-    gym_id: mo-LunarLander-v2
-    num_envs: 16
-    total_timesteps: 100000
-    epsilon: 0.8
-    stratified: True
-    num_rewards: 4
-    comp_names: ["Shaping", "Power_linear", "Power_angular", "Goal"]
-
-  HALFCHEETAH:
-    gym_id: mo-HalfCheetah-v4
-    num_envs: 16
-    total_timesteps: 500000
-    stratified: True
-    num_rewards: 2
-    comp_names: ["Run", "Control"]
-
   VSS:
     gym_id: mo-VSS-v0
     num_envs: 20
@@ -341,5 +253,11 @@ Drq:
     gamma: 0.95
     update_frequency: 1
     stratified: True
+    dylam: True
+    normalizer: "l1"
     num_rewards: 3
+    r_max: [150, 40, -100]
+    r_min: [0, 0, -300]
+    dylam_rb: 500
+    dylam_tau: 0.9999
     comp_names: ["Move", "Ball", "Energy"]

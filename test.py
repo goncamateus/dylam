@@ -1,13 +1,9 @@
-import time
-
 import gymnasium as gym
 import mo_gymnasium as mogym
 import numpy as np
 
-from methods.sac import SAC, SACStrat
-from utils.experiment import get_experiment
-from utils.experiment import parse_args
-from utils.experiment import setup_run
+from dylam.methods.sac import SAC, SACStrat
+from dylam.utils.experiment import get_experiment, parse_args, setup_run
 
 
 def test(args):

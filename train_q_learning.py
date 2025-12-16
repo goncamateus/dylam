@@ -3,20 +3,18 @@
 
 import time
 
-import numpy as np
-
-from methods.q_learning import QLearning, DRQ, QDyLam
-from utils.experiment import get_experiment, q_make_env
-from utils.experiment import parse_args
-from utils.experiment import setup_run
-from utils.logger import QLogger
+from dylam.methods.q_learning import DQ, DRQ, QDyLam, QLearning
+from dylam.utils.experiment import get_experiment, parse_args, q_make_env, setup_run
+from dylam.utils.logger import QLogger
 
 
 def get_agent_type(args):
     if args.stratified:
         if args.dylam:
             return QDyLam
-        return DRQ
+        if args.realistic:
+            return DRQ
+        return DQ
     return QLearning
 
 
@@ -33,6 +31,10 @@ def train(args, exp_name, logger: QLogger):
             action = agent.get_action(obs)
 
             next_obs, reward, termination, truncation, info = env.step(action)
+            if (termination or truncation) and args.strategy == 1:
+                agent.epsilon_greedy_decay()
+
+            info.update({"reward_epsilon": agent.epsilon})
             logger.log_episode(info, termination or truncation)
 
             if args.dylam:
@@ -45,7 +47,6 @@ def train(args, exp_name, logger: QLogger):
                     loss_dict[f"qf_update_{i}"] = update_values[i]
             else:
                 loss_dict["qf_update"] = update_values
-            logger.log_losses(loss_dict)
             obs = next_obs
 
         if args.dylam:

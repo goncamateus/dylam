@@ -4,34 +4,32 @@
 import time
 
 import gymnasium as gym
-import numpy as np
 
-from methods.dqn import DQN, DQNStrat
-from utils.experiment import get_experiment, make_env
-from utils.experiment import parse_args
-from utils.experiment import setup_run
-from utils.logger import DQNLogger
+from dylam.methods.dqn import DQ, DQN, DRQ
+from dylam.utils.experiment import get_experiment, make_env, parse_args, setup_run
+from dylam.utils.logger import DQNLogger
 
 
 def train(args, exp_name, logger: DQNLogger):
     envs = gym.vector.AsyncVectorEnv(
         [make_env(args, i, exp_name) for i in range(args.num_envs)]
     )
+
     if args.stratified:
-        agent = DQNStrat(
-            args,
-            envs.single_observation_space,
-            envs.single_action_space,
-        )
+        if args.realistic:
+            method = DRQ
+        method = DQ
     else:
-        agent = DQN(args, envs.single_observation_space, envs.single_action_space)
+        method = DQN
+
+    agent = method(args, envs.single_observation_space, envs.single_action_space)
 
     obs, _ = envs.reset()
     for global_step in range(1, args.total_timesteps + 1):
         actions = agent.get_action(obs)
 
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
-        logger.log_episode(infos, rewards)
+        logger.log_episode(infos, rewards, terminations | truncations)
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `terminal_observation`
         real_next_obs = next_obs.copy()
@@ -72,7 +70,7 @@ def train(args, exp_name, logger: DQNLogger):
         logger.push(global_step)
         if global_step % 9999 == 0:
             agent.save(f"models/{exp_name}/")
-
+    agent.save(f"models/{exp_name}/")
     logger.log_artifact()
     envs.close()
 
