@@ -128,7 +128,11 @@ class DQN(nn.Module):
 
     def load(self, path):
         self.q_network.load_state_dict(
-            torch.load(path + "q_network.pt", map_location=self.device)
+            torch.load(
+                path + "q_network.pt",
+                map_location=self.device,
+                weights_only=True,
+            )
         )
         self.q_network.eval()
 

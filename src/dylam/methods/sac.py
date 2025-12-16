@@ -182,10 +182,18 @@ class SAC(nn.Module):
 
     def load(self, path):
         self.actor.load_state_dict(
-            torch.load(path + "actor.pt", map_location=self.device)
+            torch.load(
+                path + "actor.pt",
+                map_location=self.device,
+                weights_only=True,
+            )
         )
         self.critic.load_state_dict(
-            torch.load(path + "critic.pt", map_location=self.device)
+            torch.load(
+                path + "critic.pt",
+                map_location=self.device,
+                weights_only=True,
+            )
         )
         self.actor.eval()
         self.critic.eval()
