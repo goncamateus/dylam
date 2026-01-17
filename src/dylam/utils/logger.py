@@ -60,6 +60,9 @@ class WandbResultLogger:
         self.run.log(self.log, global_step)
         self.log = {}
 
+    def close(self):
+        self.run.finish()
+
 
 class SACLogger(WandbResultLogger):
     def __init__(self, name, params):

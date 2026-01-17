@@ -48,32 +48,38 @@ def train(args, exp_name, logger: QLogger):
     env.close()
 
 
-def main(params):
-    gym_name = params.gym_id.split("-")[1]
-    exp_name = f"{gym_name}-{params.setup}_{int(time.time())}"
+def main(exp_name, params):
     logger = QLogger(exp_name, params)
     setup_run(params)
     train(params, exp_name, logger)
+    logger.close()
 
 
 if __name__ == "__main__":
     args = parse_args()
     params = get_experiment(args)
-    dylam_tau = [i / 10 for i in range(10)]
+    dylam_tau = [0.9, 0.8, 0.7, 0.6, 0.5]
     dylam_rb = [10, 50, 100, 500]
     epsilon_decay_factor = [0.95, 0.9, 0.8]
+    gym_name = params.gym_id.split("-")[1]
     for tau in dylam_tau:
         params.dylam_tau = tau
+        params.setup = f"DyLam-Tau-{tau}"
+        exp_name = f"{gym_name}-Tau-{tau}_{int(time.time())}"
         for i in range(5):
             print(f"Running experiment {i} with dylam_tau =", tau)
-            main(params)
+            main(exp_name, params)
     for rb in dylam_rb:
         params.dylam_rb = rb
+        params.setup = f"DyLam-RB-{rb}"
+        exp_name = f"{gym_name}-RB-{rb}_{int(time.time())}"
         for i in range(5):
             print(f"Running experiment {i} with dylam_rb =", rb)
-            main(params)
+            main(exp_name, params)
     for edf in epsilon_decay_factor:
         params.epsilon_decay_factor = edf
+        params.setup = f"DyLam-EpsilonDecayFactor-{edf}"
+        exp_name = f"{gym_name}-EpsilonDecayFactor-{edf}_{int(time.time())}"
         for i in range(5):
             print(f"Running experiment {i} with epsilon_decay_factor =", edf)
-            main(params)
+            main(exp_name, params)

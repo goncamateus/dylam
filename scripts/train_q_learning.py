@@ -67,6 +67,7 @@ def main(params):
     logger = QLogger(exp_name, params)
     setup_run(params)
     train(params, exp_name, logger)
+    logger.close()
 
 
 if __name__ == "__main__":

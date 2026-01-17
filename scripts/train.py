@@ -84,6 +84,7 @@ def main(params):
     logger = SACLogger(exp_name, params)
     setup_run(params)
     train(params, exp_name, logger)
+    logger.close()
 
 
 if __name__ == "__main__":
