@@ -212,6 +212,8 @@ class SACStrat(SAC):
             args, observation_space, action_space, log_sig_min, log_sig_max
         )
         self.lambdas = torch.ones(args.num_rewards).to(self.device) / args.num_rewards
+        if args.lambdas != [1]:
+            self.lambdas = torch.Tensor(args.lambdas).to(self.device)
         self.r_max = torch.Tensor(args.r_max).to(self.device)
         self.r_min = torch.Tensor(args.r_min).to(self.device)
         self.normalizer = self.set_normalizer(args.normalizer)

@@ -120,6 +120,17 @@ Drq:
     num_rewards: 3
     comp_names: ["Energy", "Objective", "Illegal_action"]
 
+  TAXI_TUNED:
+    gym_id: mo-Taxi-v3
+    total_episodes: 2000
+    epsilon: 0.8
+    gamma: 0.9999
+    q_lr: 0.1
+    stratified: True
+    lambdas: [0.2, 0.2, 0.6]
+    num_rewards: 3
+    comp_names: ["Energy", "Objective", "Illegal_action"]
+
   MINECART:
     gym_id: mo-Minecart-v0
     num_envs: 16
@@ -165,6 +176,25 @@ Drq:
     update_frequency: 1
     stratified: True
     normalizer: "l1"
+    num_rewards: 3
+    comp_names: ["Move", "Ball", "Energy"]
+
+  VSS_TUNED:
+    gym_id: mo-VSS-v0
+    num_envs: 20
+    total_timesteps: 500000
+    learning_starts: 5000
+    tau: 0.999
+    policy_frequency: 1
+    policy_lr: 0.0001
+    q_lr: 0.0001
+    batch_size: 256
+    n_hidden: 4
+    gamma: 0.95
+    update_frequency: 1
+    stratified: True
+    normalizer: "l1"
+    lambdas: [0.45, 0.45, 0.1]
     num_rewards: 3
     comp_names: ["Move", "Ball", "Energy"]
 

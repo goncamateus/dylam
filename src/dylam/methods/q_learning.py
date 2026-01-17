@@ -99,6 +99,8 @@ class DQ(QLearning):
         self.num_rewards = args.num_rewards
         self.components_q = np.zeros((self.num_rewards, *self.q_table.shape))
         self.lambdas = np.ones(self.num_rewards)
+        if args.lambdas != [1]:
+            self.lambdas = np.array(args.lambdas)
 
     def update_component_tables(self, observation, action, reward, next_obs):
         def get_bootstrap_q(i):
