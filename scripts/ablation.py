@@ -65,24 +65,24 @@ if __name__ == "__main__":
     for tau in dylam_tau:
         params.dylam_tau = tau
         params.setup = f"DyLam-Tau-{tau}"
-        params.seed = int(time.time())
-        exp_name = f"{gym_name}-Tau-{tau}_{params.seed}"
-        for i in range(5):
+        for i in range(10):
+            params.seed = int(time.time())
+            exp_name = f"{gym_name}-Tau-{tau}_{params.seed}"
             print(f"Running experiment {i} with dylam_tau =", tau)
             main(exp_name, params)
     for rb in dylam_rb:
         params.dylam_rb = rb
         params.setup = f"DyLam-RB-{rb}"
-        params.seed = int(time.time())
-        exp_name = f"{gym_name}-RB-{rb}_{params.seed}"
-        for i in range(5):
+        for i in range(10):
+            params.seed = int(time.time())
+            exp_name = f"{gym_name}-RB-{rb}_{params.seed}"
             print(f"Running experiment {i} with dylam_rb =", rb)
             main(exp_name, params)
     for edf in epsilon_decay_factor:
         params.epsilon_decay_factor = edf
         params.setup = f"DyLam-EpsilonDecayFactor-{edf}"
-        params.seed = int(time.time())
-        exp_name = f"{gym_name}-EpsilonDecayFactor-{edf}_{params.seed}"
-        for i in range(5):
+        for i in range(10):
+            params.seed = int(time.time())
+            exp_name = f"{gym_name}-EpsilonDecayFactor-{edf}_{params.seed}"
             print(f"Running experiment {i} with epsilon_decay_factor =", edf)
             main(exp_name, params)
