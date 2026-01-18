@@ -6,16 +6,17 @@ from yaml import safe_load
 
 
 METHOD_COLORS = {
-    "Q-Learning": "orange",
-    "DQN": "orange",
+    "Q-Learning": "#FF6F00",
+    "DQN": "#FF6F00",
     "SAC": "#10FF00",
-    "Baseline": "orange",
-    "DyLam": "blue",
-    "drQ": "red",
-    "Q-Decomp": "green",
-    "Q-Decomposition": "green",
-    "DRQ": "red",
-    "GPILS": "green",
+    "Baseline": "#FF6F00",
+    "DyLam": "#10FF00",
+    "drQ": "#0091FF",
+    "Q-Decomp": "#EE00FF",
+    "Q-Decomposition": "#EE00FF",
+    "DRQ": "#0091FF",
+    "Tuned-DRQ": "#FFD900",
+    "GPILS": "#EE00FF",
 }
 
 FORMATTER = ticker.ScalarFormatter(useMathText=True)
@@ -23,7 +24,7 @@ FORMATTER.set_scientific(True)
 FORMATTER.set_powerlimits((-1, 1))
 FONT = font_manager.FontProperties(weight='bold')
 
-PARAMS = safe_load(open("../experiments.yml", "r"))
+PARAMS = safe_load(open("../scripts/experiments.yml", "r"))
 REWARD_RANGES = {
     value["gym_id"].replace("mo-", ""): {
         "r_max": value["r_max"],
