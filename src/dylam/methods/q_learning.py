@@ -139,7 +139,7 @@ class DQ(QLearning):
         self.components_q = np.load(path + "components_q.npy")
 
 
-class DRQ(DQ):
+class UDC(DQ):
     def update_component_tables(self, observation, action, reward, next_obs):
         def get_bootstrap_q(i):
             next_action = self.get_output(next_obs)
@@ -159,7 +159,7 @@ class DRQ(DQ):
         return values
 
 
-class QDyLam(DRQ):
+class QDyLam(UDC):
     def __init__(self, args, observation_space, action_space):
         super().__init__(args, observation_space, action_space)
         self.r_max = np.array(args.r_max)

@@ -98,7 +98,7 @@ Decq:
     num_rewards: 4
     comp_names: ["Shaping", "Power_linear", "Power_angular", "Goal"]
 
-Drq:
+Udc:
   CHICKENBANANA:
     gym_id: mo-ChickenBanana-v0
     total_episodes: 2001

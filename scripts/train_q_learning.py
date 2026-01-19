@@ -3,7 +3,7 @@
 
 import time
 
-from dylam.methods.q_learning import DQ, DRQ, QDyLam, QLearning
+from dylam.methods.q_learning import DQ, UDC, QDyLam, QLearning
 from dylam.utils.experiment import get_experiment, parse_args, q_make_env, setup_run
 from dylam.utils.logger import QLogger
 
@@ -13,7 +13,7 @@ def get_agent_type(args):
         if args.dylam:
             return QDyLam
         if args.realistic:
-            return DRQ
+            return UDC
         return DQ
     return QLearning
 

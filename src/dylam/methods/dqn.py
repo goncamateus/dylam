@@ -248,7 +248,7 @@ class DQ(DQN):
                 self.episode_rewards[i] = np.zeros(self.num_rewards)
 
 
-class DRQ(DQ):
+class UDC(DQ):
     def update_q(
         self,
         state_batch,

@@ -5,7 +5,7 @@ import time
 
 import gymnasium as gym
 
-from dylam.methods.dqn import DQ, DQN, DRQ
+from dylam.methods.dqn import DQ, DQN, UDC
 from dylam.utils.experiment import get_experiment, make_env, parse_args, setup_run
 from dylam.utils.logger import DQNLogger
 
@@ -17,7 +17,7 @@ def train(args, exp_name, logger: DQNLogger):
 
     if args.stratified:
         if args.realistic:
-            method = DRQ
+            method = UDC
         method = DQ
     else:
         method = DQN
