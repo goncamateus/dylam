@@ -11,11 +11,11 @@ METHOD_COLORS = {
     "SAC": "#FF6F00",
     "Baseline": "#FF6F00",
     "DyLam": "#39EA65",
-    "drQ": "#0091FF",
+    "udc": "#0091FF",
     "Q-Decomp": "#EE00FF",
     "Q-Decomposition": "#EE00FF",
-    "DRQ": "#0091FF",
-    "Tuned-DRQ": "#FFD900",
+    "UDC": "#0091FF",
+    "Tuned-UDC": "#FFD900",
     "GPILS": "#EE00FF",
 }
 
