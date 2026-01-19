@@ -8,9 +8,9 @@ from yaml import safe_load
 METHOD_COLORS = {
     "Q-Learning": "#FF6F00",
     "DQN": "#FF6F00",
-    "SAC": "#10FF00",
+    "SAC": "#FF6F00",
     "Baseline": "#FF6F00",
-    "DyLam": "#10FF00",
+    "DyLam": "#39EA65",
     "drQ": "#0091FF",
     "Q-Decomp": "#EE00FF",
     "Q-Decomposition": "#EE00FF",
