@@ -194,8 +194,9 @@ Udc:
     update_frequency: 1
     stratified: True
     normalizer: "l1"
-    lambdas: [0.45, 0.45, 0.1]
+    lambdas: [0.38, 0.52, 0.1]
     num_rewards: 3
+    reward_scaling: 1000
     comp_names: ["Move", "Ball", "Energy"]
 
 Dylam:

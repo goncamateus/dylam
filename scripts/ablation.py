@@ -61,6 +61,7 @@ if __name__ == "__main__":
     dylam_tau = [0.9, 0.8, 0.7, 0.6, 0.5]
     dylam_rb = [10, 50, 100, 500]
     epsilon_decay_factor = [0.95, 0.9, 0.8]
+    normalizers = ["softmax", "minmax", "l1"]
     gym_name = params.gym_id.split("-")[1]
     for tau in dylam_tau:
         params.dylam_tau = tau
@@ -85,4 +86,12 @@ if __name__ == "__main__":
             params.seed = int(time.time())
             exp_name = f"{gym_name}-EpsilonDecayFactor-{edf}_{params.seed}"
             print(f"Running experiment {i} with epsilon_decay_factor =", edf)
+            main(exp_name, params)
+    for normalizer in normalizers:
+        params.normalizer = normalizer
+        params.setup = f"DyLam-Normalizer-{normalizer}"
+        for i in range(10):
+            params.seed = int(time.time())
+            exp_name = f"{gym_name}-Normalizer-{normalizer}_{params.seed}"
+            print(f"Running experiment {i} with normalizer =", normalizer)
             main(exp_name, params)

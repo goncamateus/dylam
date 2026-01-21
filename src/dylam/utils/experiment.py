@@ -19,7 +19,7 @@ def strtobool(value: str) -> bool:
 
 def softmax_norm(dQ):
     expdQ = torch.exp(dQ) - 1
-    return expdQ / (torch.sum(expdQ, 0) + 1e-4)
+    return (expdQ + 1e-4) / (torch.sum(expdQ, 0) + 1e-4)
 
 
 def minmax_norm(dQ):

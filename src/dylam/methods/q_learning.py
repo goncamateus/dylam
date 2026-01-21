@@ -1,8 +1,10 @@
 import os
 
 import numpy as np
+import torch
 
 from dylam.utils.buffer import StratLastRewards
+from dylam.utils.experiment import l1_norm, minmax_norm, softmax_norm
 
 
 class QLearning:
@@ -169,6 +171,19 @@ class QDyLam(UDC):
         self.last_reward_mean = None
         self.last_episode_rewards = StratLastRewards(args.dylam_rb, self.num_rewards)
         self.lambdas = np.ones(self.num_rewards) / self.num_rewards
+        self.normalizer = self.set_normalizer(args.normalizer)
+
+    def set_normalizer(self, normalizer):
+        norm_func = None
+        if normalizer == "softmax":
+            norm_func = softmax_norm
+        elif normalizer == "minmax":
+            norm_func = minmax_norm
+        elif normalizer == "l1":
+            norm_func = l1_norm
+        else:
+            raise ValueError(f"Normalizer {normalizer} not found.")
+        return norm_func
 
     def get_output(self, observation):
         lambdas = self.lambdas.reshape(-1, 1)
@@ -224,6 +239,5 @@ class QDyLam(UDC):
                     rew_mean_t + (self.last_reward_mean - rew_mean_t) * self.rew_tau
                 )
             zeta = np.clip((self.r_max - rew_mean_t) / (self.r_max - self.r_min), 0, 1)
-            weights = np.exp(zeta) - 1
-            self.lambdas = (weights + 1e-4) / np.sum(weights + 1e-4, 0)
+            self.lambdas = self.normalizer(torch.Tensor(zeta)).cpu().numpy()
             self.last_reward_mean = rew_mean_t
