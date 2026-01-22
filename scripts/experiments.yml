@@ -61,7 +61,7 @@ Decq:
     stratified: True
     realistic: False
     num_rewards: 3
-    comp_names: ["Objective", "Banana", "Chicken"]
+    comp_names: ["Gate", "Banana", "Chicken"]
 
   TAXI:
     gym_id: mo-Taxi-v3
@@ -108,7 +108,7 @@ Udc:
     epsilon_decay_factor: 0.9988
     stratified: True
     num_rewards: 3
-    comp_names: ["Objective", "Banana", "Chicken"]
+    comp_names: ["Gate", "Banana", "Chicken"]
 
   TAXI:
     gym_id: mo-Taxi-v3
@@ -212,7 +212,7 @@ Dylam:
     dylam: True
     r_max: [100, 30, 70]
     r_min: [0, 0, 0]
-    comp_names: ["Objective", "Banana", "Chicken"]
+    comp_names: ["Gate", "Banana", "Chicken"]
 
   TAXI:
     gym_id: mo-Taxi-v3
