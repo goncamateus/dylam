@@ -40,11 +40,12 @@ def smooth_curve(points: np.ndarray, factor: int = 100):
 
 
 def plot_result(
-    gym_id,
+    title,
     results: dict,
     formatter: ticker.ScalarFormatter,
     colors: dict,
     y_label: str,
+    base_path: str = ".",
     x_label: str = "Number of training steps",
     smooth_factor: int = 100,
     smooth_factor_min_max: int = 100,
@@ -74,10 +75,10 @@ def plot_result(
     ax.set_ylabel(y_label, labelpad=1)
     ax.grid(True)
     ax.legend(prop=FONT)
-    ax.set_title(f"{gym_id}")
+    ax.set_title(f"{title}")
     plt.gca().yaxis.set_major_formatter(formatter)
     plt.gca().xaxis.set_major_formatter(formatter)
-    plt.savefig(f"{gym_id}.pdf", format="pdf", bbox_inches="tight")
+    plt.savefig(f"{base_path}/{title}.pdf", format="pdf", bbox_inches="tight")
     plt.close()
 
 
