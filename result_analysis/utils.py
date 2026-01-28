@@ -22,7 +22,7 @@ METHOD_COLORS = {
 FORMATTER = ticker.ScalarFormatter(useMathText=True)
 FORMATTER.set_scientific(True)
 FORMATTER.set_powerlimits((-1, 1))
-FONT = font_manager.FontProperties(weight='bold')
+FONT = font_manager.FontProperties(weight="bold")
 
 PARAMS = safe_load(open("../scripts/experiments.yml", "r"))
 REWARD_RANGES = {
@@ -90,6 +90,7 @@ def plot_result_taxi(
     y_label: str,
     x_label: str = "Number of training steps",
     smooth_factor: int = 100,
+    base_path: str = ".",
 ):
     def get_reward(result, keys):
         reward = (
@@ -132,12 +133,17 @@ def plot_result_taxi(
     ax.set_title(f"{gym_id}")
     plt.gca().yaxis.set_major_formatter(formatter)
     plt.gca().xaxis.set_major_formatter(formatter)
-    plt.savefig(f"{gym_id}.pdf", format="pdf", bbox_inches="tight")
+    plt.savefig(f"{base_path}/{gym_id}.pdf", format="pdf", bbox_inches="tight")
     plt.close()
 
 
 def plot_lambdas(
-    title, lambdas, formatter, smooth_factor, x_label="Number of training steps"
+    title,
+    lambdas,
+    formatter,
+    smooth_factor,
+    x_label="Number of training steps",
+    base_path=".",
 ):
     COLOR = {
         0: "red",
@@ -166,7 +172,7 @@ def plot_lambdas(
     ax.set_title(f"{title}")
     plt.gca().yaxis.set_major_formatter(formatter)
     plt.gca().xaxis.set_major_formatter(formatter)
-    path = title + "-weights.pdf"
+    path = base_path + "/" + title + "-weights.pdf"
     plt.savefig(path, format="pdf", bbox_inches="tight")
     plt.close()
 
@@ -179,6 +185,7 @@ def plot_rewards(
     formatter,
     smooth_factor,
     x_label="Number of training steps",
+    base_path=".",
 ):
     def normalize_rewards(rew, reward_max, reward_min):
         rew = np.array(rew)
@@ -220,7 +227,7 @@ def plot_rewards(
     ax.set_title(title)
     plt.gca().yaxis.set_major_formatter(formatter)
     plt.gca().xaxis.set_major_formatter(formatter)
-    path = title + "-components.pdf"
+    path = base_path + "/" + title + "-components.pdf"
     plt.savefig(path, format="pdf", bbox_inches="tight")
     plt.close()
 
@@ -228,7 +235,7 @@ def plot_rewards(
 def pareto_frontier(obj1, obj2):
     """
     Find the indices of the Pareto frontier in a two-objective optimization problem.
-    
+
     Parameters:
         obj1 (np.ndarray): The first objective values.
         obj2 (np.ndarray): The second objective values.
