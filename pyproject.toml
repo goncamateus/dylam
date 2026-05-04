@@ -8,7 +8,7 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "gymnasium[mujoco]==0.29.1",
+    "gymnasium[box2d, mujoco]==0.29.1",
     "mujoco>=3.0.0",
     "matplotlib>=3.10.8",
     "minigrid>=3.0.0",
