@@ -1,0 +1,24 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    ".opencode/plugins/graphify.js"
+  ],
+  "provider": {
+    "llama.cpp": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "llama-server",
+      "options": {
+        "baseURL": "http://127.0.0.1:8080/v1"
+      },
+      "models": { 
+        "llama-cpp": {
+          "name": "local-model",
+          "limit": {
+            "context": 256000,
+            "output": 128000
+          }
+        }
+      }
+    }
+  }
+}
