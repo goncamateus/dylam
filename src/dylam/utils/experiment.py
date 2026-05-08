@@ -139,6 +139,12 @@ def base_hyperparams():
         "gae_lambda": 0,
         "update_epochs": 10,
         "realistic": True,
+        "algorithm": "cond",
+        "memory_strategy": "std",
+        "weight_change_freq": 1000,
+        "weight_mode": "regular",
+        "reset_optimizer_on_w_change": False,
+        "der_secondary_size": 10000,
     }
     return hyper_params
 

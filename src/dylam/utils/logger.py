@@ -159,3 +159,22 @@ class PPOLogger(WandbResultLogger):
 
     def log_artifact(self):
         self.artifact.add_file(f"models/{self.run.name}/actor.pt")
+
+
+class DynMORLLogger(DQNLogger):
+    def __init__(self, name, params):
+        params.method = "dynmorl"
+        super(DQNLogger, self).__init__(name, params)
+
+    def log_weights(self, w):
+        for i in range(len(w)):
+            val = w[i].item() if hasattr(w[i], "item") else float(w[i])
+            self.log.update({f"lambdas/{self.comp_names[i]}": val})
+
+    def log_losses(self, losses):
+        if "qf_loss_0" in losses:
+            for i in range(len(losses)):
+                self.log.update({f"losses/qf_loss_{i}": losses[f"qf_loss_{i}"]})
+
+    def log_artifact(self):
+        self.artifact.add_file(f"models/{self.run.name}/q_network.pt")

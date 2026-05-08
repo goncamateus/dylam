@@ -230,7 +230,7 @@ Dylam:
   MINECART:
     gym_id: mo-Minecart-v0
     num_envs: 16
-    total_timesteps: 20000
+    total_timesteps: 200000
     gamma: 0.98
     target_network_frequency: 200
     tau: 0.00001
@@ -292,3 +292,58 @@ Dylam:
     dylam_rb: 500
     dylam_tau: 0.9999
     comp_names: ["Move", "Ball", "Energy"]
+
+Dynmorl:
+  MINECART:
+    gym_id: mo-Minecart-v0
+    num_envs: 16
+    total_timesteps: 200000
+    gamma: 0.98
+    target_network_frequency: 200
+    tau: 0.00001
+    epsilon: 1.0
+    epsilon_decay_factor: 0.99997
+    stratified: true
+    num_rewards: 3
+    r_max: [1.5, 1.5, 0]
+    r_min: [0, 0, -20]
+    comp_names: ["First_minerium", "Second_minerium", "Fuel"]
+    algorithm: cond
+    memory_strategy: der
+    weight_change_freq: 1000
+    weight_mode: regular
+    reset_optimizer_on_w_change: false
+    der_secondary_size: 10000
+
+  HALFCHEETAH:
+    gym_id: mo-HalfCheetah-v4
+    num_envs: 16
+    total_timesteps: 500000
+    stratified: true
+    num_rewards: 2
+    r_max: [800, -200]
+    r_min: [0, -800]
+    comp_names: ["Run", "Control"]
+    algorithm: cond
+    memory_strategy: der
+    weight_change_freq: 1000
+    weight_mode: regular
+    reset_optimizer_on_w_change: false
+    der_secondary_size: 10000
+
+  LUNARLANDER:
+    gym_id: mo-LunarLander-v2
+    num_envs: 16
+    total_timesteps: 100000
+    epsilon: 0.8
+    stratified: true
+    num_rewards: 4
+    r_max: [1000, -100, -20, 1]
+    r_min: [-1000, -1000, -1000, -1]
+    comp_names: ["Shaping", "Power_linear", "Power_angular", "Goal"]
+    algorithm: cond
+    memory_strategy: der
+    weight_change_freq: 1000
+    weight_mode: regular
+    reset_optimizer_on_w_change: false
+    der_secondary_size: 10000
