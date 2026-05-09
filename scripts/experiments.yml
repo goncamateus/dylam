@@ -227,6 +227,32 @@ Dylam:
     r_min: [-200, 0, -10]
     comp_names: ["Energy", "Objective", "Illegal_action"]
 
+  TAXI_ROBUST1:
+    gym_id: mo-Taxi-v3  
+    total_episodes: 2000
+    gamma: 0.9999
+    q_lr: 0.1
+    stratified: True
+    num_rewards: 3
+    dylam: True
+    lambdas: [0.3333, 0.3333, 0.3333]
+    r_max: [-15, 1.25, 0]
+    r_min: [-150, 0, -7.5]
+    comp_names: ["Energy", "Objective", "Illegal_action"]
+
+  TAXI_ROBUST2:
+    gym_id: mo-Taxi-v3
+    total_episodes: 2000
+    gamma: 0.9999
+    q_lr: 0.1
+    stratified: True
+    num_rewards: 3
+    dylam: True
+    lambdas: [0.3333, 0.3333, 0.3333]
+    r_max: [-25, 0.75, 0]
+    r_min: [-250, 0, -12.5]
+    comp_names: ["Energy", "Objective", "Illegal_action"]
+
   MINECART:
     gym_id: mo-Minecart-v0
     num_envs: 16
@@ -289,6 +315,52 @@ Dylam:
     num_rewards: 3
     r_max: [150, 40, -100]
     r_min: [0, 0, -300]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    comp_names: ["Move", "Ball", "Energy"]
+
+  ROBUSTNESS_TEST1:
+    gym_id: mo-VSS-v0
+    num_envs: 20
+    total_timesteps: 500000
+    learning_starts: 5000
+    tau: 0.999
+    policy_frequency: 1
+    policy_lr: 0.0001
+    q_lr: 0.0001
+    batch_size: 256
+    n_hidden: 4
+    gamma: 0.95
+    update_frequency: 1
+    stratified: True
+    dylam: True
+    normalizer: "l1"
+    num_rewards: 3
+    r_max: [112.5, 30, -125]
+    r_min: [0, 0, -375]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    comp_names: ["Move", "Ball", "Energy"]
+
+  ROBUSTNESS_TEST2:
+    gym_id: mo-VSS-v0
+    num_envs: 20
+    total_timesteps: 500000
+    learning_starts: 5000
+    tau: 0.999
+    policy_frequency: 1
+    policy_lr: 0.0001
+    q_lr: 0.0001
+    batch_size: 256
+    n_hidden: 4
+    gamma: 0.95
+    update_frequency: 1
+    stratified: True
+    dylam: True
+    normalizer: "l1"
+    num_rewards: 3
+    r_max: [187.5, 50, -75]
+    r_min: [0, 0, -225]
     dylam_rb: 500
     dylam_tau: 0.9999
     comp_names: ["Move", "Ball", "Energy"]
