@@ -17,6 +17,8 @@ METHOD_COLORS = {
     "UDC": "#0091FF",
     "Tuned-UDC": "#FFD900",
     "GPILS": "#EE00FF",
+    "1.25": "#FF6F00",
+    "0.75": "#0091FF",
 }
 
 FORMATTER = ticker.ScalarFormatter(useMathText=True)
