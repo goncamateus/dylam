@@ -228,7 +228,7 @@ Dylam:
     comp_names: ["Energy", "Objective", "Illegal_action"]
 
   TAXI_ROBUST1:
-    gym_id: mo-Taxi-v3  
+    gym_id: mo-Taxi-v3
     total_episodes: 2000
     gamma: 0.9999
     q_lr: 0.1
@@ -236,8 +236,8 @@ Dylam:
     num_rewards: 3
     dylam: True
     lambdas: [0.3333, 0.3333, 0.3333]
-    r_max: [-15, 1.25, 0]
-    r_min: [-150, 0, -7.5]
+    r_max: [-5, 1, 0]
+    r_min: [-200, 0, -10]
     comp_names: ["Energy", "Objective", "Illegal_action"]
 
   TAXI_ROBUST2:
@@ -249,8 +249,8 @@ Dylam:
     num_rewards: 3
     dylam: True
     lambdas: [0.3333, 0.3333, 0.3333]
-    r_max: [-25, 0.75, 0]
-    r_min: [-250, 0, -12.5]
+    r_max: [-40, 1, 0]
+    r_min: [-200, 0, -10]
     comp_names: ["Energy", "Objective", "Illegal_action"]
 
   MINECART:
