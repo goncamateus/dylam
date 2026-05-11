@@ -151,7 +151,7 @@ Udc:
     stratified: True
     num_rewards: 2
     comp_names: ["Run", "Control"]
-  
+
   LUNARLANDER:
     gym_id: mo-LunarLander-v2
     num_envs: 16

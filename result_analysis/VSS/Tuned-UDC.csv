@@ -1,4 +1,4 @@
-"Step","env: VSS_TUNED - ep_info/Goal","env: VSS_TUNED - ep_info/Goal__MIN","env: VSS_TUNED - ep_info/Goal__MAX"
+"Step","env: VSS - ep_info/Goal","env: VSS_TUNED - ep_info/Goal__MIN","env: VSS_TUNED - ep_info/Goal__MAX"
 "145","-1","-1","-1"
 "168","1","1","1"
 "171","-1","-1","-1"

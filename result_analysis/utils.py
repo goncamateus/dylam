@@ -11,14 +11,18 @@ METHOD_COLORS = {
     "SAC": "#FF6F00",
     "Baseline": "#FF6F00",
     "DyLam": "#39EA65",
+    "Nominal": "#39EA65",
+    "Nominal (20 steps)": "#39EA65",
     "udc": "#0091FF",
     "Q-Decomp": "#EE00FF",
     "Q-Decomposition": "#EE00FF",
     "UDC": "#0091FF",
     "Tuned-UDC": "#FFD900",
     "GPILS": "#EE00FF",
-    "1.25": "#FF6F00",
-    "0.75": "#0091FF",
+    r"+25% bounds": "#FF6F00",
+    r"Optimistic (5 steps)": "#FF6F00",
+    r"-25% bounds": "#0091FF",
+    r"Pessimistic (40 steps)": "#0091FF",
 }
 
 FORMATTER = ticker.ScalarFormatter(useMathText=True)
