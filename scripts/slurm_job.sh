@@ -31,3 +31,5 @@ uv run --directory scripts/ python train.py --env $1 --setup $2 --track --captur
 
 echo "Copying results back to project directory"
 rsync -av --exclude='.venv' --exclude='.git/' --exclude='__pycache__/' --exclude='scripts/models/' --exclude='scripts/videos/' --exclude='scripts/wandb/' $TMP_DIR/ $PROJECT_DIR/ 
+cd /tmp
+rm -rf $TMP_DIR
