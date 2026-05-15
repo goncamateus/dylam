@@ -11,6 +11,7 @@ module load Python3.10
 export UV_CACHE_DIR=/tmp/uv-cache/
 PROJECT_DIR=$(pwd)
 TMP_DIR=/tmp/$USER/dylam/
+rm -rf $TMP_DIR
 mkdir -p $TMP_DIR
 
 echo "Copying project files to $TMP_DIR"
