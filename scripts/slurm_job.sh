@@ -11,7 +11,7 @@ module load Python3.10
 export UV_CACHE_DIR=/tmp/uv-cache/
 cd ..
 PROJECT_DIR=$(pwd)
-TMP_DIR=/tmp/$USER/dylam/
+TMP_DIR=/tmp/$USER/$RANDOM
 rm -rf $TMP_DIR
 mkdir -p $TMP_DIR
 
@@ -27,6 +27,7 @@ uv venv --clear --no-cache --link-mode hardlink
 echo "Installing project dependencies"
 uv sync --frozen
 uv pip install -e .
+uv pip install box2d-py
 
 echo "Starting Job"
 uv run --directory scripts/ python train.py --env $1 --setup $2 --track --capture-video
