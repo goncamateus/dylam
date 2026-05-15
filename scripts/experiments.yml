@@ -319,7 +319,7 @@ Dylam:
     dylam_tau: 0.9999
     comp_names: ["Move", "Ball", "Energy"]
 
-  ROBUSTNESS_TEST1:
+  ROBUSTNESS_MOVE1:
     gym_id: mo-VSS-v0
     num_envs: 20
     total_timesteps: 500000
@@ -336,13 +336,13 @@ Dylam:
     dylam: True
     normalizer: "l1"
     num_rewards: 3
-    r_max: [112.5, 30, -125]
-    r_min: [0, 0, -375]
+    r_max: [225, 40, -100]
+    r_min: [0, 0, -300]
     dylam_rb: 500
     dylam_tau: 0.9999
     comp_names: ["Move", "Ball", "Energy"]
 
-  ROBUSTNESS_TEST2:
+  ROBUSTNESS_MOVE2:
     gym_id: mo-VSS-v0
     num_envs: 20
     total_timesteps: 500000
@@ -359,8 +359,54 @@ Dylam:
     dylam: True
     normalizer: "l1"
     num_rewards: 3
-    r_max: [187.5, 50, -75]
-    r_min: [0, 0, -225]
+    r_max: [112.5, 40, -100]
+    r_min: [0, 0, -300]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    comp_names: ["Move", "Ball", "Energy"]
+
+  ROBUSTNESS_BALL1:
+    gym_id: mo-VSS-v0
+    num_envs: 20
+    total_timesteps: 500000
+    learning_starts: 5000
+    tau: 0.999
+    policy_frequency: 1
+    policy_lr: 0.0001
+    q_lr: 0.0001
+    batch_size: 256
+    n_hidden: 4
+    gamma: 0.95
+    update_frequency: 1
+    stratified: True
+    dylam: True
+    normalizer: "l1"
+    num_rewards: 3
+    r_max: [225, 50, -100]
+    r_min: [0, 0, -300]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    comp_names: ["Move", "Ball", "Energy"]
+
+  ROBUSTNESS_BALL2:
+    gym_id: mo-VSS-v0
+    num_envs: 20
+    total_timesteps: 500000
+    learning_starts: 5000
+    tau: 0.999
+    policy_frequency: 1
+    policy_lr: 0.0001
+    q_lr: 0.0001
+    batch_size: 256
+    n_hidden: 4
+    gamma: 0.95
+    update_frequency: 1
+    stratified: True
+    dylam: True
+    normalizer: "l1"
+    num_rewards: 3
+    r_max: [112.5, 20, -100]
+    r_min: [0, 0, -300]
     dylam_rb: 500
     dylam_tau: 0.9999
     comp_names: ["Move", "Ball", "Energy"]
