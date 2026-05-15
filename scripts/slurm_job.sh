@@ -9,6 +9,7 @@
 # Load modules and activate python environment
 module load Python3.10
 export UV_CACHE_DIR=/tmp/uv-cache/
+cd ..
 PROJECT_DIR=$(pwd)
 TMP_DIR=/tmp/$USER/dylam/
 rm -rf $TMP_DIR
