@@ -7,7 +7,8 @@
 #SBATCH --mail-user=mgm4@cin.ufpe.br
 
 # Load modules and activate python environment
-module load Python3.10
+module use /opt/easybuild/modules/all
+module load Python3.10 SWIG
 export UV_CACHE_DIR=/tmp/uv-cache/
 cd ..
 PROJECT_DIR=$(pwd)
@@ -27,7 +28,6 @@ uv venv --clear --no-cache --link-mode hardlink
 echo "Installing project dependencies"
 uv sync --frozen
 uv pip install -e .
-uv pip install box2d-py
 
 echo "Starting Job"
 uv run --directory scripts/ python train.py --env $1 --setup $2 --track --capture-video
