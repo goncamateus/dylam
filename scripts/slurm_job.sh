@@ -1,8 +1,9 @@
 #!/bin/bash
-#SBATCH --mem 8G
 #SBATCH -c 8
+#SBATCH --mem 8G
 #SBATCH --gpus 1
 #SBATCH -p short-simple
+#SBATCH --account=hansenclever_de_franca_bassani_group
 #SBATCH --mail-type=FAIL,END,ARRAY_TASKS
 #SBATCH --mail-user=mgm4@cin.ufpe.br
 
