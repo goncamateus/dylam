@@ -6,21 +6,21 @@ from yaml import safe_load
 
 
 METHOD_COLORS = {
-    "Q-Learning": "#FF6F00",
-    "DQN": "#FF6F00",
-    "SAC": "#FF6F00",
-    "Baseline": "#FF6F00",
-    "DyLam": "#39EA65",
-    "Nominal": "#39EA65",
-    "Nominal (20 steps)": "#39EA65",
+    "Q-Learning": "#FF6B2B",
+    "DQN": "#FF6B2B",
+    "SAC": "#FF6B2B",
+    "Baseline": "#FF6B2B",
+    "DyLam": "#00C48C",
+    "Nominal": "#00C48C",
+    "Nominal (20 steps)": "#00C48C",
     "udc": "#0091FF",
-    "Q-Decomp": "#EE00FF",
-    "Q-Decomposition": "#EE00FF",
+    "Q-Decomp": "#F5317F",
+    "Q-Decomposition": "#F5317F",
     "UDC": "#0091FF",
-    "Tuned-UDC": "#FFD900",
-    "GPILS": "#EE00FF",
-    r"+25% bounds": "#FF6F00",
-    r"Optimistic (5 steps)": "#FF6F00",
+    "Tuned-UDC": "#9B5DE5",
+    "GPILS": "#F5317F",
+    r"+25% bounds": "#FF6B2B",
+    r"Optimistic (5 steps)": "#FF6B2B",
     r"-25% bounds": "#0091FF",
     r"Pessimistic (40 steps)": "#0091FF",
 }
@@ -152,10 +152,10 @@ def plot_lambdas(
     base_path=".",
 ):
     COLOR = {
-        0: "red",
-        1: "blue",
-        2: "green",
-        3: "orange",
+        0: "#00C48C",
+        1: "#FF6B2B",
+        2: "#0091FF",
+        3: "#F5317F",
     }
     fig, ax = plt.subplots(figsize=(10, 6))
     for i, weight in enumerate(lambdas.keys()):
@@ -200,10 +200,10 @@ def plot_rewards(
         return rew
 
     PARAM = {
-        0: ("red", (0, (3, 1))),
-        1: ("blue", (0, (3, 4))),
-        2: ("green", (0, (3, 8))),
-        3: ("orange", (0, (3, 12))),
+        0: ("#00C48C", (0, (3, 1))),
+        1: ("#FF6B2B", (0, (3, 4))),
+        2: ("#0091FF", (0, (3, 8))),
+        3: ("#F5317F", (0, (3, 12))),
     }
     fig, ax = plt.subplots(figsize=(10, 6))
     normalized_max_rewards = [
