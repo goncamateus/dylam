@@ -152,9 +152,9 @@ def plot_lambdas(
     base_path=".",
 ):
     COLOR = {
-        0: "#00C48C",
+        0: "#0091FF",
         1: "#FF6B2B",
-        2: "#0091FF",
+        2: "#00C48C",
         3: "#F5317F",
     }
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -200,9 +200,9 @@ def plot_rewards(
         return rew
 
     PARAM = {
-        0: ("#00C48C", (0, (3, 1))),
+        0: ("#0091FF", (0, (3, 1))),
         1: ("#FF6B2B", (0, (3, 4))),
-        2: ("#0091FF", (0, (3, 8))),
+        2: ("#00C48C", (0, (3, 8))),
         3: ("#F5317F", (0, (3, 12))),
     }
     fig, ax = plt.subplots(figsize=(10, 6))
