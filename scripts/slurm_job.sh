@@ -31,7 +31,7 @@ uv sync --frozen
 uv pip install -e .
 
 echo "Starting Job"
-uv run --directory scripts/ python train.py --env $1 --setup $2 --track --capture-video
+uv run --directory scripts/ python $1 --env $2 --setup $3 --track --capture-video
 
 echo "Copying results back to project directory"
 rsync -av --exclude='.venv' --exclude='.git/' --exclude='__pycache__/' --exclude='scripts/models/' --exclude='scripts/videos/' --exclude='scripts/wandb/' $TMP_DIR/ $PROJECT_DIR/ 
