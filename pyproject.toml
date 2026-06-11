@@ -16,7 +16,7 @@ dependencies = [
     "numpy==1.26.4",
     "rsoccer-gym; sys_platform == 'linux'",
     "seaborn>=0.13.2",
-    "torch==2.8.0",
+    "torch==2.12.0",
     "wandb>=0.23.1",
     "moviepy>=2.2.1",
     "jupyter>=1.1.1",
