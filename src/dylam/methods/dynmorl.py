@@ -98,10 +98,9 @@ class DynMORL(nn.Module):
         return torch.Tensor(raw).to(self.device)
 
     def update_q(self, state_batch, action_batch, reward_batch, next_state_batch, done_batch, w_stored):
+        w_update = w_stored
         if self.algorithm == "cond":
             w_update = self._sample_weights(state_batch.shape[0])
-        else:
-            w_update = w_stored
 
         qf_losses = []
         q_mat = self._q_mat(self.q_network, state_batch, w_update)
