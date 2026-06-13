@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH -c 8
-#SBATCH --mem 8G
+#SBATCH -c 16
+#SBATCH --mem 32G
 #SBATCH --gpus 1
 #SBATCH -p short-simple
 #SBATCH --account=hansenclever_de_franca_bassani_group
@@ -31,7 +31,13 @@ uv sync --frozen
 uv pip install -e .
 
 echo "Starting Job"
-uv run --directory scripts/ python $1 --env $2 --setup $3 --track --capture-video
+for i in {1..5}; do
+    (
+        sleep $(( (i-1) * 5 ))
+        uv run --directory scripts/ python $1 --env $2 --setup $3 --track --capture-video
+    ) &
+done
+wait
 
 echo "Copying results back to project directory"
 rsync -av --exclude='.venv' --exclude='.git/' --exclude='__pycache__/' --exclude='scripts/models/' --exclude='scripts/videos/' --exclude='scripts/wandb/' $TMP_DIR/ $PROJECT_DIR/ 
