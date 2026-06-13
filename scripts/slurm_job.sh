@@ -10,6 +10,7 @@
 # Load modules and activate python environment
 module use /opt/easybuild/modules/all
 module load Python3.10 SWIG
+export MUJOCO_GL=egl
 export UV_CACHE_DIR=/tmp/uv-cache/
 cd ..
 PROJECT_DIR=$(pwd)
