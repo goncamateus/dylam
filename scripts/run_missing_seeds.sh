@@ -19,11 +19,9 @@ DRY=${1:-}
 
 # env  setup  n_missing
 JOBS=(
-  "HALFCHEETAH Baseline 5"
-  "HALFCHEETAH Drq      4"
   "VSS         Baseline 5"
-  "VSS         Drq      5"
-  "VSS_TUNED   Drq      3"
+  "VSS         Udc      5"
+  "VSS_TUNED   Udc      3"
 )
 
 for job in "${JOBS[@]}"; do
