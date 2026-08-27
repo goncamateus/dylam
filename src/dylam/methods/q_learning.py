@@ -4,7 +4,12 @@ import numpy as np
 import torch
 
 from dylam.utils.buffer import StratLastRewards
-from dylam.utils.experiment import l1_norm, minmax_norm, softmax_norm
+from dylam.utils.experiment import (
+    l1_norm,
+    minmax_norm,
+    minmax_norm_fixed,
+    softmax_norm,
+)
 
 
 class QLearning:
@@ -179,6 +184,8 @@ class QDyLam(UDC):
             norm_func = softmax_norm
         elif normalizer == "minmax":
             norm_func = minmax_norm
+        elif normalizer == "minmax-fixed":
+            norm_func = minmax_norm_fixed
         elif normalizer == "l1":
             norm_func = l1_norm
         else:
@@ -241,3 +248,41 @@ class QDyLam(UDC):
             zeta = np.clip((self.r_max - rew_mean_t) / (self.r_max - self.r_min), 0, 1)
             self.lambdas = self.normalizer(torch.Tensor(zeta)).cpu().numpy()
             self.last_reward_mean = rew_mean_t
+
+
+class QDyLamScalar(QDyLam):
+    """DyLam weights without Q-decomposition: one table on r = sum_i lambda_i(t) r_i.
+
+    Isolates the contribution of the decomposed critics. UDC controls the opposite
+    direction (decomposition with static weights), so this fills the remaining cell:
+    dynamic weights, single critic. The weights are still computed by the standard
+    DyLam rule from the per-component episodic returns; only the value function is
+    scalar. Tabular Q-learning has no replay buffer, so nothing goes stale.
+    """
+
+    def get_output(self, observation):
+        return QLearning.get_output(self, observation)
+
+    def softmax(self, observation):
+        return QLearning.softmax(self, observation)
+
+    def ucb(self, observation):
+        return QLearning.ucb(self, observation)
+
+    def update(self, observation, action, reward, next_obs):
+        reward = np.asarray(reward) * self.reward_scaling
+        scalar_reward = float(np.dot(self.lambdas, reward))
+        update_value = scalar_reward + self.gamma * (
+            self.q_table[next_obs].max() - self.q_table[observation][action]
+        )
+        self.q_table[observation][action] += self.alpha * update_value
+        self.total_count += 1
+        # the training loop logs one update value per component; there is only one
+        # critic here, so report the shared value for each
+        return np.full(self.num_rewards, update_value)
+
+    def save(self, path):
+        QLearning.save(self, path)
+
+    def load(self, path):
+        QLearning.load(self, path)

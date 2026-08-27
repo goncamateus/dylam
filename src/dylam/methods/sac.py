@@ -9,7 +9,12 @@ from torch.optim import Adam
 from dylam.methods.networks.architectures import DoubleQNetwork, GaussianPolicy
 from dylam.methods.networks.targets import TargetCritic
 from dylam.utils.buffer import ReplayBuffer, StratLastRewards
-from dylam.utils.experiment import l1_norm, minmax_norm, softmax_norm
+from dylam.utils.experiment import (
+    l1_norm,
+    minmax_norm,
+    minmax_norm_fixed,
+    softmax_norm,
+)
 
 
 class SAC(nn.Module):
@@ -228,6 +233,8 @@ class SACStrat(SAC):
             norm_func = softmax_norm
         elif normalizer == "minmax":
             norm_func = minmax_norm
+        elif normalizer == "minmax-fixed":
+            norm_func = minmax_norm_fixed
         elif normalizer == "l1":
             norm_func = l1_norm
         else:
@@ -275,3 +282,40 @@ class SACStrat(SAC):
             if term or trunc:
                 self.last_episode_rewards.add(self.episode_rewards[i])
                 self.episode_rewards[i] = np.zeros(self.num_rewards)
+
+
+class SACStratOpenLoop(SACStrat):
+    """Replays a fixed lambda(t) schedule instead of computing weights from returns.
+
+    Separates "adaptivity" from "this particular lambda(t) curve": the schedule is
+    DyLam's own mean weight trajectory, recorded once on VSS-v0 and replayed on fresh
+    seeds with no return feedback and no bounds. If open-loop matches DyLam, the
+    contribution is a good weight schedule and the deficiency machinery is scaffolding;
+    if it does not, the closed loop is doing real work.
+
+    The schedule CSV has a `step` column followed by one column per component, in the
+    order of `comp_names` (see result_analysis/extract_lambda_schedule.py).
+    """
+
+    def __init__(self, args, observation_space, action_space, **kwargs):
+        super().__init__(args, observation_space, action_space, **kwargs)
+        path = args.open_loop_schedule
+        with open(path) as f:
+            header = f.readline().strip().split(",")
+        expected = ["step"] + list(args.comp_names)
+        if header != expected:
+            raise ValueError(f"{path} columns {header} do not match {expected}")
+        table = np.loadtxt(path, delimiter=",", skiprows=1)
+        self.schedule_steps = table[:, 0]
+        self.schedule = table[:, 1:]
+        self.open_loop_step = 0
+        self.lambdas = torch.Tensor(self.schedule[0]).to(self.device)
+
+    def update_lambdas(self):
+        """Look the weights up by wall-clock training step. Returns are ignored."""
+        self.open_loop_step += 1
+        lam = np.array([
+            np.interp(self.open_loop_step, self.schedule_steps, self.schedule[:, i])
+            for i in range(self.schedule.shape[1])
+        ])
+        self.lambdas = torch.Tensor(lam).to(self.device)

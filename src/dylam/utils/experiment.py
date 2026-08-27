@@ -23,7 +23,16 @@ def softmax_norm(dQ):
 
 
 def minmax_norm(dQ):
+    # NOTE: this variant maps the LARGEST deficiency to the SMALLEST weight, i.e. it
+    # reverses the routing direction. It is kept as a control, see minmax_norm_fixed.
     return torch.clamp((dQ.max() - dQ) / (dQ.max() - dQ.min()), 0, 1)
+
+
+def minmax_norm_fixed(dQ):
+    spread = dQ.max() - dQ.min()
+    if spread == 0:
+        return torch.ones_like(dQ) / dQ.numel()
+    return torch.clamp((dQ - dQ.min()) / spread, 0, 1)
 
 
 def l1_norm(dQ):
@@ -109,6 +118,8 @@ def base_hyperparams():
         "dylam_tau": 0.995,
         "normalizer": "softmax",
         "dylam": False,
+        "scalar_critic": False,
+        "open_loop_schedule": None,
         "lambdas": [1],
         "r_max": [1],
         "r_min": [0],
@@ -152,6 +163,8 @@ def base_hyperparams():
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--setup", type=str, default="Baseline")
+    parser.add_argument("--seed", type=int, default=0,
+                        help="0 keeps the legacy behaviour of seeding from the clock")
     parser.add_argument("--env", type=str, default="LunarLander")
     parser.add_argument(
         "--cuda",

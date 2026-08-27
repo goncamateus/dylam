@@ -3,12 +3,16 @@
 
 import time
 
-from dylam.methods.q_learning import DQ, UDC, QDyLam, QLearning
+from dylam.methods.q_learning import DQ, UDC, QDyLam, QDyLamScalar, QLearning
 from dylam.utils.experiment import get_experiment, parse_args, q_make_env, setup_run
 from dylam.utils.logger import QLogger
 
 
 def get_agent_type(args):
+    if getattr(args, "scalar_critic", False):
+        if not args.dylam:
+            raise ValueError("scalar_critic is a DyLam ablation; set dylam: True")
+        return QDyLamScalar
     if args.stratified:
         if args.dylam:
             return QDyLam

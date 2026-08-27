@@ -534,3 +534,82 @@ Dynmorl:
     weight_mode: regular
     reset_optimizer_on_w_change: false
     der_secondary_size: 10000
+
+# Ablation for the R1 revision: DyLam's weights without Q-decomposition.
+# A single critic is trained on r = sum_i lambda_i(t) r_i, with lambda still
+# computed by the standard DyLam rule from the per-component episodic returns.
+# UDC controls the opposite direction (decomposition, static weights), so this
+# fills the remaining cell of the 2x2.
+Dylam_Scalar:
+  CHICKENBANANA:
+    gym_id: mo-ChickenBanana-v0
+    total_episodes: 2001
+    gamma: 0.9999
+    q_lr: 0.1
+    epsilon: 1
+    epsilon_decay_factor: 0.9988
+    stratified: True
+    scalar_critic: True
+    num_rewards: 3
+    dylam: True
+    r_max: [100, 30, 70]
+    r_min: [0, 0, 0]
+    comp_names: ["Gate", "Banana", "Chicken"]
+
+  # Prepared, NOT run. The tabular path implements scalar_critic; the SAC path
+  # does not, and train.py refuses to start with this flag set rather than
+  # silently falling back to full DyLam. The other half of C4, the open-loop
+  # lambda(t) replay (roadmap item R5), IS implemented for this environment:
+  # see the Dylam_Openloop block at the end of this file.
+  VSS:
+    gym_id: mo-VSS-v0
+    num_envs: 20
+    total_timesteps: 500000
+    learning_starts: 5000
+    tau: 0.999
+    policy_frequency: 1
+    policy_lr: 0.0001
+    q_lr: 0.0001
+    batch_size: 256
+    n_hidden: 4
+    gamma: 0.95
+    update_frequency: 1
+    stratified: True
+    scalar_critic: True
+    dylam: True
+    normalizer: "l1"
+    num_rewards: 3
+    r_max: [150, 40, -100]
+    r_min: [0, 0, -300]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    comp_names: ["Move", "Ball", "Energy"]
+
+# R5 ablation: open-loop replay of DyLam's own mean lambda(t) trajectory on VSS-v0.
+# No return feedback and no bounds are used; the weights come from the recorded
+# schedule alone (result_analysis/extract_lambda_schedule.py writes it). This
+# separates the value of adapting from the value of this particular curve.
+Dylam_Openloop:
+  VSS:
+    gym_id: mo-VSS-v0
+    num_envs: 20
+    total_timesteps: 500000
+    learning_starts: 5000
+    tau: 0.999
+    policy_frequency: 1
+    policy_lr: 0.0001
+    q_lr: 0.0001
+    batch_size: 256
+    n_hidden: 4
+    gamma: 0.95
+    update_frequency: 1
+    stratified: True
+    dylam: True
+    open_loop_schedule: "schedules/vss_dylam_lambda.csv"
+    normalizer: "l1"
+    num_rewards: 3
+    r_max: [150, 40, -100]
+    r_min: [0, 0, -300]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    comp_names: ["Move", "Ball", "Energy"]
