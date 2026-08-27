@@ -24,9 +24,6 @@ JOBS=(
   "VSS         Baseline 5"
   "VSS         Drq      5"
   "VSS_TUNED   Drq      3"
-  "ROBUSTNESS_MOVE_P25 Dylam 10"
-  "ROBUSTNESS_BALL_P25 Dylam 10"
-  "ROBUSTNESS_BALL_M25 Dylam 10"
 )
 
 for job in "${JOBS[@]}"; do
