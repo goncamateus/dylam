@@ -227,7 +227,7 @@ def plot_rewards(
         ax.plot(x, y, label=reward.replace("_", " "), color=PARAM[i][0])
     ax.set_xlabel(x_label)
     ax.set_ylabel("Cumulative Episode Rewards", labelpad=1)
-    ax.set_ylim(-1.2, 1.2)
+    ax.set_ylim(-1.2 if np.any(normalized_max_rewards) else 0, 1.2)
     ax.grid(True)
     # ax.legend(prop=FONT)
     ax.set_title(title)
