@@ -382,7 +382,7 @@ Dylam:
     dylam: True
     normalizer: "l1"
     num_rewards: 3
-    r_max: [225, 50, -100]
+    r_max: [225, 40, -100]
     r_min: [0, 0, -300]
     dylam_rb: 500
     dylam_tau: 0.9999
@@ -405,7 +405,7 @@ Dylam:
     dylam: True
     normalizer: "l1"
     num_rewards: 3
-    r_max: [112.5, 20, -100]
+    r_max: [112.5, 40, -100]
     r_min: [0, 0, -300]
     dylam_rb: 500
     dylam_tau: 0.9999
