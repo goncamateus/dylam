@@ -44,7 +44,6 @@ TUNED = ("VSS_TUNED", "Drq", "ep_info/Goal", "VSS-v0", "Tuned-UDC")
 
 ROBUSTNESS = [
     ("Move $-25\\%$",                 "ROBUSTNESS_MOVE2"),
-    ("Move $+25\\%$",                 "ROBUSTNESS_MOVE_P25"),
     ("Move $+50\\%$",                 "ROBUSTNESS_MOVE1"),
     ("Ball-to-goal $+25\\%$",         "ROBUSTNESS_BALL_P25"),
     ("Ball-to-goal $-25\\%$",         "ROBUSTNESS_BALL_M25"),

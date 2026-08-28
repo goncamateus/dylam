@@ -45,6 +45,7 @@ ROBUSTNESS = [
     ("Move $-25\\%$",               "ROBUSTNESS_MOVE2",    "tab:blue"),
     ("Move $+50\\%$",               "ROBUSTNESS_MOVE1",    "tab:red"),
     ("Ball $+25\\%$",               "ROBUSTNESS_BALL_P25", "tab:purple"),
+    ("Ball $-25\\%$",               "ROBUSTNESS_BALL_M25", "tab:brown"),
     ("Move $+50\\%$, ball $+25\\%$", "ROBUSTNESS_BALL1",   "tab:orange"),
     ("Move $-25\\%$, ball $-50\\%$", "ROBUSTNESS_BALL2",   "tab:green"),
 ]
