@@ -4,15 +4,16 @@ quoted in prose in sections/results/trad/performance.tex (sec:res_trad_rq1).
 
 Reads only the committed tidy CSVs under data/; never touches the network.
 Per-seed summary is the mean of the final 10% of training
-(lib.stats.seed_summary). DyLam is compared against the strongest baseline
-per environment with an exact two-sided Mann-Whitney U, Holm-Bonferroni
-corrected within the three-comparison RQ1 family (Chicken--Banana,
-HalfCheetah-v4, VSS-v0); the HalfCheetah env-return re-scoring is reported
-with its own (uncorrected) test, since it re-scores runs already in the
-family rather than adding a fourth independent comparison.
+(lib.stats.seed_summary). DyLam is compared against the strongest rival
+method per environment with an exact two-sided Mann-Whitney U,
+Holm-Bonferroni corrected within the three-comparison RQ1 family
+(Chicken--Banana, HalfCheetah-v4, VSS-v0); the HalfCheetah env-return
+re-scoring is reported with its own (uncorrected) test, since it re-scores
+runs already in the family rather than adding a fourth independent
+comparison.
 \\mbox{DyLam-Scalar} is the scalar-critic ablation of Section 6.1.1: a row
 of the summary and IQM tables, excluded from the RQ1 family (it is not a
-baseline) and from the efficiency table (it never learns the task, so
+rival method) and from the efficiency table (it never learns the task, so
 sample-efficiency is not a meaningful comparison for it).
 
 Emits three tabular-environment-only fragments (no \\begin{table}, caption,
@@ -74,7 +75,7 @@ def compute():
 
 
 def family_tests(summary):
-    """DyLam vs. the strongest baseline, per column; Holm within the 3-env family."""
+    """DyLam vs. the strongest rival method, per column; Holm within the 3-env family."""
     fam, secondary = [], []
     for col in COLUMNS:
         dylam = summary.get(("DyLam", col))
@@ -92,74 +93,60 @@ def family_tests(summary):
     return fam, secondary, adj
 
 
+def _header(units_row):
+    return [r"\begin{tabular}{lcccc}", r"\toprule",
+            r"\textbf{Method} & \textbf{Chicken--Banana} & "
+            r"\multicolumn{2}{c}{\textbf{HalfCheetah-v4}} & \textbf{VSS-v0} \\",
+            r"\cmidrule(lr){3-4}",
+            f"                & {units_row} \\\\",
+            r"\midrule"]
+
+
+def _row(method, cell):
+    """One table row: `cell(method, col)` formats each of COLUMNS' cells."""
+    return f"{method:16s}& " + " & ".join(cell(method, col) for col in COLUMNS) + r" \\"
+
+
 def render_summary(summary, fam, secondary, adj):
     star_col = {col: p < ALPHA for col, *_, p, _ in secondary}
     star_col.update({col: adj[col] < ALPHA for col, *_ in fam})
 
-    lines = [r"\begin{tabular}{lcccc}", r"\toprule",
-             r"\textbf{Method} & \textbf{Chicken--Banana} & "
-             r"\multicolumn{2}{c}{\textbf{HalfCheetah-v4}} & \textbf{VSS-v0} \\",
-             r"\cmidrule(lr){3-4}",
-             r"                & (final episode reward, max $200$) & "
-             r"(final $x$-position) & (env.\ return) & (goal rate) \\",
-             r"\midrule"]
+    def cell(method, col):
+        vals = summary.get((method, col))
+        if not vals:
+            return "---"
+        d = DECIMALS[col]
+        star = r"^\ast" if method == "DyLam" and star_col.get(col) else ""
+        return (f"${np.mean(vals):.{d}f} \\pm {np.std(vals, ddof=1):.{d}f}{star}$ "
+                f"\\, ($n{{=}}{len(vals)}$)")
+
+    lines = _header(r"(final episode reward, max $200$) & (final $x$-position) & "
+                    r"(env.\ return) & (goal rate)")
     for method in ROW_ORDER:
-        cells = []
-        for col in COLUMNS:
-            vals = summary.get((method, col))
-            if not vals:
-                cells.append("---")
-                continue
-            d = DECIMALS[col]
-            star = r"^\ast" if method == "DyLam" and star_col.get(col) else ""
-            cells.append(f"${np.mean(vals):.{d}f} \\pm {np.std(vals, ddof=1):.{d}f}{star}$ "
-                         f"\\, ($n{{=}}{len(vals)}$)")
-        lines.append(f"{method:16s}& " + " & ".join(cells) + r" \\")
+        lines.append(_row(method, cell))
         if method == "DyLam":
             lines.append(r"\midrule")
             lines.append(r"\multicolumn{5}{l}{\emph{Ablation}} \\")
-    cells = []
-    for col in COLUMNS:
-        vals = summary.get(("DyLam-Scalar", col))
-        cells.append("---" if not vals else
-                     f"${np.mean(vals):.{DECIMALS[col]}f} \\pm {np.std(vals, ddof=1):.{DECIMALS[col]}f}$ "
-                     f"\\, ($n{{=}}{len(vals)}$)")
-    lines.append("DyLam-Scalar    & " + " & ".join(cells) + r" \\")
+    lines.append(_row("DyLam-Scalar", cell))
     lines += [r"\bottomrule", r"\end{tabular}"]
     return "\n".join(lines) + "\n"
 
 
 def render_iqm(summary):
-    lines = [r"\begin{tabular}{lcccc}", r"\toprule",
-             r"\textbf{Method} & \textbf{Chicken--Banana} & "
-             r"\multicolumn{2}{c}{\textbf{HalfCheetah-v4}} & \textbf{VSS-v0} \\",
-             r"\cmidrule(lr){3-4}",
-             r"                & IQM $[95\%\ \mathrm{CI}]$ & $x$-position & "
-             r"env.\ return & goal rate \\",
-             r"\midrule"]
+    def cell(method, col):
+        vals = summary.get((method, col))
+        if not vals:
+            return "---"
+        lo, hi = stats.boot_ci(vals)
+        d = IQM_DECIMALS[col]
+        return f"${stats.iqm(vals):.{d}f}\\ [{lo:.{d}f}, {hi:.{d}f}]$"
+
+    lines = _header(r"IQM $[95\%\ \mathrm{CI}]$ & $x$-position & env.\ return & goal rate")
     for method in ROW_ORDER:
-        cells = []
-        for col in COLUMNS:
-            vals = summary.get((method, col))
-            if not vals:
-                cells.append("---")
-                continue
-            lo, hi = stats.boot_ci(vals)
-            d = IQM_DECIMALS[col]
-            cells.append(f"${stats.iqm(vals):.{d}f}\\ [{lo:.{d}f}, {hi:.{d}f}]$")
-        lines.append(f"{method:16s}& " + " & ".join(cells) + r" \\")
+        lines.append(_row(method, cell))
         if method == "DyLam":
             lines.append(r"\midrule")
-    cells = []
-    for col in COLUMNS:
-        vals = summary.get(("DyLam-Scalar", col))
-        if not vals:
-            cells.append("---")
-        else:
-            lo, hi = stats.boot_ci(vals)
-            d = IQM_DECIMALS[col]
-            cells.append(f"${stats.iqm(vals):.{d}f}\\ [{lo:.{d}f}, {hi:.{d}f}]$")
-    lines.append("DyLam-Scalar    & " + " & ".join(cells) + r" \\")
+    lines.append(_row("DyLam-Scalar", cell))
     lines += [r"\bottomrule", r"\end{tabular}"]
     return "\n".join(lines) + "\n"
 

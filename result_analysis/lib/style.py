@@ -1,4 +1,4 @@
-"""Shared plot style: condition colours, per-seed smoothing.
+"""Shared plot style: method/condition colours, per-seed smoothing.
 
 Populated scope by scope as each generator migrates, with only what the
 migrated scopes actually use -- notebooks and scripts not yet migrated still

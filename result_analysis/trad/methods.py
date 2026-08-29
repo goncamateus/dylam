@@ -24,7 +24,7 @@ CELLS = [
     *(Cell("Chicken--Banana", m, "CHICKENBANANA", s, "ep_info/total")
       for m, s in CHICKENBANANA_METHODS.items()),
     # The ablation of Section 6.1.1 (DyLam's weights, no Q-decomposition): a
-    # row of tab:res/trad/summary and tab:res/trad/iqm, not a baseline.
+    # row of tab:res/trad/summary and tab:res/trad/iqm, not a rival method.
     Cell("Chicken--Banana", "DyLam-Scalar", "CHICKENBANANA", "Dylam_Scalar", "ep_info/total"),
 
     *(Cell("HalfCheetah-v4", m, "HALFCHEETAH", s, "ep_info/Final_position")

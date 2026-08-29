@@ -89,41 +89,39 @@ EFFICIENCY_FIXTURE = [
 ]
 
 
+TABLE_COLUMNS = ["Chicken--Banana", "HalfCheetah-v4", "HalfCheetah-v4 (env return)", "VSS-v0"]
+
+
 def _rows(tex):
     return [ln.strip() for ln in tex.splitlines() if re.match(r"[A-Za-z]", ln.strip())]
 
 
-def parse_summary(tex):
+def _parse_grid(tex, pattern, build):
+    """One (column, method) -> build(match) entry per cell matching `pattern`."""
     out = {}
     for line in _rows(tex):
         cols = [c.strip() for c in line.split("&")]
         method = cols[0].strip()
-        for col, cell in zip(
-            ["Chicken--Banana", "HalfCheetah-v4", "HalfCheetah-v4 (env return)", "VSS-v0"],
-            cols[1:5],
-        ):
-            m = re.search(r"\$([\d.]+) \\pm ([\d.]+)(\^\\ast)?\$.*n\{=\}(\d+)", cell)
-            if not m:
-                continue
-            out[(col, method)] = dict(mean=float(m.group(1)), std=float(m.group(2)),
-                                      n=int(m.group(4)), star=bool(m.group(3)))
+        for col, cell in zip(TABLE_COLUMNS, cols[1:5]):
+            m = re.search(pattern, cell)
+            if m:
+                out[(col, method)] = build(m)
     return out
+
+
+def parse_summary(tex):
+    return _parse_grid(
+        tex, r"\$([\d.]+) \\pm ([\d.]+)(\^\\ast)?\$.*n\{=\}(\d+)",
+        lambda m: dict(mean=float(m.group(1)), std=float(m.group(2)),
+                      n=int(m.group(4)), star=bool(m.group(3))),
+    )
 
 
 def parse_iqm(tex):
-    out = {}
-    for line in _rows(tex):
-        cols = [c.strip() for c in line.split("&")]
-        method = cols[0].strip()
-        for col, cell in zip(
-            ["Chicken--Banana", "HalfCheetah-v4", "HalfCheetah-v4 (env return)", "VSS-v0"],
-            cols[1:5],
-        ):
-            m = re.search(r"\$([\d.]+)\\ \[([\d.]+), ([\d.]+)\]\$", cell)
-            if not m:
-                continue
-            out[(col, method)] = tuple(float(g) for g in m.groups())
-    return out
+    return _parse_grid(
+        tex, r"\$([\d.]+)\\ \[([\d.]+), ([\d.]+)\]\$",
+        lambda m: tuple(float(g) for g in m.groups()),
+    )
 
 
 def parse_efficiency(tex):
