@@ -39,4 +39,5 @@ echo
 echo "52 runs queued (22 baseline top-up + 30 robustness)."
 echo "When they finish, refresh the tables with:"
 echo "  python ../result_analysis/table1_update.py"
-echo "  python ../result_analysis/robustness_update.py"
+echo "  python ../result_analysis/robustness/fetch_data.py --refresh"
+echo "  python ../result_analysis/robustness/table.py"

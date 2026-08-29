@@ -167,5 +167,4 @@ videos/
 # R1 revision analysis caches and local sweep markers
 result_analysis/r1_cache/
 result_analysis/table1_cache/
-result_analysis/robustness_cache/
 scripts/logs/

@@ -1,17 +1,11 @@
-"""Shared plot style: condition colours, tick formatting, per-seed smoothing.
+"""Shared plot style: condition colours, per-seed smoothing.
 
-Populated scope by scope as each generator migrates. Notebooks and scripts
-not yet migrated still carry their own (already-drifted) copies of some of
-this until they are.
+Populated scope by scope as each generator migrates, with only what the
+migrated scopes actually use -- notebooks and scripts not yet migrated still
+carry their own (already-drifted) copies of tick formatting, fonts, etc.
+until they are.
 """
-import matplotlib.ticker as ticker
 import pandas as pd
-from matplotlib import font_manager
-
-FORMATTER = ticker.ScalarFormatter(useMathText=True)
-FORMATTER.set_scientific(True)
-FORMATTER.set_powerlimits((-1, 1))
-FONT = font_manager.FontProperties(weight="bold")
 
 CONDITION_COLORS = {
     "Nominal": "dimgray",

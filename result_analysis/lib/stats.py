@@ -8,8 +8,8 @@ import numpy as np
 from scipy.stats import mannwhitneyu
 
 
-def final(df, metric, frac=0.1):
-    """Per-seed summary: mean of the final `frac` of the run."""
+def seed_summary(df, metric, frac=0.1):
+    """The seed summary: mean of the final `frac` of one run's logged metric."""
     v = df[metric].to_numpy(dtype=float)
     return float(v[int((1 - frac) * len(v)):].mean())
 

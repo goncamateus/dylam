@@ -4,6 +4,10 @@ The cache is disposable: it exists to avoid re-downloading a run's history on
 every invocation, keyed by wandb run id, and lives outside the repository
 under the system temp directory. It is not a data source of record -- the
 tidy CSVs committed under each scope's data/ directory are.
+
+This data-layer split (tidy CSVs committed, run cache ephemeral) is the
+choice an ADR still needs to record and the author still needs to sign off
+on -- see the issue's "Further Notes".
 """
 import tempfile
 from pathlib import Path
@@ -55,11 +59,11 @@ def histories(env, setup, metric, max_seeds=10, samples=5000, refresh=False):
     return out
 
 
-def tidy(dfs, metric, arm):
-    """Concatenate per-seed frames into one long-form frame with an arm column."""
+def tidy(dfs, metric, condition):
+    """Concatenate per-seed frames into one long-form frame with a condition column."""
     parts = []
     for df in dfs:
         d = df[["_step", metric, "seed"]].copy()
-        d["arm"] = arm
+        d["condition"] = condition
         parts.append(d)
     return pd.concat(parts, ignore_index=True)

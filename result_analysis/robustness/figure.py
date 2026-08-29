@@ -25,6 +25,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from conditions import CONDITIONS
 from lib import stats, style
 
 METRIC = "ep_info/Goal"
@@ -33,21 +34,16 @@ DEFAULT_OUT = Path.home() / "doc/DyLam-TMLR"
 IMAGE = Path("images/results/robustness_curves.pdf")
 GRID = 200
 
-# (arm key, label -- must match a key in lib.style.CONDITION_COLORS)
-ARMS = [
-    ("nominal", "Nominal"),
-    ("move_m25", "Move $-25\\%$"),
-    ("move_p50", "Move $+50\\%$"),
-    ("ball_p25", "Ball $+25\\%$"),
-    ("ball_m25", "Ball $-25\\%$"),
-    ("compound_move_p50_ball_p25", "Move $+50\\%$, ball $+25\\%$"),
-    ("compound_move_m25_ball_m50", "Move $-25\\%$, ball $-50\\%$"),
+# Legend/draw order, matching the already-published plot.
+DRAW_ORDER = [
+    "nominal", "move_m25", "move_p50", "ball_p25", "ball_m25",
+    "compound_move_p50_ball_p25", "compound_move_m25_ball_m50",
 ]
 
 
-def per_seed_series(df, arm):
+def per_seed_series(df, condition):
     """List of (step, value) arrays, one per seed, in fetch order."""
-    d = df[df["arm"] == arm]
+    d = df[df["condition"] == condition]
     return [(g["_step"].to_numpy(dtype=float), g[METRIC].to_numpy(dtype=float))
             for _, g in d.groupby("seed", sort=False)]
 
@@ -59,12 +55,13 @@ def main():
     args = ap.parse_args()
 
     df = pd.read_csv(DATA)
-    series = {key: per_seed_series(df, key) for key, _ in ARMS}
-    grid_hi = min(steps.max() for arm in series.values() for steps, _ in arm)
+    series = {key: per_seed_series(df, key) for key in DRAW_ORDER}
+    grid_hi = min(steps.max() for one in series.values() for steps, _ in one)
     grid = np.linspace(0, grid_hi, GRID)
 
     fig, ax = plt.subplots(figsize=(5.0, 3.0))
-    for key, label in ARMS:
+    for key in DRAW_ORDER:
+        label = CONDITIONS[key].label
         mat = np.array([
             np.interp(grid, step, style.rolling_smooth(value))
             for step, value in series[key]

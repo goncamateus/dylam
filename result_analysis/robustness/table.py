@@ -6,7 +6,7 @@ sections/results/robust.tex (sec:res_robustness) -- both read off this same
 table.
 
 Reads only the committed tidy CSV under data/; never touches the network.
-Per-seed summary is the mean of the final 10% of training (lib.stats.final).
+Per-seed summary is the mean of the final 10% of training (lib.stats.seed_summary).
 Comparisons are exact two-sided Mann-Whitney U against nominal, Holm-Bonferroni
 corrected within the six-comparison RQ3 family, with rank-biserial effect size.
 
@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
 import pandas as pd
+from conditions import CONDITIONS
 from lib import stats
 
 METRIC = "ep_info/Goal"
@@ -35,15 +36,10 @@ DEFAULT_OUT = Path.home() / "doc/DyLam-TMLR"
 FRAGMENT = Path("tables/results/robustness_summary.tex")
 ALPHA = 0.05
 
-# (arm key, label, R_max string, section header or None to continue the section)
-ARMS = [
-    ("nominal", "Nominal", "(150, 40, -100)", None),
-    ("move_m25", "Move $-25\\%$", "(112.5, 40, -100)", "Move ceiling"),
-    ("move_p50", "Move $+50\\%$", "(225, 40, -100)", None),
-    ("ball_m25", "Ball $-25\\%$", "(150, 30, -100)", "Ball-to-goal ceiling"),
-    ("ball_p25", "Ball $+25\\%$", "(150, 50, -100)", None),
-    ("compound_move_p50_ball_p25", "Move $+50\\%$, ball $+25\\%$", "(225, 50, -100)", "Compound"),
-    ("compound_move_m25_ball_m50", "Move $-25\\%$, ball $-50\\%$", "(112.5, 20, -100)", None),
+# Row order: grouped by which ceiling moved, matching the published table.
+ROW_ORDER = [
+    "nominal", "move_m25", "move_p50", "ball_m25", "ball_p25",
+    "compound_move_p50_ball_p25", "compound_move_m25_ball_m50",
 ]
 
 
@@ -55,7 +51,7 @@ def fmt_p(p):
     return f"{p:.3f}"
 
 
-def per_seed(df, arm):
+def per_seed(df, condition):
     """Per-seed summaries in fetch order (not sorted by seed id).
 
     Bootstrap CIs are order-sensitive at fixed sample size (the same seed
@@ -63,16 +59,16 @@ def per_seed(df, arm):
     order), so this must match the order lib.fetch wrote the tidy CSV in to
     reproduce the published CI bounds exactly.
     """
-    d = df[df["arm"] == arm]
-    return [stats.final(g, METRIC) for _, g in d.groupby("seed", sort=False)]
+    d = df[df["condition"] == condition]
+    return [stats.seed_summary(g, METRIC) for _, g in d.groupby("seed", sort=False)]
 
 
 def compute():
     df = pd.read_csv(DATA)
-    vals = {key: per_seed(df, key) for key, *_ in ARMS}
+    vals = {key: per_seed(df, key) for key in ROW_ORDER}
     nominal = vals["nominal"]
 
-    family_keys = [key for key, *_ in ARMS if key != "nominal"]
+    family_keys = [key for key in ROW_ORDER if key != "nominal"]
     tests = {}
     for key in family_keys:
         tests[key] = stats.exact_mw(vals[key], nominal)
@@ -91,7 +87,8 @@ def render(vals, tests, p_holm):
         r"$\boldsymbol{p_{\text{Holm}}}$ & $\boldsymbol{r}$ \\",
         r"\midrule",
     ]
-    for key, label, r_max, section in ARMS:
+    for key in ROW_ORDER:
+        label, _, _, r_max, section = CONDITIONS[key]
         if section:
             lines.append(r"\midrule")
             lines.append(f"\\multicolumn{{8}}{{l}}{{\\emph{{{section}}}}} \\\\")
