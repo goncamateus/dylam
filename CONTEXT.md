@@ -18,6 +18,14 @@ A named method configuration resolved from `scripts/experiments.yml` — `Baseli
 `Decq`, `Udc`, `Dylam`, `Dynmorl`.
 _Avoid_: method, algorithm, variant
 
+**Method**:
+The paper-facing row label for a trad/ablation comparison (e.g. `Base SO RL`,
+`UDC`, `Tuned-UDC`, `DyLam`, `DyLam-Scalar`). Distinct from Setup: one Setup
+can be more than one Method depending on other config -- `Tuned-UDC` and
+`UDC` are both the `Drq` setup, distinguished only by which wandb env their
+runs were launched under.
+_Avoid_: setup (see Setup), baseline, row label
+
 **Nominal**:
 The reference configuration a scope compares against — the published bounds for
 robustness, the default hyperparameters for ablations. Every non-nominal cell is

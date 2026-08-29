@@ -49,6 +49,21 @@ def bootstrap_curve(mat, B=2000, seed=0):
     return centre, lo, hi
 
 
+def steps_to(df, metric, thr, window=20, min_periods=5):
+    """First logged step whose rolling-window mean of `metric` reaches `thr`; None if never."""
+    d = df.dropna(subset=[metric])
+    roll = d[metric].rolling(window, min_periods=min_periods).mean().to_numpy()
+    step = d["_step"].to_numpy() if "_step" in d else np.arange(len(d))
+    hit = np.where(roll >= thr)[0]
+    return float(step[hit[0]]) if len(hit) else None
+
+
+def auc(df, metric, lo, hi):
+    """Mean of `metric`, clipped and normalized to the [lo, hi] range observed elsewhere."""
+    v = df[metric].to_numpy(dtype=float)
+    return float(np.clip((v - lo) / (hi - lo), 0, 1).mean())
+
+
 def holm(ps):
     """Holm-Bonferroni correction within one family of comparisons."""
     order = sorted(range(len(ps)), key=lambda i: ps[i])

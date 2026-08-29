@@ -7,6 +7,17 @@ until they are.
 """
 import pandas as pd
 
+METHOD_COLORS = {
+    "Base SO RL": "tab:orange",
+    "Q-Decomposition": "tab:purple",
+    "UDC": "tab:blue",
+    "DyLam": "tab:green",
+    # Deliberately shared with Q-Decomposition: the two never appear in the
+    # same axes, and fig:res/all's caption documents this pairing by name --
+    # changing it would make authored prose wrong.
+    "Tuned-UDC": "tab:purple",
+}
+
 CONDITION_COLORS = {
     "Nominal": "dimgray",
     "Move $-25\\%$": "tab:blue",
