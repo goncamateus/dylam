@@ -7,7 +7,9 @@ Adds to what table1_update.py already did:
   * HalfCheetah scored on the environment's own scalar return (ep_info/total)
   * steps-to-threshold and normalized learning-curve AUC (sample efficiency)
   * Chicken-Banana success rate
-  * the RQ3 robustness family, including conditions finished since submission
+
+The RQ3 robustness family has moved to robustness/table.py, the one
+generator for tab:res/robustness/summary; this script no longer computes it.
 
 Usage:  python stats_r1.py [--refresh]
 """
@@ -41,15 +43,6 @@ ENVS = {
         "Base SO RL": "Baseline", "UDC": "Drq", "DyLam": "Dylam"}),
 }
 TUNED = ("VSS_TUNED", "Drq", "ep_info/Goal", "VSS-v0", "Tuned-UDC")
-
-ROBUSTNESS = [
-    ("Move $-25\\%$",                 "ROBUSTNESS_MOVE2"),
-    ("Move $+50\\%$",                 "ROBUSTNESS_MOVE1"),
-    ("Ball-to-goal $+25\\%$",         "ROBUSTNESS_BALL_P25"),
-    ("Ball-to-goal $-25\\%$",         "ROBUSTNESS_BALL_M25"),
-    ("Move $+50\\%$, ball $+25\\%$",  "ROBUSTNESS_BALL1"),
-    ("Move $-25\\%$, ball $-50\\%$",  "ROBUSTNESS_BALL2"),
-]
 
 
 def histories(env, setup, metric, refresh=False):
@@ -196,34 +189,10 @@ def main():
             print(f"%   {r:16s} reached {len(hit)}/{len(hs)} seeds, median steps {med:>12s}"
                   f"   AUC {np.mean(au):.3f} +- {np.std(au, ddof=1) if len(au) > 1 else 0:.3f}")
 
-    print("\n%%%% RQ3 ROBUSTNESS: exact MW vs nominal + Holm within the family")
+    # RQ3 robustness table now lives in robustness/table.py (one generator,
+    # writing straight into the paper repo); `nom` is still needed below by
+    # the R5 open-loop comparison, which has not migrated yet.
     nom = data.get(("DyLam", "VSS-v0"), [])
-    rows, ps = [], []
-    for label, env in ROBUSTNESS:
-        hs = histories(env, "Dylam", "ep_info/Goal", args.refresh)
-        vals = [final(h, "ep_info/Goal") for h in hs]
-        print(f"  {env:22s} n={len(vals)}", file=sys.stderr)
-        if not vals:
-            rows.append((label, None, None))
-            continue
-        u, p, r = exact_mw(vals, nom)
-        rows.append((label, vals, (u, p, r)))
-        ps.append(p)
-    adj = iter(holm(ps))
-    lo, hi = boot(nom)
-    print(f"%   {'Nominal':30s} n={len(nom):2d} mean {np.mean(nom):.3f} +- {np.std(nom, ddof=1):.3f}"
-          f"  IQM {iqm(nom):.3f} CI [{lo:.3f}, {hi:.3f}]")
-    for label, vals, test in rows:
-        if vals is None:
-            print(f"%   {label:30s} no finished runs")
-            continue
-        u, p, r = test
-        a = next(adj)
-        lo, hi = boot(vals)
-        print(f"%   {label:30s} n={len(vals):2d} mean {np.mean(vals):.3f} +- {np.std(vals, ddof=1):.3f}"
-              f"  IQM {iqm(vals):.3f} CI [{lo:.3f}, {hi:.3f}]  U={u:5.1f} p_exact={p:.4g}"
-              f" p_Holm={a:.4g} r={r:+.3f}")
-
 
     print("\n%%%% R5 OPEN-LOOP REPLAY: DyLam vs its own lambda(t) schedule on VSS-v0")
     ol = [final(h, "ep_info/Goal")

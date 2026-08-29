@@ -33,5 +33,6 @@ rsoccer-gym = { git = "https://github.com/goncamateus/rSoccer.git", rev = "dev" 
 dev = [
     "ipython>=8.37.0",
     "isort>=7.0.0",
+    "pytest>=9.1.1",
     "ruff>=0.14.9",
 ]

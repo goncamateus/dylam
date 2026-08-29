@@ -7,10 +7,10 @@ paper repo so the \includegraphics paths do not change.
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-
 from stats_r1 import histories, iqm
 
 OUT = Path.home() / "doc/DyLam-TMLR/images/results"
@@ -39,17 +39,6 @@ PANELS = [
                  ("DyLam", "Dylam", "tab:green")],
          extra=[("Tuned-UDC", "VSS_TUNED", "Drq", "tab:purple")]),
 ]
-
-ROBUSTNESS = [
-    ("Nominal",                     "VSS",                 "dimgray"),
-    ("Move $-25\\%$",               "ROBUSTNESS_MOVE2",    "tab:blue"),
-    ("Move $+50\\%$",               "ROBUSTNESS_MOVE1",    "tab:red"),
-    ("Ball $+25\\%$",               "ROBUSTNESS_BALL_P25", "tab:purple"),
-    ("Ball $-25\\%$",               "ROBUSTNESS_BALL_M25", "tab:brown"),
-    ("Move $+50\\%$, ball $+25\\%$", "ROBUSTNESS_BALL1",   "tab:orange"),
-    ("Move $-25\\%$, ball $-50\\%$", "ROBUSTNESS_BALL2",   "tab:green"),
-]
-
 
 def band(hs, metric, grid):
     """IQM curve and 95% bootstrap CI over seeds, on a common step grid."""
@@ -107,11 +96,6 @@ def main():
         entries += [(lab, env, setup, col) for lab, env, setup, col in p.get("extra", [])]
         loaded, grid = curves(entries, p["metric"])
         draw(loaded, grid, p["metric"], p["path"], p["xlabel"], p["ylabel"])
-
-    entries = [(lab, env, "Dylam", col) for lab, env, col in ROBUSTNESS]
-    loaded, grid = curves(entries, "ep_info/Goal")
-    draw(loaded, grid, "ep_info/Goal", OUT / "robustness_curves.pdf",
-         "Environment step", "Goal rate")
 
 
 if __name__ == "__main__":
