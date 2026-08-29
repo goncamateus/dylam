@@ -47,10 +47,10 @@ NORMALIZER_ARMS = [Arm("l1", "DyLam-Normalizer-l1"), Arm("minmax", "DyLam-Normal
 # confirmed by reproducing each row's mean/std/success count before this
 # mapping was trusted.
 NORMALIZER_TABLE_ROWS = [
-    ("Exponential, $g(\\zeta) = \\mathrm{e}^\\zeta - 1$", "DyLam-Normalizer-softmax"),
-    ("Linear ($\\ell_1$), $g(\\zeta) = \\zeta$", "DyLam-Normalizer-l1"),
-    ("Min--max", "DyLam-Normalizer-minmax-fixed"),
-    ("Min--max, reversed routing (control)", "DyLam-Normalizer-minmax"),
+    Arm("Exponential, $g(\\zeta) = \\mathrm{e}^\\zeta - 1$", "DyLam-Normalizer-softmax"),
+    Arm("Linear ($\\ell_1$), $g(\\zeta) = \\zeta$", "DyLam-Normalizer-l1"),
+    Arm("Min--max", "DyLam-Normalizer-minmax-fixed"),
+    Arm("Min--max, reversed routing (control)", "DyLam-Normalizer-minmax"),
 ]
 
 ENV = "CHICKENBANANA"

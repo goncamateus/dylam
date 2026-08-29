@@ -63,8 +63,9 @@ def tidy(dfs, metric, value, column="condition"):
     """Concatenate per-seed frames into one long-form frame with an identifying column.
 
     `column` names what `value` identifies -- "condition" for robustness's
-    bound perturbations, "method" for trad/ablation's row labels -- since
-    that identity concept differs by scope (see CONTEXT.md).
+    bound perturbations, "method" for trad's row labels, "arm" for
+    ablation's swept hyperparameter values -- since that identity concept
+    differs by scope (see CONTEXT.md).
     """
     parts = []
     for df in dfs:
