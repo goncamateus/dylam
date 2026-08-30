@@ -1,13 +1,15 @@
 """R5 open-loop replay: DyLam vs its own lambda(t) schedule on VSS-v0.
 
 In-flight work with no paper artifact yet (no fig:/tab: label references
-it anywhere in the manuscript) -- given its own scope directory per the
-issue's user story 30 ("a script with no home is the mechanism that
-produced the current state") rather than sitting orphaned at the
-top level. Everything else this script's predecessor (stats_r1.py) used
-to compute -- Table 1, the RQ1 significance family, sample efficiency,
-Chicken-Banana success rate, and the RQ3 robustness table -- already
-lives in trad/table.py and robustness/table.py.
+it anywhere in the manuscript) -- given its own scope directory per user
+story 30 ("I want the in-flight open-loop ablation given a scope
+directory now, so that it does not become the next orphan") rather than
+sitting orphaned at the top level, since -- per the issue's own solution
+section -- "a script with no home is the mechanism that produced the
+current state." Everything else this script's predecessor (stats_r1.py)
+used to compute -- Table 1, the RQ1 significance family, sample
+efficiency, Chicken-Banana success rate, and the RQ3 robustness table --
+already lives in trad/table.py and robustness/table.py.
 
 Not a generator: it prints a stats report to the console for the author
 to read, not a LaTeX fragment or figure -- there is nothing to emit yet
