@@ -16,6 +16,11 @@ METHOD_COLORS = {
     # same axes, and fig:res/all's caption documents this pairing by name --
     # changing it would make authored prose wrong.
     "Tuned-UDC": "tab:purple",
+    "GPI-LS": "tab:orange",
+    "PGMORL": "tab:blue",
+    # Deliberately shared with PGMORL: never in the same axes (PGMORL is
+    # HalfCheetah-only, DynMORL is Minecart-only).
+    "DynMORL": "tab:blue",
 }
 
 CONDITION_COLORS = {

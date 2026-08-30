@@ -1,0 +1,175 @@
+"""Generator for Table~\\ref{tab:res/pareto/hv-cardinality} (hypervolume,
+cardinality, wall-clock time on MO-HalfCheetah and MO-Minecart;
+sections/results/morl/app.tex, app:res_morl_metrics) and the pairwise
+Mann-Whitney tests quoted in prose in the same appendix
+(app:res_morl_tests) and in sections/results/morl.tex (sec:res_morl).
+
+Reads only the committed tidy CSVs under data/; never touches the
+network. Per-run HV and cardinality are computed by Pareto-filtering that
+run's own candidate set (a 10^4-point sample of DyLam/DynMORL's training
+history, or GPI-LS/PGMORL's already-approximate eval/front) against the
+env's reference point (lib.pareto). DyLam is compared against every
+applicable rival with an exact two-sided Mann-Whitney U; each of the
+three metrics (HV, cardinality, wall-time) is its own Holm-Bonferroni
+family of the (up to) four comparisons it has across both environments,
+matching the appendix's own family definition.
+
+Emits the tabular environment only (no \\begin{table}, caption, or label
+-- those stay authored prose in the manuscript).
+
+Usage: python table.py [--out-path PATH]
+"""
+import argparse
+import math
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import numpy as np
+import pandas as pd
+from arms import ENVS, HALFCHEETAH_REF, METHOD_ORDER, MINECART_REF
+
+from lib import pareto, stats
+
+DATA = Path(__file__).parent / "data"
+DEFAULT_OUT = Path.home() / "doc/DyLam-TMLR"
+FRAGMENT = Path("tables/morl/hv_cardinality.tex")
+ALPHA = 0.05
+
+REF_BY_ENV = {"HALFCHEETAH": HALFCHEETAH_REF, "MINECART": MINECART_REF}
+METRICS = ["hv", "cardinality", "wall_time_min"]
+MAXIMIZE = {"hv": True, "cardinality": True, "wall_time_min": False}
+FMT = {"hv": ".3f", "cardinality": ".0f", "wall_time_min": ".0f"}
+COL_LABEL = {"hv": "HV ($\\log_{10}$)", "cardinality": "Card.", "wall_time_min": "Time (min)"}
+
+
+def _slug(label):
+    return label.lower().replace(" ", "_").replace("-", "_")
+
+
+def per_seed_metrics(env, label, source):
+    df = pd.read_csv(DATA / f"{env.lower()}_{_slug(label)}.csv")
+    obj_cols = [c for c in df.columns if c.startswith("obj")]
+    ref = np.asarray(REF_BY_ENV[env])
+    rows = []
+    for seed, g in df.groupby("seed", sort=False):
+        pts = g[obj_cols].to_numpy(dtype=float)
+        if source.transform is not None:
+            pts = source.transform(pts)
+        front = pareto.filter_dominated(pts)
+        rows.append(dict(hv=pareto.hypervolume(front, ref), cardinality=len(front),
+                         wall_time_min=float(g["wall_time_min"].iloc[0])))
+    return rows
+
+
+def compute():
+    data = {}  # (env, method) -> {metric: [per-seed values]}
+    for env, sources in ENVS.items():
+        for source in sources:
+            rows = per_seed_metrics(env, source.label, source)
+            data[(env, source.label)] = {m: [r[m] for r in rows] for m in METRICS}
+    return data
+
+
+def family_tests(data):
+    """DyLam vs. every applicable rival, one Holm family per metric across both envs."""
+    tests = {}  # metric -> {(env, rival): (u, p, r)}
+    for metric in METRICS:
+        entries = []
+        for env, sources in ENVS.items():
+            rivals = [s.label for s in sources if s.label != "DyLam"]
+            dylam = data.get((env, "DyLam"), {}).get(metric)
+            if not dylam:
+                continue
+            for rival in rivals:
+                vals = data.get((env, rival), {}).get(metric)
+                if not vals:
+                    continue
+                entries.append((env, rival, stats.exact_mw(dylam, vals)))
+        adj = stats.holm([e[2][1] for e in entries])
+        tests[metric] = {(env, rival): (u, p, a) for (env, rival, (u, p, r)), a
+                         in zip(entries, adj)}
+    return tests
+
+
+def render(data, tests):
+    metric_header = " & ".join(f"\\textbf{{{COL_LABEL[m]}}}" for m in METRICS)
+    lines = [r"\begin{tabular}{lcccccc}", r"\toprule",
+             r" & \multicolumn{3}{c}{\textbf{MO-HalfCheetah}}"
+             r" & \multicolumn{3}{c}{\textbf{MO-Minecart}} \\",
+             r"\cmidrule(lr){2-4}\cmidrule(lr){5-7}",
+             f"\\textbf{{Method}} & {metric_header} & {metric_header} \\\\",
+             r"\midrule"]
+
+    def _shown(vals, m):
+        return [math.log10(v) for v in vals] if m == "hv" else vals
+
+    # "best" must rank the same quantity the cells display (log10 for HV) --
+    # ranking raw HV would let one high-variance outlier seed flip the bold
+    # marker onto a method whose displayed (log-mean) value is lower.
+    means = {(env, m): {method: (np.mean(_shown(v, m))
+                                 if (v := data.get((env, method), {}).get(m)) else None)
+                       for method in METHOD_ORDER}
+             for env in ENVS for m in METRICS}
+    best = {}
+    for (env, m), method_means in means.items():
+        present = [(method, v) for method, v in method_means.items() if v is not None]
+        if present:
+            pick = max if MAXIMIZE[m] else min
+            best[(env, m)] = pick(present, key=lambda kv: kv[1])[0]
+
+    for method in METHOD_ORDER:
+        cells = []
+        for env in ENVS:
+            for m in METRICS:
+                vals = data.get((env, method), {}).get(m)
+                if not vals:
+                    cells.append("---")
+                    continue
+                show = _shown(vals, m)
+                mean, sd = np.mean(show), np.std(show)
+                s = f"{mean:{FMT[m]}} $\\pm$ {sd:{FMT[m]}}"
+                cells.append(f"\\textbf{{{s}}}" if best.get((env, m)) == method else s)
+        lines.append(f"{method}  & " + " & ".join(cells) + r" \\")
+
+    lines.append(r"\midrule")
+    lines.append(r"\multicolumn{7}{l}{\textit{Mann--Whitney $U$ $p$-values "
+                 r"(two-sided, Holm within each metric, $\alpha = 0.05$)}} \\")
+    lines.append(r"\midrule")
+    for rival in [m for m in METHOD_ORDER if m != "DyLam"]:
+        cells = []
+        for env in ENVS:
+            for m in METRICS:
+                entry = tests[m].get((env, rival))
+                if entry is None:
+                    cells.append("---")
+                    continue
+                _, _, a = entry
+                sig = r"$^{\ast}$" if a < ALPHA else "n.s."
+                cells.append(f"{a:.4g}~{sig}")
+        lines.append(f"\\textit{{DyLam}} vs.\\ {rival}  & " + " & ".join(cells) + r" \\")
+
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    return "\n".join(lines) + "\n"
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--out-path", type=Path, default=DEFAULT_OUT,
+                     help="paper repository root (default: %(default)s)")
+    args = ap.parse_args()
+
+    data = compute()
+    tests = family_tests(data)
+    tex = render(data, tests)
+
+    out = args.out_path / FRAGMENT
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(tex)
+    print(tex)
+    print(f"wrote {out}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
