@@ -3,6 +3,8 @@
 
 import time
 
+import numpy as np
+
 from dylam.methods.q_learning import DQ, UDC, QDyLam, QDyLamScalar, QLearning
 from dylam.utils.experiment import get_experiment, parse_args, q_make_env, setup_run
 from dylam.utils.logger import QLogger
@@ -22,10 +24,29 @@ def get_agent_type(args):
     return QLearning
 
 
+def snapshot_path(exp_name, episode):
+    return f"models/{exp_name}/snapshots/{episode:05d}/"
+
+
+def save_snapshot(agent, path):
+    """Snapshot component Q-tables and lambdas for beyond_pdf's export.
+
+    agent.save() alone omits lambdas -- fine for the normal resume/inference
+    path, not fine here: lambda at each moment of training is exactly what
+    the beyond_pdf artifact displays.
+    """
+    agent.save(path)
+    if hasattr(agent, "lambdas"):
+        np.save(path + "lambdas.npy", agent.lambdas)
+
+
 def train(args, exp_name, logger: QLogger):
     env = q_make_env(args, exp_name)
     agent_type = get_agent_type(args)
     agent = agent_type(args, env.observation_space, env.action_space)
+
+    if args.checkpoint_interval:
+        save_snapshot(agent, snapshot_path(exp_name, 0))
 
     for episode in range(1, args.total_episodes + 1):
         obs, _ = env.reset()
@@ -60,6 +81,8 @@ def train(args, exp_name, logger: QLogger):
         logger.push(episode)
         if episode % 10 == 0:
             agent.save(f"models/{exp_name}/")
+        if args.checkpoint_interval and episode % args.checkpoint_interval == 0:
+            save_snapshot(agent, snapshot_path(exp_name, episode))
 
     logger.log_artifact()
     env.close()

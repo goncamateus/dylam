@@ -196,6 +196,14 @@ def parse_args():
         const=True,
         help="Log on wandb",
     )
+    parser.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        default=0,
+        help="Tabular Q-learning only: episode interval for snapshotting "
+        "component Q-tables and lambdas under models/<run>/snapshots/. "
+        "0 (default) disables snapshotting entirely.",
+    )
     args = parser.parse_args()
     args.env = args.env.lower().upper()
     args.setup = args.setup.lower().title()
