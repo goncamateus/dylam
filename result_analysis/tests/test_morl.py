@@ -17,6 +17,10 @@ for HV and cardinality (which depend on the specific 10 runs) are also
 xfail, but its time p-value is not: DyLam is faster than every one of the
 31 candidate runs, so the exact Mann-Whitney U hits complete separation
 (and the same minimal p) regardless of which 10 are drawn.
+
+Also invokes the generator with --format html and checks the HTML sibling
+fragment's rows carry the same means/p-values as the LaTeX rows -- both are
+rendered from the same in-memory `data`/`tests` (see morl/table.py).
 """
 import re
 import subprocess
@@ -24,6 +28,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from bs4 import BeautifulSoup
 
 TABLE_SCRIPT = Path(__file__).resolve().parent.parent / "morl" / "table.py"
 
@@ -115,14 +120,49 @@ def parse_table(tex):
     return means, pvals
 
 
+def parse_html_table(html):
+    soup = BeautifulSoup(html, "html.parser")
+    means, pvals = {}, {}
+    for tr in soup.find("tbody").find_all("tr"):
+        cells = [td.get_text(strip=True) for td in tr.find_all("td")]
+        label, rest = cells[0], cells[1:]
+        if label.startswith("Mann") or not any(rest):
+            continue  # divider row
+        if label.startswith("DyLam vs. "):
+            rival = label[len("DyLam vs. "):]
+            for (env, metric), cell in zip(CELL_ORDER, rest):
+                m = re.match(r"([\d.eE+-]+)\s+(\*|n\.s\.)", cell)
+                if m:
+                    pvals[(rival, env, metric)] = float(m.group(1))
+            continue
+        for (env, metric), cell in zip(CELL_ORDER, rest):
+            m = re.match(r"([\d.]+) ± ([\d.]+)", cell)
+            if m:
+                means[(label, env, metric)] = (float(m.group(1)), float(m.group(2)))
+    return means, pvals
+
+
 @pytest.fixture(scope="module")
-def generated(tmp_path_factory):
+def generated_both(tmp_path_factory):
     out_path = tmp_path_factory.mktemp("paper")
-    subprocess.run([sys.executable, str(TABLE_SCRIPT), "--out-path", str(out_path)],
+    subprocess.run([sys.executable, str(TABLE_SCRIPT), "--out-path", str(out_path),
+                    "--format", "both"],
                    capture_output=True, text=True, check=True)
-    fragment = out_path / "tables" / "morl" / "hv_cardinality.tex"
-    assert fragment.exists()
-    return parse_table(fragment.read_text())
+    tex_fragment = out_path / "tables" / "morl" / "hv_cardinality.tex"
+    html_fragment = out_path / "tables" / "morl" / "hv_cardinality.html"
+    assert tex_fragment.exists()
+    assert html_fragment.exists()
+    return parse_table(tex_fragment.read_text()), parse_html_table(html_fragment.read_text())
+
+
+@pytest.fixture(scope="module")
+def generated(generated_both):
+    return generated_both[0]
+
+
+@pytest.fixture(scope="module")
+def generated_html(generated_both):
+    return generated_both[1]
 
 
 @pytest.mark.parametrize("method,env,metric,mean,std,tol", MEANS_FIXTURE)
@@ -137,3 +177,33 @@ def test_means_match_manuscript(generated, method, env, metric, mean, std, tol):
 def test_pvalues_match_manuscript(generated, rival, env, metric, p):
     _, pvals = generated
     assert pvals[(rival, env, metric)] == pytest.approx(p, rel=0.15)
+
+
+@pytest.mark.parametrize("method,env,metric,mean,std,tol", MEANS_FIXTURE)
+def test_html_means_match_manuscript(generated_html, method, env, metric, mean, std, tol):
+    means, _ = generated_html
+    got_mean, got_std = means[(method, env, metric)]
+    assert got_mean == pytest.approx(mean, abs=tol)
+    assert got_std == pytest.approx(std, abs=tol)
+
+
+@pytest.mark.parametrize("rival,env,metric,p", P_FIXTURE)
+def test_html_pvalues_match_manuscript(generated_html, rival, env, metric, p):
+    _, pvals = generated_html
+    assert pvals[(rival, env, metric)] == pytest.approx(p, rel=0.15)
+
+
+def test_html_matches_latex(generated, generated_html):
+    """Same in-memory `data`/`tests` feed both renderers (morl/table.py), so
+    every cell that appears in the LaTeX table must appear in the HTML table
+    with the identical value."""
+    tex_means, tex_pvals = generated
+    html_means, html_pvals = generated_html
+    assert set(tex_means) == set(html_means)
+    for key, (mean, std) in tex_means.items():
+        h_mean, h_std = html_means[key]
+        assert h_mean == pytest.approx(mean, abs=1e-9)
+        assert h_std == pytest.approx(std, abs=1e-9)
+    assert set(tex_pvals) == set(html_pvals)
+    for key, p in tex_pvals.items():
+        assert html_pvals[key] == pytest.approx(p, rel=1e-6)

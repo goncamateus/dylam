@@ -16,6 +16,11 @@ the manuscript's Base SO RL numbers for those two environments are stale.
 DyLam-Scalar's mean/std (never computed by any script before this one) is
 off by ~0.1%, plausibly a rounding artifact of however it was originally
 computed by hand; its IQM matches exactly.
+
+Also invokes the generator with --format html and checks the HTML sibling
+fragments' rows carry the same values as the LaTeX rows -- both are rendered
+from the same in-memory `summary`/`frames`/`compute_efficiency()` values
+(see trad/table.py).
 """
 import re
 import subprocess
@@ -23,6 +28,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from bs4 import BeautifulSoup
 
 TABLE_SCRIPT = Path(__file__).resolve().parent.parent / "trad" / "table.py"
 
@@ -149,17 +155,85 @@ def parse_efficiency(tex):
     return out
 
 
+def _html_rows(html):
+    soup = BeautifulSoup(html, "html.parser")
+    headers = [th.get_text(strip=True) for th in soup.find("thead").find_all("th")]
+    for tr in soup.find("tbody").find_all("tr"):
+        cells = [td.get_text(strip=True) for td in tr.find_all("td")]
+        yield dict(zip(headers, cells))
+
+
+def parse_summary_html(html):
+    out = {}
+    for row in _html_rows(html):
+        method = row["Method"]
+        for col in TABLE_COLUMNS:
+            m = re.search(r"([\d.]+) ± ([\d.]+)(\*)? \(n=(\d+)\)", row[col])
+            if m:
+                out[(col, method)] = dict(mean=float(m.group(1)), std=float(m.group(2)),
+                                          n=int(m.group(4)), star=bool(m.group(3)))
+    return out
+
+
+def parse_iqm_html(html):
+    out = {}
+    for row in _html_rows(html):
+        method = row["Method"]
+        for col in TABLE_COLUMNS:
+            m = re.search(r"([\d.]+) \[([\d.]+), ([\d.]+)\]", row[col])
+            if m:
+                out[(col, method)] = tuple(float(g) for g in m.groups())
+    return out
+
+
+def parse_efficiency_html(html):
+    out = {}
+    column = None
+    for row in _html_rows(html):
+        if row["Environment"]:
+            column = row["Environment"].split(" (")[0]
+        method = row["Method"]
+        hit, tot = (int(x) for x in row["Reached"].split("/"))
+        med_field = row["Median budget"]
+        if med_field == "never":
+            med, unit = None, None
+        else:
+            mm = re.match(r"(\d+)(k)? ?(?:steps?|ep\.)", med_field)
+            med, unit = int(mm.group(1)), ("k" if mm.group(2) else "ep")
+        auc_mean, auc_std = (float(x) for x in
+                             re.search(r"([\d.]+) ± ([\d.]+)", row["AUC"]).groups())
+        out[(column, method)] = (hit, tot, med, unit, auc_mean, auc_std)
+    return out
+
+
 @pytest.fixture(scope="module")
-def generated(tmp_path_factory):
+def generated_all(tmp_path_factory):
     out_path = tmp_path_factory.mktemp("paper")
-    subprocess.run([sys.executable, str(TABLE_SCRIPT), "--out-path", str(out_path)],
+    subprocess.run([sys.executable, str(TABLE_SCRIPT), "--out-path", str(out_path),
+                    "--format", "both"],
                    capture_output=True, text=True, check=True)
     root = out_path / "tables" / "results"
-    return dict(
+    tex = dict(
         summary=parse_summary((root / "trad_summary.tex").read_text()),
         iqm=parse_iqm((root / "trad_iqm.tex").read_text()),
         efficiency=parse_efficiency((root / "trad_efficiency.tex").read_text()),
     )
+    html = dict(
+        summary=parse_summary_html((root / "trad_summary.html").read_text()),
+        iqm=parse_iqm_html((root / "trad_iqm.html").read_text()),
+        efficiency=parse_efficiency_html((root / "trad_efficiency.html").read_text()),
+    )
+    return tex, html
+
+
+@pytest.fixture(scope="module")
+def generated(generated_all):
+    return generated_all[0]
+
+
+@pytest.fixture(scope="module")
+def generated_html(generated_all):
+    return generated_all[1]
 
 
 SUMMARY_TOL = {  # half the last displayed decimal place, per column
@@ -203,3 +277,60 @@ def test_efficiency_matches_manuscript(generated, col, method, hit, tot, med, un
     assert g_unit == unit
     assert g_auc_mean == pytest.approx(auc_mean, abs=6e-4)
     assert g_auc_std == pytest.approx(auc_std, abs=6e-4)
+
+
+@pytest.mark.parametrize("col,method,want", SUMMARY_FIXTURE)
+def test_html_summary_matches_manuscript(generated_html, col, method, want):
+    got = generated_html["summary"][(col, method)]
+    tol = SUMMARY_TOL[col]
+    assert got["mean"] == pytest.approx(want["mean"], abs=tol)
+    assert got["std"] == pytest.approx(want["std"], abs=tol)
+    assert got["n"] == want["n"]
+
+
+@pytest.mark.parametrize("col,method,want", IQM_FIXTURE)
+def test_html_iqm_matches_manuscript(generated_html, col, method, want):
+    got = generated_html["iqm"][(col, method)]
+    for g, w in zip(got, want):
+        assert g == pytest.approx(w, abs=IQM_TOL[col])
+
+
+@pytest.mark.parametrize("col,method,hit,tot,med,unit,auc_mean,auc_std", EFFICIENCY_FIXTURE)
+def test_html_efficiency_matches_manuscript(generated_html, col, method, hit, tot, med, unit,
+                                            auc_mean, auc_std):
+    g_hit, g_tot, g_med, g_unit, g_auc_mean, g_auc_std = \
+        generated_html["efficiency"][(col, method)]
+    assert (g_hit, g_tot) == (hit, tot)
+    assert g_med == med
+    assert g_unit == unit
+    assert g_auc_mean == pytest.approx(auc_mean, abs=6e-4)
+    assert g_auc_std == pytest.approx(auc_std, abs=6e-4)
+
+
+def test_html_matches_latex(generated, generated_html):
+    """Same in-memory `summary`/`frames`/`compute_efficiency()` values feed
+    both renderers (trad/table.py), so every cell in the LaTeX tables must
+    appear in the HTML tables with the identical value."""
+    assert set(generated["summary"]) == set(generated_html["summary"])
+    for key, tex_row in generated["summary"].items():
+        html_row = generated_html["summary"][key]
+        assert html_row["mean"] == pytest.approx(tex_row["mean"], abs=1e-9)
+        assert html_row["std"] == pytest.approx(tex_row["std"], abs=1e-9)
+        assert html_row["n"] == tex_row["n"]
+        assert html_row["star"] == tex_row["star"]
+
+    assert set(generated["iqm"]) == set(generated_html["iqm"])
+    for key, tex_val in generated["iqm"].items():
+        html_val = generated_html["iqm"][key]
+        for g, w in zip(html_val, tex_val):
+            assert g == pytest.approx(w, abs=1e-9)
+
+    assert set(generated["efficiency"]) == set(generated_html["efficiency"])
+    for key, tex_row in generated["efficiency"].items():
+        h_hit, h_tot, h_med, h_unit, h_auc_mean, h_auc_std = generated_html["efficiency"][key]
+        t_hit, t_tot, t_med, t_unit, t_auc_mean, t_auc_std = tex_row
+        assert (h_hit, h_tot) == (t_hit, t_tot)
+        assert h_med == t_med
+        assert h_unit == t_unit
+        assert h_auc_mean == pytest.approx(t_auc_mean, abs=1e-9)
+        assert h_auc_std == pytest.approx(t_auc_std, abs=1e-9)

@@ -17,9 +17,13 @@ rival method) and from the efficiency table (it never learns the task, so
 sample-efficiency is not a meaningful comparison for it).
 
 Emits three tabular-environment-only fragments (no \\begin{table}, caption,
-or label -- those stay authored prose in the manuscript).
+or label -- those stay authored prose in the manuscript). --format html
+emits the same three tables as semantic HTML <table> fragments for the
+Beyond-PDF submission (issue #42), one HTML file per LaTeX fragment (same
+stem, .html suffix) -- built from the same `summary`/`frames` this module
+already computes for the LaTeX side, never hand-ported.
 
-Usage: python table.py [--out-path PATH]
+Usage: python table.py [--out-path PATH] [--format {latex,html,both}]
 """
 import argparse
 import re
@@ -33,6 +37,7 @@ import pandas as pd
 from methods import CELLS
 
 from core import stats
+from core.html import strong, table as html_table
 
 DATA = Path(__file__).parent / "data"
 DEFAULT_OUT = Path.home() / "doc/DyLam-TMLR"
@@ -133,6 +138,24 @@ def render_summary(summary, fam, secondary, adj):
     return "\n".join(lines) + "\n"
 
 
+def render_summary_html(summary, fam, secondary, adj):
+    star_col = {col: p < ALPHA for col, *_, p, _ in secondary}
+    star_col.update({col: adj[col] < ALPHA for col, *_ in fam})
+
+    def cell(method, col):
+        vals = summary.get((method, col))
+        if not vals:
+            return "—"
+        d = DECIMALS[col]
+        star = "*" if method == "DyLam" and star_col.get(col) else ""
+        return f"{np.mean(vals):.{d}f} ± {np.std(vals, ddof=1):.{d}f}{star} (n={len(vals)})"
+
+    headers = ["Method"] + COLUMNS
+    body = [[method] + [cell(method, col) for col in COLUMNS] for method in ROW_ORDER]
+    body.append(["DyLam-Scalar"] + [cell("DyLam-Scalar", col) for col in COLUMNS])
+    return html_table(headers, body)
+
+
 def render_iqm(summary):
     def cell(method, col):
         vals = summary.get((method, col))
@@ -152,13 +175,26 @@ def render_iqm(summary):
     return "\n".join(lines) + "\n"
 
 
-def render_efficiency(frames, summary):
-    lines = [r"\begin{tabular}{llccc}", r"\toprule",
-             r"\textbf{Environment} & \textbf{Method} & \textbf{Reached} & "
-             r"\textbf{Median budget} & \textbf{AUC} \\", r"\midrule"]
-    for i, col in enumerate(EFFICIENCY_COLUMNS):
-        if i:
-            lines.append(r"\midrule")
+def render_iqm_html(summary):
+    def cell(method, col):
+        vals = summary.get((method, col))
+        if not vals:
+            return "—"
+        lo, hi = stats.boot_ci(vals)
+        d = IQM_DECIMALS[col]
+        return f"{stats.iqm(vals):.{d}f} [{lo:.{d}f}, {hi:.{d}f}]"
+
+    headers = ["Method"] + COLUMNS
+    body = [[method] + [cell(method, col) for col in COLUMNS] for method in ROW_ORDER]
+    body.append(["DyLam-Scalar"] + [cell("DyLam-Scalar", col) for col in COLUMNS])
+    return html_table(headers, body)
+
+
+def compute_efficiency(frames, summary):
+    """Per efficiency column: the rival threshold and every method's
+    (reached, median-budget, AUC) row. Shared by both renderers below."""
+    out = {}
+    for col in EFFICIENCY_COLUMNS:
         rivals = {m: summary[(m, col)] for m in ROW_ORDER
                   if m != "DyLam" and (m, col) in summary}
         dylam = summary.get(("DyLam", col))
@@ -168,61 +204,121 @@ def render_efficiency(frames, summary):
         thr = float(np.mean(rivals[best]))
         allv = [x for m in list(rivals) + ["DyLam"] for x in summary[(m, col)]]
         lo, hi = min(allv), max(allv)
-        rows = list(rivals) + ["DyLam"]
-        best_auc, best_median = None, None
         computed = []
-        for method in rows:
+        for method in list(rivals) + ["DyLam"]:
             fs = frames[(method, col)]
             st = [stats.steps_to(f, METRIC[col], thr) for f in fs]
             hit = [s for s in st if s is not None]
             au = [stats.auc(f, METRIC[col], lo, hi) for f in fs]
             med = np.median(hit) if hit else None
-            computed.append((method, len(hit), len(fs), med, np.mean(au),
-                             np.std(au, ddof=1) if len(au) > 1 else 0.0))
-        best_auc = max(c[4] for c in computed)
-        reached_medians = [c[3] for c in computed if c[3] is not None]
+            computed.append(dict(method=method, n_hit=len(hit), n_tot=len(fs), med=med,
+                                 au_mean=np.mean(au),
+                                 au_std=np.std(au, ddof=1) if len(au) > 1 else 0.0))
+        best_auc = max(c["au_mean"] for c in computed)
+        reached_medians = [c["med"] for c in computed if c["med"] is not None]
         best_median = min(reached_medians) if reached_medians else None
-        for j, (method, n_hit, n_tot, med, au_mean, au_std) in enumerate(computed):
-            bold_med = med is not None and med == best_median
-            bold_auc = au_mean == best_auc
-            if med is None:
+        for c in computed:
+            c["bold_med"] = c["med"] is not None and c["med"] == best_median
+            c["bold_auc"] = c["au_mean"] == best_auc
+        out[col] = dict(threshold=thr, rows=computed)
+    return out
+
+
+def render_efficiency(data):
+    lines = [r"\begin{tabular}{llccc}", r"\toprule",
+             r"\textbf{Environment} & \textbf{Method} & \textbf{Reached} & "
+             r"\textbf{Median budget} & \textbf{AUC} \\", r"\midrule"]
+    for i, col in enumerate(EFFICIENCY_COLUMNS):
+        if i:
+            lines.append(r"\midrule")
+        entry = data.get(col)
+        if entry is None:
+            continue
+        thr = entry["threshold"]
+        rows = entry["rows"]
+        for j, c in enumerate(rows):
+            if c["med"] is None:
                 med_tex = "never"
             elif col == "Chicken--Banana":
-                num = f"{med:.0f}"
-                med_tex = (f"$\\mathbf{{{num}}}$ ep." if bold_med else f"${num}$ ep.")
+                num = f"{c['med']:.0f}"
+                med_tex = (f"$\\mathbf{{{num}}}$ ep." if c["bold_med"] else f"${num}$ ep.")
             else:
-                num = f"{med / 1000:.0f}"
-                med_tex = (f"$\\mathbf{{{num}}}$k steps" if bold_med else f"${num}$k steps")
-            auc_num = f"{au_mean:.3f} \\pm {au_std:.3f}"
-            auc_tex = f"$\\mathbf{{{auc_num}}}$" if bold_auc else f"${auc_num}$"
+                num = f"{c['med'] / 1000:.0f}"
+                med_tex = (f"$\\mathbf{{{num}}}$k steps" if c["bold_med"] else f"${num}$k steps")
+            auc_num = f"{c['au_mean']:.3f} \\pm {c['au_std']:.3f}"
+            auc_tex = f"$\\mathbf{{{auc_num}}}$" if c["bold_auc"] else f"${auc_num}$"
             if j == 0:
                 thr_str = f"{thr:.{THRESHOLD_DECIMALS[col]}f}"
-                lines.append(f"\\multirow{{{len(computed)}}}{{*}}{{{col} ($\\geq {thr_str}$)}}")
-            lines.append(f"  & {method:16s} & ${n_hit}/{n_tot}$ & {med_tex} & {auc_tex} \\\\")
+                lines.append(f"\\multirow{{{len(rows)}}}{{*}}{{{col} ($\\geq {thr_str}$)}}")
+            lines.append(f"  & {c['method']:16s} & ${c['n_hit']}/{c['n_tot']}$ & "
+                         f"{med_tex} & {auc_tex} \\\\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     return "\n".join(lines) + "\n"
+
+
+def render_efficiency_html(data):
+    headers = ["Environment", "Method", "Reached", "Median budget", "AUC"]
+    body = []
+    for col in EFFICIENCY_COLUMNS:
+        entry = data.get(col)
+        if entry is None:
+            continue
+        thr = entry["threshold"]
+        thr_str = f"{thr:.{THRESHOLD_DECIMALS[col]}f}"
+        rows = entry["rows"]
+        for j, c in enumerate(rows):
+            if c["med"] is None:
+                med_str = "never"
+            elif col == "Chicken--Banana":
+                med_str = f"{c['med']:.0f} ep."
+            else:
+                med_str = f"{c['med'] / 1000:.0f}k steps"
+            med_cell = strong(med_str) if c["bold_med"] else med_str
+            auc_str = f"{c['au_mean']:.3f} ± {c['au_std']:.3f}"
+            auc_cell = strong(auc_str) if c["bold_auc"] else auc_str
+            env_cell = f"{col} (≥ {thr_str})" if j == 0 else ""
+            body.append([env_cell, c["method"], f"{c['n_hit']}/{c['n_tot']}",
+                        med_cell, auc_cell])
+    return html_table(headers, body)
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out-path", type=Path, default=DEFAULT_OUT,
                      help="paper repository root (default: %(default)s)")
+    ap.add_argument("--format", choices=["latex", "html", "both"], default="latex",
+                     help="output format(s) to write (default: %(default)s)")
     args = ap.parse_args()
 
     frames, summary = compute()
     fam, secondary, adj = family_tests(summary)
+    efficiency = compute_efficiency(frames, summary)
 
-    outputs = {
-        "tables/results/trad_summary.tex": render_summary(summary, fam, secondary, adj),
-        "tables/results/trad_iqm.tex": render_iqm(summary),
-        "tables/results/trad_efficiency.tex": render_efficiency(frames, summary),
-    }
-    for rel, tex in outputs.items():
-        out = args.out_path / rel
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(tex)
-        print(tex)
-        print(f"wrote {out}", file=sys.stderr)
+    if args.format in ("latex", "both"):
+        outputs = {
+            "tables/results/trad_summary.tex": render_summary(summary, fam, secondary, adj),
+            "tables/results/trad_iqm.tex": render_iqm(summary),
+            "tables/results/trad_efficiency.tex": render_efficiency(efficiency),
+        }
+        for rel, tex in outputs.items():
+            out = args.out_path / rel
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(tex)
+            print(tex)
+            print(f"wrote {out}", file=sys.stderr)
+
+    if args.format in ("html", "both"):
+        outputs = {
+            "tables/results/trad_summary.html": render_summary_html(summary, fam, secondary, adj),
+            "tables/results/trad_iqm.html": render_iqm_html(summary),
+            "tables/results/trad_efficiency.html": render_efficiency_html(efficiency),
+        }
+        for rel, html in outputs.items():
+            out = args.out_path / rel
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(html)
+            print(html)
+            print(f"wrote {out}", file=sys.stderr)
 
 
 if __name__ == "__main__":
