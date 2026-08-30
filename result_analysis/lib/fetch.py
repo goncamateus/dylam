@@ -39,8 +39,8 @@ def histories(env, setup, metric, max_seeds=10, samples=5000, refresh=False,
 
     Each frame carries a `seed` column (the run's `config.seed`, falling back
     to the run id when a run predates that config key). Capped at `max_seeds`
-    finished runs. `entity_project` defaults to this project; morl's
-    coverage baselines (GPI-LS, PGMORL) live in a different one. With
+    finished runs. `entity_project` defaults to this project; morl's rival
+    methods (GPI-LS, PGMORL) live in a different one. With
     `with_wall_time`, each frame also carries a constant `_wall_time_min`
     column (the run's total wall-clock time), for morl's timing comparison.
     """

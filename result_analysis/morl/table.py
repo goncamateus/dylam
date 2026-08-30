@@ -27,12 +27,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
-import pandas as pd
-from arms import ENVS, HALFCHEETAH_REF, METHOD_ORDER, MINECART_REF
+from sources import ENVS, HALFCHEETAH_REF, METHOD_ORDER, MINECART_REF, per_seed
 
 from lib import pareto, stats
 
-DATA = Path(__file__).parent / "data"
 DEFAULT_OUT = Path.home() / "doc/DyLam-TMLR"
 FRAGMENT = Path("tables/morl/hv_cardinality.tex")
 ALPHA = 0.05
@@ -44,20 +42,10 @@ FMT = {"hv": ".3f", "cardinality": ".0f", "wall_time_min": ".0f"}
 COL_LABEL = {"hv": "HV ($\\log_{10}$)", "cardinality": "Card.", "wall_time_min": "Time (min)"}
 
 
-def _slug(label):
-    return label.lower().replace(" ", "_").replace("-", "_")
-
-
 def per_seed_metrics(env, label, source):
-    df = pd.read_csv(DATA / f"{env.lower()}_{_slug(label)}.csv")
-    obj_cols = [c for c in df.columns if c.startswith("obj")]
     ref = np.asarray(REF_BY_ENV[env])
     rows = []
-    for seed, g in df.groupby("seed", sort=False):
-        pts = g[obj_cols].to_numpy(dtype=float)
-        if source.transform is not None:
-            pts = source.transform(pts)
-        front = pareto.filter_dominated(pts)
+    for seed, g, front in per_seed(env, source):
         rows.append(dict(hv=pareto.hypervolume(front, ref), cardinality=len(front),
                          wall_time_min=float(g["wall_time_min"].iloc[0])))
     return rows

@@ -71,8 +71,12 @@ owns each artifact.
 _Avoid_: plotter, analysis script
 
 **Tidy CSV**:
-Committed per-seed long-form data — one row per (step, seed), columns
-`_step, <metric>, seed`. The only data shape a generator may read.
+Committed per-seed long-form data. The only data shape a generator may
+read. Default shape is one row per (step, seed), columns `_step,
+<metric>, seed`, plus an identity column where a scope has more than one
+condition/method/arm per file. A scope whose rows are Pareto candidate
+points rather than a step series (morl) drops `_step` for `obj1..objN,
+seed, point_index`, one file per source instead of an identity column.
 _Avoid_: the CSVs, exports, data
 
 **Aggregated export**:

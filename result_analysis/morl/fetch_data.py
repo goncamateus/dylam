@@ -1,14 +1,16 @@
 """Fetch morl scope data into tidy CSVs: per-seed Pareto candidate point
-clouds for every (env, method) in arms.py, plus DyLam/DynMORL's weight
+clouds for every (env, method) in sources.py, plus DyLam/DynMORL's weight
 (lambda) trajectories for the two weight-space figure panels.
 
-Two protocols, matching arms.Source.kind:
-  "dylam" -- this project's own runs. A candidate set is this seed's
-    training history (10^4 sampled points, arms.DYLAM_SAMPLES), Pareto
-    filtering happens at analysis time in table.py/figure.py.
-  "morl"  -- morl-baselines reference runs in a separate wandb project.
-    A candidate set is the eval/front table already logged at the end of
-    training (a JSON-backed wandb Table, downloaded once per run).
+Two protocols, matching sources.Source.kind:
+  "history" -- this project's own runs (DyLam, DynMORL). A candidate set
+    is this seed's training history (10^4 sampled points,
+    sources.DYLAM_SAMPLES), Pareto filtering happens at analysis time in
+    table.py/figure.py.
+  "front"   -- morl-baselines reference runs (GPI-LS, PGMORL) in a
+    separate wandb project. A candidate set is the eval/front table
+    already logged at the end of training (a JSON-backed wandb Table,
+    downloaded once per run).
 
 GPI-LS and PGMORL do not log an accessible per-policy weight vector (no
 history key, no config field enumerating it) under either project, so the
@@ -33,16 +35,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
 import pandas as pd
-from arms import (ENVS, HALFCHEETAH_WEIGHT_METRICS, MAX_SEEDS,
-                  MINECART_WEIGHT_METRICS)
+from sources import (DYLAM_SAMPLES, ENVS, HALFCHEETAH_WEIGHT_METRICS,
+                     MAX_SEEDS, MINECART_WEIGHT_METRICS, slug)
 
 from lib import fetch
 
 DATA = Path(__file__).parent / "data"
-
-
-def _slug(label):
-    return label.lower().replace(" ", "_").replace("-", "_")
 
 
 def _to_tidy(df, metrics, with_wall_time=True):
@@ -57,15 +55,15 @@ def _to_tidy(df, metrics, with_wall_time=True):
     return d
 
 
-def fetch_dylam_source(source, refresh):
+def fetch_history_source(source, refresh):
     dfs = fetch.histories(source.env_or_id, source.setup_or_algo, source.metrics,
-                          samples=10_000, max_seeds=MAX_SEEDS, refresh=refresh,
+                          samples=DYLAM_SAMPLES, max_seeds=MAX_SEEDS, refresh=refresh,
                           with_wall_time=True, entity_project=source.project)
     return [_to_tidy(df, source.metrics) for df in dfs]
 
 
 def fetch_weights(env_or_id, setup, project, metrics, refresh):
-    dfs = fetch.histories(env_or_id, setup, metrics, samples=10_000, max_seeds=MAX_SEEDS,
+    dfs = fetch.histories(env_or_id, setup, metrics, samples=DYLAM_SAMPLES, max_seeds=MAX_SEEDS,
                           refresh=refresh, entity_project=project)
     return [_to_tidy(df, metrics, with_wall_time=False) for df in dfs]
 
@@ -84,7 +82,7 @@ def _parse_front_table(run, last):
     return None
 
 
-def fetch_morl_source(source, refresh):
+def fetch_front_source(source, refresh):
     runs = fetch.api().runs(
         source.project,
         filters={"config.env_id": source.env_or_id, "config.algo": source.setup_or_algo,
@@ -128,12 +126,12 @@ def main():
     for env, sources in ENVS.items():
         for source in sources:
             print(f"  {env:12s} {source.label:8s} ...", file=sys.stderr, end=" ")
-            fetch_fn = fetch_dylam_source if source.kind == "dylam" else fetch_morl_source
+            fetch_fn = fetch_history_source if source.kind == "history" else fetch_front_source
             frames = fetch_fn(source, args.refresh)
             print(f"n={len(frames)}", file=sys.stderr)
             if not frames:
                 sys.exit(f"no data for {env}/{source.label}")
-            out = DATA / f"{env.lower()}_{_slug(source.label)}.csv"
+            out = DATA / f"{env.lower()}_{slug(source.label)}.csv"
             pd.concat(frames, ignore_index=True).to_csv(out, index=False)
             print(f"wrote {out}", file=sys.stderr)
 

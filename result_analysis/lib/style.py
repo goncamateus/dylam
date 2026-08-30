@@ -16,6 +16,8 @@ METHOD_COLORS = {
     # same axes, and fig:res/all's caption documents this pairing by name --
     # changing it would make authored prose wrong.
     "Tuned-UDC": "tab:purple",
+    # Deliberately shared with Base SO RL: never in the same axes (morl's
+    # figures don't plot trad's single-objective baseline).
     "GPI-LS": "tab:orange",
     "PGMORL": "tab:blue",
     # Deliberately shared with PGMORL: never in the same axes (PGMORL is

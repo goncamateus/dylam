@@ -47,7 +47,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from arms import ENVS
+from sources import ENVS, per_seed
 
 from lib import pareto, style
 
@@ -57,28 +57,17 @@ HALFCHEETAH_R_MAX = (800.0, 800.0)  # R_max=(800,-200) on ctrl's 1000-shifted ax
 MARKERS = {"PGMORL": "o", "GPI-LS": "s", "DynMORL": "o", "DyLam": "^"}
 
 
-def _slug(label):
-    return label.lower().replace(" ", "_").replace("-", "_")
-
-
 def merged_front(env, source):
     """Non-dominated front of every seed's candidates, pooled.
 
-    Filters each seed's ~10^4-point candidate set first (bounded, same cost
-    table.py already pays per seed) and only then merges and re-filters the
-    much smaller per-seed fronts. Pareto-filtering is idempotent under
-    union -- NDS(A u B) == NDS(NDS(A) u NDS(B)) -- so this is the identical
-    front a single pooled filter would give, just without ever materializing
-    an O(n^2) dominance matrix over the full ~10^5-point pooled cloud.
+    Pools sources.per_seed's already-per-seed-filtered fronts (bounded,
+    same cost table.py already pays per seed) and re-filters once more.
+    Pareto-filtering is idempotent under union -- NDS(A u B) ==
+    NDS(NDS(A) u NDS(B)) -- so this is the identical front a single pooled
+    filter would give, just without ever materializing an O(n^2) dominance
+    matrix over the full ~10^5-point pooled cloud.
     """
-    df = pd.read_csv(DATA / f"{env.lower()}_{_slug(source.label)}.csv")
-    obj_cols = [c for c in df.columns if c.startswith("obj")]
-    seed_fronts = []
-    for _, g in df.groupby("seed", sort=False):
-        pts = g[obj_cols].to_numpy(dtype=float)
-        if source.transform is not None:
-            pts = source.transform(pts)
-        seed_fronts.append(pareto.filter_dominated(pts))
+    seed_fronts = [front for _, _, front in per_seed(env, source)]
     return pareto.filter_dominated(np.concatenate(seed_fronts, axis=0))
 
 
