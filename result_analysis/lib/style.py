@@ -25,6 +25,13 @@ METHOD_COLORS = {
     "DynMORL": "tab:blue",
 }
 
+# Positional, not name-keyed: index i colors the i-th component in a given
+# env's own comp_names order (curriculum has one policy, not several
+# methods/conditions to distinguish by name). Matches the currently
+# published curriculum figures' palette (utils.py's plot_lambdas/
+# plot_rewards, index-keyed the same way).
+COMPONENT_PALETTE = ["#0091FF", "#FF6B2B", "#00C48C"]
+
 CONDITION_COLORS = {
     "Nominal": "dimgray",
     "Move $-25\\%$": "tab:blue",
