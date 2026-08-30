@@ -31,8 +31,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from lib import stats, style
 from methods import CHICKENBANANA_METHODS, COMPONENT_METRICS
+
+from lib import stats, style
 
 DATA = Path(__file__).parent / "data"
 DEFAULT_OUT = Path.home() / "doc/DyLam-TMLR"

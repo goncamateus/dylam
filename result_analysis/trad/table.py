@@ -30,8 +30,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
 import pandas as pd
-from lib import stats
 from methods import CELLS
+
+from lib import stats
 
 DATA = Path(__file__).parent / "data"
 DEFAULT_OUT = Path.home() / "doc/DyLam-TMLR"

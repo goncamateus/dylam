@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
 from conditions import CONDITIONS
+
 from lib import fetch
 
 METRIC = "ep_info/Goal"
