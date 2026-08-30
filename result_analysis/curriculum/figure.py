@@ -5,7 +5,7 @@ per-component returns driving it, for ChickenBanana-v0, HalfCheetah-v4,
 and VSS-v0.
 
 Reads only the committed tidy CSVs under data/; never touches the
-network. Colors are positional (lib.style.COMPONENT_PALETTE, index i for
+network. Colors are positional (core.style.COMPONENT_PALETTE, index i for
 the i-th component in sources.ENVS[env].components) -- matching every
 component's order in that env's own Dylam comp_names, and reused as-is
 for HalfCheetah/VSS, whose components figures have no surviving

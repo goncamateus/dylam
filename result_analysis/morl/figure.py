@@ -5,7 +5,7 @@ discovered front and weight space) and fig:res/minecart-pareto-group
 
 Reads only the committed tidy CSVs under data/; never touches the network.
 Each method's plotted front is its per-seed candidate sets pooled and
-re-filtered to the non-dominated subset (lib.pareto), matching the
+re-filtered to the non-dominated subset (core.pareto), matching the
 manuscript's own "candidates pooled, duplicates removed, dominated points
 filtered" protocol (app:res_morl_metrics) -- the same computation
 table.py does per-seed, just merged across seeds here for the picture.

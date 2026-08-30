@@ -6,7 +6,7 @@ sections/results/robust.tex (sec:res_robustness) -- both read off this same
 table.
 
 Reads only the committed tidy CSV under data/; never touches the network.
-Per-seed summary is the mean of the final 10% of training (lib.stats.seed_summary).
+Per-seed summary is the mean of the final 10% of training (core.stats.seed_summary).
 Comparisons are exact two-sided Mann-Whitney U against nominal, Holm-Bonferroni
 corrected within the six-comparison RQ3 family, with rank-biserial effect size.
 
@@ -57,7 +57,7 @@ def per_seed(df, condition):
 
     Bootstrap CIs are order-sensitive at fixed sample size (the same seed
     resample draws different index->value pairings for a different input
-    order), so this must match the order lib.fetch wrote the tidy CSV in to
+    order), so this must match the order core.fetch wrote the tidy CSV in to
     reproduce the published CI bounds exactly.
     """
     d = df[df["condition"] == condition]

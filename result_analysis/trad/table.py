@@ -4,7 +4,7 @@ quoted in prose in sections/results/trad/performance.tex (sec:res_trad_rq1).
 
 Reads only the committed tidy CSVs under data/; never touches the network.
 Per-seed summary is the mean of the final 10% of training
-(lib.stats.seed_summary). DyLam is compared against the strongest rival
+(core.stats.seed_summary). DyLam is compared against the strongest rival
 method per environment with an exact two-sided Mann-Whitney U,
 Holm-Bonferroni corrected within the three-comparison RQ1 family
 (Chicken--Banana, HalfCheetah-v4, VSS-v0); the HalfCheetah env-return

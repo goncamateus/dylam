@@ -2,8 +2,8 @@
 (fig:ablation/{tau,rb,normalizer,epsilon}, sections/ablation.tex).
 
 Reads only the committed tidy CSVs under data/; never touches the network.
-Each panel is IQM + 95% bootstrap CI across seeds (lib.style.rolling_smooth
-+ lib.stats.bootstrap_curve), the same protocol as trad/robustness --
+Each panel is IQM + 95% bootstrap CI across seeds (core.style.rolling_smooth
++ core.stats.bootstrap_curve), the same protocol as trad/robustness --
 replacing the per-sweep cumsum-smoothed mean/min-max bands of the two
 notebooks this supersedes (ablation.ipynb, dead entirely; the combined
 figures in ablation_combined.ipynb, whose two files disagreed on the

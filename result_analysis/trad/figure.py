@@ -4,9 +4,9 @@ fig:res/chicken_banana/components (sections/results/trad/app.tex).
 Reads only the committed tidy CSVs under data/; never touches the network.
 
 fig:res/all summarizes each seed's smoothed curve by IQM + 95% bootstrap CI
-across seeds (lib.style.rolling_smooth + lib.stats.bootstrap_curve) -- the
+across seeds (core.style.rolling_smooth + core.stats.bootstrap_curve) -- the
 protocol that actually produced the currently published figure. Colors are
-lib.style.METHOD_COLORS, keyed by the paper method label, not by whichever
+core.style.METHOD_COLORS, keyed by the paper method label, not by whichever
 algorithm name a panel's legend happens to use for it (Q-Learning/SAC are
 both "Base SO RL").
 

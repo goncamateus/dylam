@@ -3,7 +3,7 @@ ablation on Chicken--Banana, sections/ablation.tex, app:normalizer).
 
 Reads only the committed tidy CSV under data/; never touches the network.
 Per-seed summary is the mean of the final 10% of training
-(lib.stats.seed_summary); success counts seeds whose summary exceeds 160
+(core.stats.seed_summary); success counts seeds whose summary exceeds 160
 (of a max 200). p is an exact two-sided Mann-Whitney test against the
 Exponential (nominal) row -- no Holm correction, matching the manuscript
 (each row is its own comparison against nominal, not a family).

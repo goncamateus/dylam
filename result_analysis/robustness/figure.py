@@ -2,8 +2,8 @@
 bound misspecification, sections/results/robust.tex).
 
 Reads only the committed tidy CSV under data/; never touches the network.
-Per-seed rolling-mean smoothing (lib.style.rolling_smooth) before cross-seed
-IQM + bootstrap aggregation (lib.stats.bootstrap_curve) is the protocol that
+Per-seed rolling-mean smoothing (core.style.rolling_smooth) before cross-seed
+IQM + bootstrap aggregation (core.stats.bootstrap_curve) is the protocol that
 actually produced the currently published figure -- the other implementation
 that once existed for this plot (a notebook, since deleted) used per-seed
 Gaussian smoothing with min/max bands over a different, narrower set of

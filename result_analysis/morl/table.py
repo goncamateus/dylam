@@ -8,7 +8,7 @@ Reads only the committed tidy CSVs under data/; never touches the
 network. Per-run HV and cardinality are computed by Pareto-filtering that
 run's own candidate set (a 10^4-point sample of DyLam/DynMORL's training
 history, or GPI-LS/PGMORL's already-approximate eval/front) against the
-env's reference point (lib.pareto). DyLam is compared against every
+env's reference point (core.pareto). DyLam is compared against every
 applicable rival with an exact two-sided Mann-Whitney U; each of the
 three metrics (HV, cardinality, wall-time) is its own Holm-Bonferroni
 family of the (up to) four comparisons it has across both environments,
