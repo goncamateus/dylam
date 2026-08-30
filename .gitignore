@@ -164,3 +164,15 @@ wandb/
 videos/
 .vscode/
 scripts/logs/
+
+# Beyond PDF: local render output. tmlr_do_not_modify is the committed
+# author kit; these paths inside it are build.py's copy targets, not source.
+beyond_pdf/tmlr_do_not_modify/_site/
+beyond_pdf/tmlr_do_not_modify/.jekyll-cache/
+beyond_pdf/tmlr_do_not_modify/Gemfile.lock
+beyond_pdf/tmlr_do_not_modify/_under_review/*
+!beyond_pdf/tmlr_do_not_modify/_under_review/.gitkeep
+beyond_pdf/tmlr_do_not_modify/assets/bibliography/
+beyond_pdf/tmlr_do_not_modify/assets/html/
+beyond_pdf/tmlr_do_not_modify/assets/gif/
+beyond_pdf/tmlr_do_not_modify/assets/img/submission/

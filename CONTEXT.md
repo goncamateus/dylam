@@ -88,3 +88,19 @@ _Avoid_: CSV export, wandb CSV
 Ephemeral per-run wandb history keyed by run id, living outside the repo. A
 network cache, never an archive — anything worth keeping becomes a tidy CSV.
 _Avoid_: cache dir, data cache
+
+### Beyond PDF
+
+**Beyond PDF submission**:
+The DyLam manuscript rendered as a web-native page for TMLR's Beyond PDF track,
+built from the author kit's Jekyll/distill layout. A parallel presentation of the
+same paper, not a separate publication.
+_Avoid_: companion, website, blog post, HTML version
+
+**Embed**:
+A self-contained interactive HTML document iframed into the Beyond PDF
+submission, produced by an Embed generator from tidy CSVs or checkpoints --
+a wider read contract than Generator's, which is tidy-CSV-only. Distinct from
+a Paper artifact: an Embed carries no LaTeX label, and one Embed commonly
+supersedes several Paper artifacts.
+_Avoid_: widget, applet, interactive figure

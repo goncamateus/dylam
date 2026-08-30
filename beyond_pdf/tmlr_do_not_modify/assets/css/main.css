@@ -1,0 +1,33 @@
+/*******************************************************************************
+ * Custom Styles for TMLR Beyond PDF
+ ******************************************************************************/
+
+:root { --global-bg-color: #ffffff; --global-code-bg-color: rgba(181, 9, 172, 0.05); --global-text-color: #000000; --global-text-color-light: #828282; --global-theme-color: #2698BA; --global-hover-color: #2698BA; --global-footer-bg-color: #1C1C1D; --global-footer-text-color: #c1c1c1; --global-footer-link-color: #ffffff; --global-distill-app-color: #828282; --global-divider-color: rgba(0,0,0,.1); --global-card-bg-color: #ffffff; }
+pre { color: var(--global-theme-color); background-color: var(--global-code-bg-color); border-radius: 6px; padding: 6px 12px; }
+pre pre, pre code { background-color: transparent; border-radius: 0; padding: 0; }
+
+.navbar {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+  box-shadow: none !important;
+}
+
+body.fixed-top-nav {
+  padding-top: 56px !important;
+}
+
+@media (max-width: 575px) {
+  body.fixed-top-nav {
+    padding-top: 80px !important;
+  }
+}
+
+d-title {
+  padding: 2rem 0 1.5rem !important;
+}
+
+@media(min-width: 768px) {
+  d-title {
+    padding: 4rem 0 1.5rem !important;
+  }
+}

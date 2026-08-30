@@ -1,0 +1,316 @@
+
+    <style type="text/css">
+      .navbar {
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+      }
+      body.fixed-top-nav {
+        padding-top: 56px !important;
+      }
+      @media (max-width: 575px) {
+        body.fixed-top-nav {
+          padding-top: 80px !important;
+        }
+      }
+    </style>
+    <!-- Metadata, OpenGraph and Schema.org -->
+    {% include metadata.html %}
+
+    <!-- Bootstrap & MDB -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@{{ site.bootstrap.version }}/dist/css/bootstrap.min.css" rel="stylesheet" integrity="{{ site.bootstrap.integrity.css }}" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mdbootstrap@{{ site.mdb.version }}/css/mdb.min.css" integrity="{{ site.mdb.integrity.css }}" crossorigin="anonymous" />
+
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@{{ site.fontawesome.version }}/css/all.min.css" integrity="{{ site.fontawesome.integrity }}" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/academicons@{{ site.academicons.version }}/css/academicons.min.css" integrity="{{ site.academicons.integrity }}" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Roboto+Slab:100,300,400,500,700|Material+Icons">
+
+    <!-- Code Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jwarby/jekyll-pygments-themes@master/{{ site.highlight_theme_light | append: '.css' }}" media="" id="highlight_theme_light" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+    <script>
+      window.addEventListener("load", function() {
+         setTimeout(function() { if(window.Prism) window.Prism.highlightAll(); }, 500);
+      });
+
+      document.addEventListener('click', function(e) {
+        const target = e.target.closest('a');
+        if (target && target.getAttribute('href') && target.getAttribute('href').startsWith('#')) {
+          e.preventDefault();
+          const id = target.getAttribute('href').slice(1);
+          const element = document.getElementById(id);
+          if (element) {
+            const y = element.getBoundingClientRect().top + window.scrollY - 70;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+          }
+        }
+      });
+    </script>
+
+    <!-- Styles -->
+    {% if site.icon.size < 3 %}
+    <link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>{{ site.icon }}</text></svg>">
+    {% elsif site.icon != blank %}
+    <link rel="shortcut icon" href="{{ site.icon | prepend: '/assets/img/' | relative_url}}"/>
+    {% endif %}
+    <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+    <link rel="canonical" href="{{ page.url | replace:'index.html','' | absolute_url }}">
+
+    <style type="text/css">
+        /* Base styling for TOC on wide screens (> 1024px) */
+        d-article d-contents {
+          align-self: start;
+          grid-column: 1 / 4;
+          grid-row: auto / span 4;
+          justify-self: end;
+          margin-top: 0em;
+          padding-left: 2em;
+          padding-right: 3em;
+          border-right: 1px solid rgba(0,0,0,0.1);
+          width: calc(max(70%, 300px));
+          margin-right: 0px;
+          display: grid;
+          grid-template-columns: minmax(8px, 1fr) [toc] auto minmax(8px, 1fr) [toc-line] 1px minmax(32px, 2fr);
+        }
+        d-article d-contents nav {
+          grid-column: toc;
+        }
+        d-article d-contents nav a {
+          border-bottom: none;
+          text-decoration: none;
+          color: rgba(0, 0, 0, 0.8);
+        }
+        d-article d-contents nav a:hover {
+          border-bottom: 1px solid rgba(0,0,0,0.8);
+        }
+        d-article d-contents nav h3 {
+          margin-top: 0;
+          margin-bottom: 1em;
+          font-size: 18px;
+          font-weight: 700;
+          color: rgba(0,0,0,0.8);
+        }
+        d-article d-contents nav > div {
+          display: block;
+          outline: none;
+          margin-bottom: 0.8em;
+          color: rgba(0, 0, 0, 0.8);
+          font-weight: bold;
+        }
+        d-article d-contents nav ul {
+          padding-left: 1em;
+          margin-top: 0;
+          margin-bottom: 6px;
+          list-style-type: none;
+        }
+        d-article d-contents nav ul li {
+          margin-bottom: 0.25em;
+        }
+        
+        @media (max-width: 1024px) {
+          d-article d-contents {
+            display: block;
+            grid-column-start: 2;
+            grid-column-end: -2;
+            padding-bottom: 0.5em;
+            margin-bottom: 1em;
+            padding-top: 0.5em;
+            width: 100%;
+            border: 1px solid rgba(0,0,0,.1);
+          }
+          d-article d-contents nav {
+            grid-column: none;
+          }
+        }
+          d-contents nav h3 {
+            grid-column: page-start / text-start;
+            font-size: 15px;
+            font-weight: 500;
+            margin-top: 1em;
+            margin-bottom: 0;
+            color: rgba(0,0,0,0.65);
+          }
+          d-contents nav > div, d-contents nav > ul {
+            grid-column: text;
+          }
+          d-contents nav > div {
+            font-weight: bold;
+            margin-top: 1em;
+            margin-bottom: 0.25em;
+          }
+        }
+
+        h1.page-heading {
+            color: #000000;
+            text-align: center;
+        }
+        a.next, a.previous {
+            font-weight: bold;
+            color: #000000;
+            background-color: #DDDDDD;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        span.page_number {
+            padding: 10px;
+        }
+        div.outer-pagination {
+            font-weight: bold;
+            width: 100%;
+            padding: 10px;
+            text-align: center;
+        }
+        div.inner-pagination {
+            display: inline-block;
+        }
+
+        /* Base styling for TOC on wide screens (> 1024px) */
+        d-article d-contents {
+          align-self: start;
+          grid-column: 1 / 4;
+          grid-row: auto / span 4;
+          justify-self: end;
+          margin-top: 0em;
+          padding-left: 2em;
+          padding-right: 3em;
+          border-right: 1px solid rgba(0,0,0,0.1);
+          width: calc(max(70%, 300px));
+          margin-right: 0px;
+          display: grid;
+          grid-template-columns: minmax(8px, 1fr) [toc] auto minmax(8px, 1fr) [toc-line] 1px minmax(32px, 2fr);
+        }
+        d-article d-contents nav {
+          grid-column: toc;
+        }
+        d-article d-contents nav a {
+          border-bottom: none;
+          text-decoration: none;
+          color: rgba(0, 0, 0, 0.8);
+        }
+        d-article d-contents nav a:hover {
+          border-bottom: 1px solid rgba(0,0,0,0.8);
+        }
+        d-article d-contents nav h3 {
+          margin-top: 0;
+          margin-bottom: 1em;
+          font-size: 18px;
+          font-weight: 700;
+          color: rgba(0,0,0,0.8);
+        }
+        d-article d-contents nav > div {
+          display: block;
+          outline: none;
+          margin-bottom: 0.8em;
+          color: rgba(0, 0, 0, 0.8);
+          font-weight: bold;
+        }
+        d-article d-contents nav ul {
+          padding-left: 1em;
+          margin-top: 0;
+          margin-bottom: 6px;
+          list-style-type: none;
+        }
+        d-article d-contents nav ul li {
+          margin-bottom: 0.25em;
+        }
+        
+        @media (max-width: 1024px) {
+          d-article d-contents {
+            display: block;
+            grid-column-start: 2;
+            grid-column-end: -2;
+            padding-bottom: 0.5em;
+            margin-bottom: 1em;
+            padding-top: 0.5em;
+            width: 100%;
+            border: 1px solid rgba(0,0,0,.1);
+          }
+          d-article d-contents nav {
+            grid-column: none;
+          }
+        }
+          d-contents nav h3 {
+            grid-column: page-start / text-start;
+            font-size: 15px;
+            font-weight: 500;
+            margin-top: 1em;
+            margin-bottom: 0;
+            color: rgba(0,0,0,0.65);
+          }
+          d-contents nav > div, d-contents nav > ul {
+            grid-column: text;
+          }
+          d-contents nav > div {
+            font-weight: bold;
+            margin-top: 1em;
+            margin-bottom: 0.25em;
+          }
+        }
+
+        .pagination-wrapper {
+          text-align: center;
+        }
+
+        .pagination {
+          display: inline-block;
+          margin: 0 0 2rem;
+        }
+
+        .pagination a,
+        .pagination span {
+          border-radius: 3px;
+          float: left;
+          height: 36px;
+          line-height: 36px;
+          width: 30px;
+        }
+
+        a.pagination-step,
+        span.pagination-step {
+          padding: 0 10px;
+          width: auto;
+        }
+
+        .pagination-first,
+        .pagination-last,
+        .pagination-more, {
+          display: none;
+        }
+
+        .pagination .active {
+          background: #ddd;
+          color: #fff;
+        }
+
+        @media (min-width: 38em) {
+          .pagination-first,
+          .pagination-last,
+          .pagination-more {
+            display: block;
+          }
+
+          a.pagination-step,
+          span.pagination-step {
+            padding: 0 15px;
+            width: auto;
+          }
+        }
+
+        span.path {
+          font-style: italic;
+          color: #555555;
+        }
+    </style>
+    
+    <!-- Dark Mode -->
+    {% if site.enable_darkmode %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jwarby/jekyll-pygments-themes@master/{{ site.highlight_theme_dark | append: '.css' }}" media="none" id="highlight_theme_dark" />
+
+    <script src="{{ '/assets/js/theme.js' | relative_url }}"></script>
+    <script src="{{ '/assets/js/dark_mode.js' | relative_url }}"></script>
+    {% endif %}
