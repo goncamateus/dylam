@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import numpy as np
 
-from lib import fetch, stats
+from core import fetch, stats
 
 
 def main():

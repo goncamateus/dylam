@@ -27,7 +27,7 @@ import numpy as np
 import pandas as pd
 from arms import NORMALIZER_TABLE_ROWS
 
-from lib import stats
+from core import stats
 
 DATA = Path(__file__).parent / "data" / "normalizer_table_total.csv"
 DEFAULT_OUT = Path.home() / "doc/DyLam-TMLR"

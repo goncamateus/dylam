@@ -38,7 +38,7 @@ import pandas as pd
 from sources import (DYLAM_SAMPLES, ENVS, HALFCHEETAH_WEIGHT_METRICS,
                      MAX_SEEDS, MINECART_WEIGHT_METRICS, slug)
 
-from lib import fetch
+from core import fetch
 
 DATA = Path(__file__).parent / "data"
 

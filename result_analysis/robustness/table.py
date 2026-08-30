@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 from conditions import CONDITIONS
 
-from lib import stats
+from core import stats
 
 METRIC = "ep_info/Goal"
 DATA = Path(__file__).parent / "data" / "vss_ep_info_goal.csv"

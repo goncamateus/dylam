@@ -49,7 +49,7 @@ import numpy as np
 import pandas as pd
 from sources import ENVS, per_seed
 
-from lib import pareto, style
+from core import pareto, style
 
 DATA = Path(__file__).parent / "data"
 DEFAULT_OUT = Path.home() / "doc/DyLam-TMLR"

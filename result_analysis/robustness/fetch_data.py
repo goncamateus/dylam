@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import pandas as pd
 from conditions import CONDITIONS
 
-from lib import fetch
+from core import fetch
 
 METRIC = "ep_info/Goal"
 OUT = Path(__file__).parent / "data" / "vss_ep_info_goal.csv"

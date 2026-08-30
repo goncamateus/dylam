@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import numpy as np
 from sources import ENVS, HALFCHEETAH_REF, METHOD_ORDER, MINECART_REF, per_seed
 
-from lib import pareto, stats
+from core import pareto, stats
 
 DEFAULT_OUT = Path.home() / "doc/DyLam-TMLR"
 FRAGMENT = Path("tables/morl/hv_cardinality.tex")

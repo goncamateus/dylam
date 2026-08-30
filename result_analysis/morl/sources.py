@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from lib import pareto
+from core import pareto
 
 DATA = Path(__file__).parent / "data"
 
