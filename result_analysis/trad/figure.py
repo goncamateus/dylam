@@ -82,7 +82,7 @@ def _grid_for(series_by_method):
     return np.linspace(0, hi, GRID)
 
 
-def draw_main(out_root):
+def draw_main(out_root, fmt="pdf"):
     for panel in MAIN_PANELS:
         df = pd.read_csv(DATA / panel["file"])
         series_by_method = {method: _per_seed_series(df, "method", method, panel["metric"])
@@ -103,13 +103,12 @@ def draw_main(out_root):
         fig.tight_layout()
 
         out = out_root / panel["out"]
-        out.parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out)
+        for written in style.savefig(fig, out, fmt):
+            print(f"wrote {written}", file=sys.stderr)
         plt.close(fig)
-        print(f"wrote {out}", file=sys.stderr)
 
 
-def draw_components(out_root):
+def draw_components(out_root, fmt="pdf"):
     for label, file, metric, r_max, out_rel in COMPONENT_PANELS:
         df = pd.read_csv(DATA / file)
         series_by_method = {m: _per_seed_series(df, "method", m, metric)
@@ -129,19 +128,21 @@ def draw_components(out_root):
         fig.tight_layout()
 
         out = out_root / out_rel
-        out.parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out)
+        for written in style.savefig(fig, out, fmt):
+            print(f"wrote {written}", file=sys.stderr)
         plt.close(fig)
-        print(f"wrote {out}", file=sys.stderr)
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out-path", type=Path, default=DEFAULT_OUT,
                      help="paper repository root (default: %(default)s)")
+    ap.add_argument("--format", choices=style.FORMATS, default="pdf",
+                     help="output format: pdf (manuscript, default), svg "
+                          "(Beyond PDF), or both (default: %(default)s)")
     args = ap.parse_args()
-    draw_main(args.out_path)
-    draw_components(args.out_path)
+    draw_main(args.out_path, args.format)
+    draw_components(args.out_path, args.format)
 
 
 if __name__ == "__main__":

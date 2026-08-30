@@ -78,7 +78,7 @@ def _grid_mean(df, metric):
     return grid, mat.mean(axis=0)
 
 
-def draw_weights(out_root):
+def draw_weights(out_root, fmt="pdf"):
     for env, spec in ENVS.items():
         fig, ax = plt.subplots(figsize=(5.5, 4.0))
         for i, comp in enumerate(spec.components):
@@ -93,13 +93,12 @@ def draw_weights(out_root):
         ax.grid(alpha=0.3)
         fig.tight_layout()
         out = out_root / OUT_DIR[env] / f"{spec.gym_label}-weights.pdf"
-        out.parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out)
+        for written in style.savefig(fig, out, fmt):
+            print(f"wrote {written}", file=sys.stderr)
         plt.close(fig)
-        print(f"wrote {out}", file=sys.stderr)
 
 
-def draw_components(out_root):
+def draw_components(out_root, fmt="pdf"):
     for env, spec in ENVS.items():
         fig, ax = plt.subplots(figsize=(5.5, 4.0))
         for i, comp in enumerate(spec.components):
@@ -116,19 +115,21 @@ def draw_components(out_root):
         ax.legend(fontsize=8)
         fig.tight_layout()
         out = out_root / OUT_DIR[env] / f"{spec.gym_label}-components.pdf"
-        out.parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out)
+        for written in style.savefig(fig, out, fmt):
+            print(f"wrote {written}", file=sys.stderr)
         plt.close(fig)
-        print(f"wrote {out}", file=sys.stderr)
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out-path", type=Path, default=DEFAULT_OUT,
                      help="paper repository root (default: %(default)s)")
+    ap.add_argument("--format", choices=style.FORMATS, default="pdf",
+                     help="output format: pdf (manuscript, default), svg "
+                          "(Beyond PDF), or both (default: %(default)s)")
     args = ap.parse_args()
-    draw_weights(args.out_path)
-    draw_components(args.out_path)
+    draw_weights(args.out_path, args.format)
+    draw_components(args.out_path, args.format)
 
 
 if __name__ == "__main__":

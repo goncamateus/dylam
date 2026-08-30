@@ -53,6 +53,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out-path", type=Path, default=DEFAULT_OUT,
                      help="paper repository root (default: %(default)s)")
+    ap.add_argument("--format", choices=style.FORMATS, default="pdf",
+                     help="output format: pdf (manuscript, default), svg "
+                          "(Beyond PDF), or both (default: %(default)s)")
     args = ap.parse_args()
 
     df = pd.read_csv(DATA)
@@ -77,10 +80,9 @@ def main():
     fig.tight_layout()
 
     out = args.out_path / IMAGE
-    out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out)
+    for written in style.savefig(fig, out, args.format):
+        print(f"wrote {written}", file=sys.stderr)
     plt.close(fig)
-    print(f"wrote {out}", file=sys.stderr)
 
 
 if __name__ == "__main__":
