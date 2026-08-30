@@ -20,6 +20,7 @@ import pandas as pd
 from arms import (COMPONENTS, ENV, EPSILON_ARMS, LAMBDA_METRICS, NOMINAL_SETUP,
                   NORMALIZER_ARMS, NORMALIZER_TABLE_ROWS, RB_ARMS,
                   REWARD_METRICS, TAU_ARMS)
+
 from lib import fetch
 
 DATA = Path(__file__).parent / "data"

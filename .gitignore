@@ -162,6 +162,4 @@ models/
 wandb/
 videos/
 .vscode/
-# R1 revision analysis caches and local sweep markers
-result_analysis/r1_cache/
 scripts/logs/

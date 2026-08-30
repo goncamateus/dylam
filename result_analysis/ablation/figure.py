@@ -36,6 +36,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from arms import COMPONENTS, EPSILON_ARMS, NORMALIZER_ARMS, RB_ARMS, TAU_ARMS
+
 from lib import stats, style
 
 DATA = Path(__file__).parent / "data"

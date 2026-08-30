@@ -1,16 +1,30 @@
 """R5 open-loop replay: DyLam vs its own lambda(t) schedule on VSS-v0.
 
-Everything else this script used to compute -- Table 1, the RQ1
-significance family, sample efficiency, Chicken-Banana success rate, and
-the RQ3 robustness table -- now lives in trad/table.py and
-robustness/table.py. This is the one piece not yet migrated; it will
-retire into ablation/openloop's own generator when that scope migrates.
+In-flight work with no paper artifact yet (no fig:/tab: label references
+it anywhere in the manuscript) -- given its own scope directory per the
+issue's user story 30 ("a script with no home is the mechanism that
+produced the current state") rather than sitting orphaned at the
+top level. Everything else this script's predecessor (stats_r1.py) used
+to compute -- Table 1, the RQ1 significance family, sample efficiency,
+Chicken-Banana success rate, and the RQ3 robustness table -- already
+lives in trad/table.py and robustness/table.py.
 
-Usage: python stats_r1.py [--refresh]
+Not a generator: it prints a stats report to the console for the author
+to read, not a LaTeX fragment or figure -- there is nothing to emit yet
+because there is no published number to reproduce. It will grow into a
+real generator (with its own data/ and, once R5 has a published table,
+a test) once the manuscript actually cites this result.
+
+Usage: python report.py [--refresh]
 """
 import argparse
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import numpy as np
+
 from lib import fetch, stats
 
 
