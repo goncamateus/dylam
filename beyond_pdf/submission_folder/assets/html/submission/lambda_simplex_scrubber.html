@@ -4,20 +4,45 @@
 <meta charset="utf-8">
 <title>DyLam Beyond-PDF Companion</title>
 <style>
-  :root { color-scheme: light; }
+  :root {
+    color-scheme: light dark;
+    --ink: #1a1a1a;
+    --ink-soft: #333;
+    --ink-muted: #555;
+    --ink-faint: #666;
+    --surface: #fff;
+    --surface-alt: #f0f0f0;
+    --border: #e0e0e0;
+    --border-soft: #bbb;
+    --grid-wall: #9a9a9a;
+    --grid-open: #f2f2f2;
+    --grid-outline: #cfcfcf;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e8e8e8;
+      --ink-soft: #cfcfcf;
+      --ink-muted: #aaa;
+      --ink-faint: #999;
+      --surface: #262626;
+      --surface-alt: #2f2f2f;
+      --border: #444;
+      --border-soft: #555;
+      --grid-wall: #555;
+      --grid-open: #2b2b2b;
+      --grid-outline: #444;
+    }
+  }
   * { box-sizing: border-box; }
   body {
-    margin: 0; padding: 24px 32px 48px; background: #fafafa; color: #1a1a1a;
+    margin: 0; padding: 0; background: transparent; color: var(--ink);
     font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
   }
   main { max-width: 1100px; margin: 0 auto; }
-  h1 { font-size: 1.35rem; margin: 0 0 4px; }
-  p.framing, p.caption { max-width: 72ch; color: #333; }
-  p.caption { font-size: 0.9rem; color: #555; border-top: 1px solid #ddd; padding-top: 12px; margin-top: 20px; }
-  .guarantee { font-size: 0.85rem; color: #555; background: #f0f0f0; border-radius: 6px; padding: 8px 12px; margin: 12px 0; }
+  .guarantee { font-size: 0.85rem; color: var(--ink-muted); background: var(--surface-alt); border-radius: 6px; padding: 8px 12px; margin: 0 0 12px; }
   .controls {
     display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-    margin: 18px 0 10px; padding: 12px 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px;
+    margin: 18px 0 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
   }
   .controls input[type=range] { flex: 1 1 260px; min-width: 200px; }
   #episode-label { font-variant-numeric: tabular-nums; min-width: 9ch; }
@@ -28,38 +53,29 @@
   #mode-badge.follow { background: #2e7d32; }
   #mode-badge.free { background: #b45309; }
   #follow-btn {
-    padding: 6px 12px; border-radius: 6px; border: 1px solid #bbb; background: #fff; cursor: pointer;
+    padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-soft); background: var(--surface); color: var(--ink); cursor: pointer;
   }
   #follow-btn:disabled { opacity: 0.4; cursor: default; }
   .panels { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
   .panel {
-    background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px;
     flex: 1 1 320px; min-width: 300px;
   }
-  .panel h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: #666; margin: 0 0 8px; }
+  .panel h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-faint); margin: 0 0 8px; }
   svg { display: block; max-width: 100%; height: auto; }
   #simplex-svg { cursor: crosshair; }
   #legend { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 14px 0; font-size: 0.85rem; }
   #legend .swatch { display: inline-flex; align-items: center; gap: 6px; }
   #legend .dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
-  .arrow-text { font-size: 13px; font-weight: 700; fill: #1a1a1a; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
-  .grid-cell-wall { fill: #9a9a9a; }
-  .grid-cell-open { fill: #f2f2f2; }
-  .grid-cell-outline { stroke: #cfcfcf; stroke-width: 1; }
-  .marker-text { font-size: 12px; font-weight: 700; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .arrow-text { font-size: 13px; font-weight: 700; fill: currentColor; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .grid-cell-wall { fill: var(--grid-wall); }
+  .grid-cell-open { fill: var(--grid-open); }
+  .grid-cell-outline { stroke: var(--grid-outline); stroke-width: 1; }
+  .marker-text { font-size: 12px; font-weight: 700; fill: currentColor; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
 </style>
 </head>
 <body>
 <main>
-  <h1>DyLam Beyond-PDF Companion &mdash; ChickenBanana &lambda;-simplex training scrubber</h1>
-  <p class="framing">
-    DyLam decomposes a multi-objective reward into per-Component critics and adapts a weight
-    &lambda;(t) over training to trade them off. Scrub the slider below to watch &lambda; move
-    through training on ChickenBanana and see the greedy policy it induces at each moment. Click
-    anywhere in the weight simplex to try a different, fixed weighting against the <em>same</em>
-    learned Component Q-tables at that same moment &mdash; the counterfactual this page exists to make
-    checkable.
-  </p>
   <div class="guarantee">
     Every frame on this page was computed offline in Python from real checkpoints of a training
     run reported in the paper, and only looked up here &mdash; the browser recomputes nothing about
@@ -91,19 +107,6 @@
       <svg id="bars-svg"></svg>
     </div>
   </div>
-
-  <p class="caption">
-    Left: the ChickenBanana grid, with the currently-displayed policy's greedy action drawn in
-    each reachable cell (before either pickup) and its rollout path overlaid statically &mdash; the
-    path is not animated, so two weightings can be compared at a glance by switching between them.
-    Middle: the three-Component weight simplex, coloured by the behaviour class each weighting's
-    policy achieves <em>at the currently selected episode</em>, with DyLam's own &lambda; trajectory
-    drawn as a trail up to that episode. Clicking elsewhere fixes that weighting (free mode,
-    amber) so the time slider keeps scrubbing the counterfactual; the button above returns to
-    DyLam's own trajectory (follow mode, green). Right: the rollout's per-Component returns
-    (solid bars) against the method's own r_max ceilings (dashed), with DyLam's actual training-time
-    return at that episode ghosted behind for reference.
-  </p>
 </main>
 
 <script>
@@ -181,7 +184,7 @@ function drawGrid() {
 
   if (entry.path.length > 1) {
     const pts = entry.path.map(([x, y]) => `${x * cs + cs / 2},${y * cs + cs / 2}`).join(" ");
-    s += `<polyline points="${pts}" fill="none" stroke="#1a1a1a" stroke-width="2.5" ` +
+    s += `<polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2.5" ` +
          `stroke-opacity="0.55" stroke-linejoin="round"></polyline>`;
   }
   svg.innerHTML = s;
@@ -234,7 +237,7 @@ function drawSimplex() {
   const trail = DATA.lambdaTrajectory.slice(0, state.episodeIdx + 1).map(w => simplexXY(w, SIMPLEX_SIZE, SIMPLEX_PAD));
   if (trail.length > 1) {
     const pts = trail.map(([x, y]) => `${x},${y}`).join(" ");
-    s += `<polyline points="${pts}" fill="none" stroke="#1a1a1a" stroke-width="1.5" opacity="0.5"></polyline>`;
+    s += `<polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.5"></polyline>`;
   }
   const [cx, cy] = trail[trail.length - 1];
   s += `<circle cx="${cx}" cy="${cy}" r="6" fill="#2e7d32" stroke="#fff" stroke-width="2"></circle>`;
