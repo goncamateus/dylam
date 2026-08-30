@@ -71,7 +71,7 @@ def merged_front(env, source):
     return pareto.filter_dominated(np.concatenate(seed_fronts, axis=0))
 
 
-def draw_halfcheetah_pareto(out_root):
+def draw_halfcheetah_pareto(out_root, fmt="pdf"):
     fig, ax = plt.subplots(figsize=(5.0, 3.6))
     for source in ENVS["HALFCHEETAH"]:
         front = merged_front("HALFCHEETAH", source)
@@ -84,13 +84,12 @@ def draw_halfcheetah_pareto(out_root):
     ax.legend(fontsize=8)
     fig.tight_layout()
     out = out_root / "images/results/pareto/halfcheetah_pareto.pdf"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out)
+    for written in style.savefig(fig, out, fmt):
+        print(f"wrote {written}", file=sys.stderr)
     plt.close(fig)
-    print(f"wrote {out}", file=sys.stderr)
 
 
-def draw_halfcheetah_weights(out_root):
+def draw_halfcheetah_weights(out_root, fmt="pdf"):
     df = pd.read_csv(DATA / "halfcheetah_dylam_weights.csv")
     fig, ax = plt.subplots(figsize=(5.0, 3.6))
     ax.scatter(df["obj1"], df["obj2"], color=style.METHOD_COLORS["DyLam"],
@@ -100,10 +99,9 @@ def draw_halfcheetah_weights(out_root):
     ax.legend(fontsize=8)
     fig.tight_layout()
     out = out_root / "images/results/pareto/halfcheetah_weights_comparison.pdf"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out)
+    for written in style.savefig(fig, out, fmt):
+        print(f"wrote {written}", file=sys.stderr)
     plt.close(fig)
-    print(f"wrote {out}", file=sys.stderr)
 
 
 MINECART_OBJ_LABELS = ["First Minerium", "Second Minerium", "Fuel"]
@@ -111,7 +109,7 @@ MINECART_WEIGHT_LABELS = ["$\\lambda_1$", "$\\lambda_2$", "$\\lambda_3$"]
 PAIRS = [(0, 1), (0, 2), (1, 2)]
 
 
-def draw_minecart(out_root):
+def draw_minecart(out_root, fmt="pdf"):
     fronts = {s.label: merged_front("MINECART", s) for s in ENVS["MINECART"]}
     weights = {
         "DyLam": pd.read_csv(DATA / "minecart_dylam_weights.csv"),
@@ -138,21 +136,25 @@ def draw_minecart(out_root):
     handles, labels = axes[0, 0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=len(labels))
     fig.tight_layout(rect=[0, 0.05, 1, 1])
+    # dpi=200 only matters for the raster (png) leg; svg is vector and
+    # ignores it, but style.savefig forwards it to both calls uniformly.
     out = out_root / "images/results/pareto/minecart_pareto_weights.png"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out, dpi=200)
+    for written in style.savefig(fig, out, fmt, dpi=200):
+        print(f"wrote {written}", file=sys.stderr)
     plt.close(fig)
-    print(f"wrote {out}", file=sys.stderr)
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out-path", type=Path, default=DEFAULT_OUT,
                      help="paper repository root (default: %(default)s)")
+    ap.add_argument("--format", choices=style.FORMATS, default="pdf",
+                     help="output format: pdf/png (manuscript, default), "
+                          "svg (Beyond PDF), or both (default: %(default)s)")
     args = ap.parse_args()
-    draw_halfcheetah_pareto(args.out_path)
-    draw_halfcheetah_weights(args.out_path)
-    draw_minecart(args.out_path)
+    draw_halfcheetah_pareto(args.out_path, args.format)
+    draw_halfcheetah_weights(args.out_path, args.format)
+    draw_minecart(args.out_path, args.format)
 
 
 if __name__ == "__main__":

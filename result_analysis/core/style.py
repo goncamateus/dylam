@@ -7,6 +7,34 @@ until they are.
 """
 import pandas as pd
 
+# Beyond PDF (issue #41): every static figure Generator can additionally
+# emit SVG through its existing CLI, alongside the PDF the LaTeX manuscript
+# build already relies on. FORMATS is the shared choice list for that CLI
+# flag, kept here so all five figure Generators agree on the same spelling.
+FORMATS = ("pdf", "svg", "both")
+
+
+def savefig(fig, out, fmt="pdf", **kwargs):
+    """Save `fig` to `out` (a Generator's existing .pdf/.png-suffixed path).
+
+    `fmt` is one of FORMATS: "pdf" preserves exactly the current behaviour
+    (writes only `out` -- the manuscript's own LaTeX/PDF build stays
+    untouched); "svg" writes only a same-stem .svg next to it, in place of
+    `out`; "both" writes both. Returns the list of paths actually written,
+    for callers that want to log what they produced.
+    """
+    out.parent.mkdir(parents=True, exist_ok=True)
+    written = []
+    if fmt in ("pdf", "both"):
+        fig.savefig(out, **kwargs)
+        written.append(out)
+    if fmt in ("svg", "both"):
+        svg_out = out.with_suffix(".svg")
+        fig.savefig(svg_out, **kwargs)
+        written.append(svg_out)
+    return written
+
+
 METHOD_COLORS = {
     "Base SO RL": "tab:orange",
     "Q-Decomposition": "tab:purple",

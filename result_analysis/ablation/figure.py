@@ -97,7 +97,7 @@ def _isolated_row(ax_row, sweep, comp, arms):
     ax_row.set_ylim(0, 1)
 
 
-def draw(out_root):
+def draw(out_root, fmt="pdf"):
     for sweep, arms, isolated, out_rel in FIGURES:
         nrows = 3 if isolated else 2
         fig, axes = plt.subplots(nrows=nrows, ncols=3, figsize=(15, 4 * nrows), sharex=True)
@@ -121,18 +121,20 @@ def draw(out_root):
         fig.tight_layout()
 
         out = out_root / out_rel
-        out.parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out)
+        for written in style.savefig(fig, out, fmt):
+            print(f"wrote {written}", file=sys.stderr)
         plt.close(fig)
-        print(f"wrote {out}", file=sys.stderr)
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out-path", type=Path, default=DEFAULT_OUT,
                      help="paper repository root (default: %(default)s)")
+    ap.add_argument("--format", choices=style.FORMATS, default="pdf",
+                     help="output format: pdf (manuscript, default), svg "
+                          "(Beyond PDF), or both (default: %(default)s)")
     args = ap.parse_args()
-    draw(args.out_path)
+    draw(args.out_path, args.format)
 
 
 if __name__ == "__main__":
