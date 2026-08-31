@@ -67,6 +67,10 @@
 <main>
   <div class="controls">
     <div class="control-group">
+      <label for="env-select">Environment</label>
+      <select id="env-select"></select>
+    </div>
+    <div class="control-group">
       <label for="proj-select">Projection</label>
       <select id="proj-select"></select>
     </div>
@@ -82,18 +86,18 @@ const DATA = /*__BEYOND_PDF_DATA__*/null;
 const W = 640, H = 440, padL = 56, padB = 40, padT = 14, padR = 14;
 
 function drawPlot() {
-  const meta = DATA.meta;
-  const proj = DATA.projections.find(p => p.key === state.projection);
+  const meta = DATA.meta.panels[state.env];
+  const proj = DATA.projections[state.env].find(p => p.key === state.projection);
   const di = proj.axes[0], dj = proj.axes[1];
   const labels = meta.axisLabels;
 
   // Bounds over every method's points on the two projected axes.
   let xmin = Infinity, xmax = -Infinity, ymin = Infinity, ymax = -Infinity;
   for (const method of meta.methods) {
-    const pts = meta.points[method.label];
+    const pts = meta.points[method.label].obj;
     for (const p of pts) {
-      xmin = Math.min(xmin, p.obj[di]); xmax = Math.max(xmax, p.obj[di]);
-      ymin = Math.min(ymin, p.obj[dj]); ymax = Math.max(ymax, p.obj[dj]);
+      xmin = Math.min(xmin, p[di]); xmax = Math.max(xmax, p[di]);
+      ymin = Math.min(ymin, p[dj]); ymax = Math.max(ymax, p[dj]);
     }
   }
   const spanX = (xmax - xmin) || 1, spanY = (ymax - ymin) || 1;
@@ -130,13 +134,15 @@ function drawPlot() {
   // baselines) render at full opacity; weighted points render dimmer and
   // come alive on hover -- the weighting is the reveal.
   for (const method of meta.methods) {
-    const pts = meta.points[method.label];
+    const pointSet = meta.points[method.label];
+    const pts = pointSet.obj;
     if (!pts.length) continue;
-    const hasW = meta.weights[method.label];
+    const hasW = meta.weights[method.label].available;
     const opacity = hasW ? 0.45 : 0.85;
     s += `<g>`;
-    for (const p of pts) {
-      s += `<circle class="point" cx="${sx(p.obj[di]).toFixed(1)}" cy="${sy(p.obj[dj]).toFixed(1)}" r="${p.r}" fill="${method.color}" fill-opacity="${opacity}" data-method="${method.label}" data-p="${p.i}"></circle>`;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      s += `<circle class="point" cx="${sx(p[di]).toFixed(1)}" cy="${sy(p[dj]).toFixed(1)}" r="${pointSet.r}" fill="${method.color}" fill-opacity="${opacity}" data-method="${method.label}" data-p="${i}"></circle>`;
     }
     s += `</g>`;
   }
@@ -146,7 +152,7 @@ function drawPlot() {
 const tooltip = document.getElementById("tooltip");
 
 function attachHover(svg) {
-  const meta = DATA.meta;
+  const meta = DATA.meta.panels[state.env];
   svg.addEventListener("mousemove", (ev) => {
     const t = ev.target;
     if (!t.classList || !t.classList.contains("point")) {
@@ -155,17 +161,19 @@ function attachHover(svg) {
     }
     const methodLabel = t.getAttribute("data-method");
     const idx = +t.getAttribute("data-p");
-    const p = meta.points[methodLabel][idx];
+    const p = meta.points[methodLabel].obj[idx];
     const rows = [];
     for (let i = 0; i < meta.axisLabels.length; i++) {
-      rows.push(`<strong>${meta.axisLabels[i]}</strong>: ${p.obj[i].toFixed(3)}`);
+      rows.push(`<strong>${meta.axisLabels[i]}</strong>: ${p[i].toFixed(3)}`);
     }
     const w = meta.weights[methodLabel];
-    if (w) {
+    if (w.available) {
       rows.push(`<em>λ weights</em>: ` +
-        w.values[p.i].map((v, i) => `${meta.weightLabels[i]} ${v.toFixed(3)}`).join(", "));
-      rows.push(`<span style="color:var(--ink-faint)">${w.note}</span>`);
+        w.values[idx].map((v, i) => `λ${i + 1} ${v.toFixed(3)}`).join(", "));
+    } else {
+      rows.push(`<em>λ weights</em>: unavailable`);
     }
+    rows.push(`<span style="color:var(--ink-faint)">${w.note}</span>`);
     tooltip.innerHTML = `<strong style="color:${meta.methods.find(m => m.label === methodLabel).color}">${methodLabel}</strong><br>` + rows.join("<br>");
     tooltip.style.display = "block";
     tooltip.style.left = (ev.clientX + 14) + "px";
@@ -174,27 +182,50 @@ function attachHover(svg) {
   svg.addEventListener("mouseleave", () => { tooltip.style.display = "none"; });
 }
 
-const state = { projection: DATA.projections[0].key };
+const state = {
+  env: DATA.selectors[0].options[0].key,
+  projection: DATA.projections[DATA.selectors[0].options[0].key][0].key
+};
+
+function renderLegend() {
+  const meta = DATA.meta.panels[state.env];
+  const legend = document.getElementById("legend");
+  legend.innerHTML = meta.methods.filter(m => {
+    return meta.points[m.label].obj.length > 0;
+  }).map(m =>
+    `<span class="swatch"><span class="dot" style="background:${m.color}"></span>${m.label}</span>`
+  ).join("");
+}
+
+function populateProjectionSelector() {
+  const sel = document.getElementById("proj-select");
+  sel.innerHTML = DATA.projections[state.env].map(p =>
+    `<option value="${p.key}">${p.label}</option>`).join("");
+  sel.value = state.projection;
+}
 
 function render() {
+  populateProjectionSelector();
+  renderLegend();
   const plot = document.getElementById("plot");
   plot.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${drawPlot()}</svg>`;
   attachHover(plot.querySelector("svg"));
 }
 
 function init() {
-  const sel = document.getElementById("proj-select");
-  sel.innerHTML = DATA.projections.map(p =>
-    `<option value="${p.key}">${p.label}</option>`).join("");
-  sel.addEventListener("change", () => { state.projection = sel.value; render(); });
-
-  const legend = document.getElementById("legend");
-  legend.innerHTML = DATA.meta.methods.filter(m => {
-    // Only methods with points somewhere are legend entries.
-    return DATA.meta.points[m.label].length > 0;
-  }).map(m =>
-    `<span class="swatch"><span class="dot" style="background:${m.color}"></span>${m.label}</span>`
-  ).join("");
+  const envSelect = document.getElementById("env-select");
+  envSelect.innerHTML = DATA.selectors[0].options.map(option =>
+    `<option value="${option.key}">${option.label}</option>`).join("");
+  envSelect.value = state.env;
+  envSelect.addEventListener("change", () => {
+    state.env = envSelect.value;
+    state.projection = DATA.projections[state.env][0].key;
+    render();
+  });
+  document.getElementById("proj-select").addEventListener("change", (event) => {
+    state.projection = event.target.value;
+    render();
+  });
 
   render();
 }

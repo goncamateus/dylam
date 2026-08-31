@@ -83,6 +83,7 @@ WEIGHT_NOTE = (
     "weights recovered by interpolating the logged λ trajectory "
     "at the point's time fraction"
 )
+WEIGHT_UNAVAILABLE_NOTE = "λ weights not available: this method did not log a per-policy weight trajectory"
 
 
 def _weight_series(env, label, morl_data):
@@ -200,12 +201,16 @@ def build(out_path, max_points=2500, data_root=None):
             for label, pts in points_by_method.items()
         }
         env_weights = {
-            label: {
-                "values": [[round(float(v), 3) for v in w] for w in weights],
-                "note": WEIGHT_NOTE,
-            }
+            label: (
+                {
+                    "available": True,
+                    "values": [[round(float(v), 3) for v in w] for w in weights],
+                    "note": WEIGHT_NOTE,
+                }
+                if weights is not None
+                else {"available": False, "note": WEIGHT_UNAVAILABLE_NOTE}
+            )
             for label, weights in weights_by_method.items()
-            if weights is not None
         }
         meta_panels[env] = {
             "axisLabels": axis_labels,

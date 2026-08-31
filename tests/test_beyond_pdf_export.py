@@ -24,6 +24,7 @@ only need components_q/lambdas arrays shaped like the real ones.
 """
 
 import json
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -481,8 +482,92 @@ def _check_pareto_explorer_indices(data):
             pts = panel["points"][method["label"]]["obj"]
             assert len(panel["points"][method["label"]]["i"]) == len(pts)
         for label, w in panel["weights"].items():
+            if not w["available"]:
+                continue
             assert len(w["values"]) == len(panel["points"][label]["obj"])
             assert len(w["values"][0]) == len(panel["axisLabels"])
+
+
+def test_pareto_hover_reports_weight_availability(generator, generated):
+    """Every rendered front has an explicit hover-weight result.
+
+    This catches the former silent omission for coverage baselines whose
+    source data contains no per-policy lambda trajectory.
+    """
+    if generator.name != "pareto_explorer":
+        pytest.skip("only the Pareto explorer has front-point weights")
+    _, data = generated
+
+    for panel in data["meta"]["panels"].values():
+        for method in panel["methods"]:
+            weight = panel["weights"][method["label"]]
+            assert weight["note"]
+            if weight["available"]:
+                assert len(weight["values"]) == len(panel["points"][method["label"]]["obj"])
+            else:
+                assert "not available" in weight["note"].lower()
+
+
+def test_pareto_embed_initializes_environment_and_projection_selectors(generator, generated):
+    """The generated Pareto Embed boots against its emitted multi-env data.
+
+    This catches a template/export schema mismatch that previously crashed
+    before either selector or the first front could render.
+    """
+    if generator.name != "pareto_explorer":
+        pytest.skip("only the Pareto explorer has environment projections")
+    html, _ = generated
+    script = re.search(r"<script>(.*?)</script>", html, re.DOTALL).group(1)
+    harness = r'''
+const vm = require("node:vm");
+const fs = require("node:fs");
+const script = fs.readFileSync(0, "utf8");
+const svg = { listeners: {}, addEventListener(type, handler) { this.listeners[type] = handler; } };
+const elements = Object.fromEntries(
+  ["env-select", "proj-select", "plot", "legend", "tooltip"].map(id =>
+    [id, {
+      innerHTML: "", style: {}, listeners: {},
+      addEventListener(type, handler) { this.listeners[type] = handler; },
+      querySelector() { return svg; }
+    }]
+  )
+);
+vm.runInNewContext(script, { document: { getElementById: id => elements[id] } });
+const initialProjection = elements["proj-select"].innerHTML;
+elements["env-select"].value = "MINECART";
+elements["env-select"].listeners.change();
+function hover(method) {
+  svg.listeners.mousemove({
+    target: {
+      classList: { contains: name => name === "point" },
+      getAttribute: name => name === "data-method" ? method : "0"
+    },
+    clientX: 0,
+    clientY: 0
+  });
+  return elements.tooltip.innerHTML;
+}
+process.stdout.write(JSON.stringify({
+  env: elements["env-select"].innerHTML,
+  projection: initialProjection,
+  minecartProjection: elements["proj-select"].innerHTML,
+  plot: elements.plot.innerHTML,
+  unavailableHover: hover("GPI-LS"),
+  weightedHover: hover("DyLam")
+}));
+'''
+    result = subprocess.run(
+        ["node", "-e", harness], input=script, capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
+    rendered = json.loads(result.stdout)
+    assert "MO-HalfCheetah" in rendered["env"]
+    assert "MO-Minecart" in rendered["env"]
+    assert "Run vs Control" in rendered["projection"]
+    assert "M1 vs M2" in rendered["minecartProjection"]
+    assert "<circle" in rendered["plot"]
+    assert "λ weights</em>: unavailable" in rendered["unavailableHover"]
+    assert "λ1" in rendered["weightedHover"]
 
 
 def test_mechanism_fidelity_guard_aborts_on_mismatch(tmp_path_factory, tmp_path):
