@@ -22,6 +22,7 @@ ChickenBanana environment is used for rollouts (it is local, deterministic,
 offline gym code, not a real training run), so the synthetic snapshots below
 only need components_q/lambdas arrays shaped like the real ones.
 """
+
 import json
 import subprocess
 import sys
@@ -35,19 +36,24 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 EXPORT_SCRIPT = REPO_ROOT / "beyond_pdf" / "export.py"
 ABLATION_EXPORT_SCRIPT = REPO_ROOT / "beyond_pdf" / "ablation_export.py"
+ENV_EXPORT_SCRIPT = REPO_ROOT / "beyond_pdf" / "env_export.py"
+PARETO_EXPORT_SCRIPT = REPO_ROOT / "beyond_pdf" / "pareto_export.py"
 MECHANISM_EXPORT_SCRIPT = REPO_ROOT / "beyond_pdf" / "mechanism_export.py"
 N_STATES, N_ACTIONS, NUM_REWARDS = 64, 4, 3
 
 sys.path.insert(0, str(REPO_ROOT / "result_analysis"))
 sys.path.insert(0, str(REPO_ROOT / "result_analysis" / "ablation"))
-from arms import (COMPONENTS, EPSILON_ARMS, NORMALIZER_ARMS,  # noqa: E402
-                  RB_ARMS, TAU_ARMS)
+from arms import COMPONENTS, EPSILON_ARMS, NORMALIZER_ARMS, RB_ARMS, TAU_ARMS  # noqa: E402, F401
 
 sys.path.insert(0, str(REPO_ROOT / "beyond_pdf"))
 import mechanism_export as mechanism  # noqa: E402
 
-ABLATION_SWEEPS = {"tau": TAU_ARMS, "rb": RB_ARMS, "normalizer": NORMALIZER_ARMS,
-                   "epsilon": EPSILON_ARMS}
+ABLATION_SWEEPS = {
+    "tau": TAU_ARMS,
+    "rb": RB_ARMS,
+    "normalizer": NORMALIZER_ARMS,
+    "epsilon": EPSILON_ARMS,
+}
 
 
 def write_snapshot(root, episode, components_q, lambdas):
@@ -68,9 +74,19 @@ def make_all_zero_snapshots(root):
 
 
 def run_export(snapshots, out, expected_return, extra=()):
-    cmd = [sys.executable, str(EXPORT_SCRIPT), "--snapshots", str(snapshots),
-           "--out", str(out), "--expected-return", *map(str, expected_return),
-           "--lattice-step", "2", *extra]
+    cmd = [
+        sys.executable,
+        str(EXPORT_SCRIPT),
+        "--snapshots",
+        str(snapshots),
+        "--out",
+        str(out),
+        "--expected-return",
+        *map(str, expected_return),
+        "--lattice-step",
+        "2",
+        *extra,
+    ]
     return subprocess.run(cmd, capture_output=True, text=True)
 
 
@@ -130,16 +146,20 @@ def _write_ablation_csv(path, arm_labels, metric, n_seeds=2, n_steps=5):
 
 def _make_ablation_data(root):
     for comp in COMPONENTS:
-        _write_ablation_csv(root / f"nominal_{comp.lower()}_reward.csv", ["nominal"],
-                            "ep_info/" + comp)
-        _write_ablation_csv(root / f"nominal_{comp.lower()}_lambda.csv", ["nominal"],
-                            "lambdas/" + comp)
+        _write_ablation_csv(
+            root / f"nominal_{comp.lower()}_reward.csv", ["nominal"], "ep_info/" + comp
+        )
+        _write_ablation_csv(
+            root / f"nominal_{comp.lower()}_lambda.csv", ["nominal"], "lambdas/" + comp
+        )
         for sweep, arms in ABLATION_SWEEPS.items():
             labels = [a.label for a in arms]
-            _write_ablation_csv(root / f"{sweep}_{comp.lower()}_reward.csv", labels,
-                                "ep_info/" + comp)
-            _write_ablation_csv(root / f"{sweep}_{comp.lower()}_lambda.csv", labels,
-                                "lambdas/" + comp)
+            _write_ablation_csv(
+                root / f"{sweep}_{comp.lower()}_reward.csv", labels, "ep_info/" + comp
+            )
+            _write_ablation_csv(
+                root / f"{sweep}_{comp.lower()}_lambda.csv", labels, "lambdas/" + comp
+            )
 
 
 def _build_ablation_curves(tmp_path_factory):
@@ -150,8 +170,16 @@ def _build_ablation_curves(tmp_path_factory):
     data_dir = tmp_path_factory.mktemp("ablation_data")
     _make_ablation_data(data_dir)
     out = tmp_path_factory.mktemp("out") / "ablation_curves.html"
-    cmd = [sys.executable, str(ABLATION_EXPORT_SCRIPT), "--data-dir", str(data_dir),
-           "--out", str(out), "--grid-points", "10"]
+    cmd = [
+        sys.executable,
+        str(ABLATION_EXPORT_SCRIPT),
+        "--data-dir",
+        str(data_dir),
+        "--out",
+        str(out),
+        "--grid-points",
+        "10",
+    ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert out.exists()
@@ -161,14 +189,19 @@ def _build_ablation_curves(tmp_path_factory):
 
 def _check_ablation_curves_indices(data):
     """No deduplicated table here (unlike the scrubber): every panel is a
-    self-contained set of pre-computed curves, so the only structural
-    invariant is that all 4 sweeps x 2 kinds x 3 components are present."""
-    assert len(data["sweeps"]) == 4
-    assert len(data["kinds"]) == 2
-    assert len(data["components"]) == 3
-    for sweep in data["sweeps"]:
-        for kind in data["kinds"]:
-            assert set(data["panels"][sweep["key"]][kind["key"]]) == set(data["components"])
+    self-contained set of pre-computed curves, so the structural invariants
+    are the 4 sweeps x 2 kinds selector options and all 4 x 2 x 3 panel
+    cells resolving into the meta table (the shared template's schema)."""
+    assert len(data["selectors"]) == 2
+    assert len(data["selectors"][0]["options"]) == 4  # sweeps
+    assert len(data["selectors"][1]["options"]) == 2  # kinds
+    n = 0
+    for sweep, kinds in data["panels"].items():
+        n += len(kinds) * len(kinds[next(iter(kinds))])
+        for kind, panels in kinds.items():
+            for pk in panels.values():
+                assert pk in data["meta"]["panels"]
+    assert n == 4 * 2 * 3
 
 
 def _make_mechanism_returns_csv(path, window_end):
@@ -200,17 +233,30 @@ def _build_mechanism_explainer(tmp_path_factory):
 
     buffer_len, tau_lambda = mechanism.dylam_hyperparams()
     returns = mechanism.load_actual_returns(returns_csv)
-    gbar, _, _ = mechanism.replay_smoothed_returns(returns, window_end, buffer_len, tau_lambda)
+    gbar, _, _ = mechanism.replay_smoothed_returns(
+        returns, window_end, buffer_len, tau_lambda
+    )
     _, _, _, lam = mechanism.dylam_weights(gbar)
     lam_arr = np.array([lam[c.name] for c in mechanism.COMPONENTS])
 
     snapshots = tmp_path_factory.mktemp("mechanism_snapshots")
-    write_snapshot(snapshots, window_end, np.zeros((NUM_REWARDS, N_STATES, N_ACTIONS)), lam_arr)
+    write_snapshot(
+        snapshots, window_end, np.zeros((NUM_REWARDS, N_STATES, N_ACTIONS)), lam_arr
+    )
 
     out = tmp_path_factory.mktemp("out") / "mechanism_explainer.html"
-    cmd = [sys.executable, str(MECHANISM_EXPORT_SCRIPT), "--snapshots", str(snapshots),
-           "--out", str(out), "--window-end", str(window_end),
-           "--actual-returns", str(returns_csv)]
+    cmd = [
+        sys.executable,
+        str(MECHANISM_EXPORT_SCRIPT),
+        "--snapshots",
+        str(snapshots),
+        "--out",
+        str(out),
+        "--window-end",
+        str(window_end),
+        "--actual-returns",
+        str(returns_csv),
+    ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert out.exists()
@@ -231,6 +277,214 @@ def _check_mechanism_explainer_indices(data):
     assert set(data["gbar"]) == names
 
 
+def _make_tiny_series_csv(path, columns, identity, identities, n_seeds=2, n_steps=5):
+    """A synthetic Tidy CSV shaped like the trad/curriculum scopes':
+    _step, seed, <identity>, <columns...>, one row per (identity, seed, step)."""
+    header = ["_step", "seed", identity] + columns
+    rows = [",".join(header)]
+    for ident in identities:
+        for seed in range(n_seeds):
+            for step in range(n_steps):
+                rows.append(
+                    ",".join(
+                        [str(step), str(seed), ident]
+                        + [str(step + seed)] * len(columns)
+                    )
+                )
+    path.write_text("\n".join(rows) + "\n")
+
+
+def _make_env_curves_data(root):
+    """The trad and curriculum CSVs env_export.py reads, minimum-shaped.
+
+    Column and file names must match the real committed ones (the generator
+    reads them by name), but the values only need to exercise the CLI
+    contract -- one row per (method/identity, seed, step)."""
+    root = Path(root)
+    trad = root / "trad" / "data"
+    curr = root / "curriculum" / "data"
+    trad.mkdir(parents=True)
+    curr.mkdir(parents=True)
+
+    _make_tiny_series_csv(
+        trad / "chicken_banana.csv",
+        ["ep_info/total"],
+        "method",
+        ["Base SO RL", "Q-Decomposition", "UDC", "DyLam"],
+    )
+    _make_tiny_series_csv(
+        trad / "halfcheetah_v4.csv",
+        ["ep_info/Final_position"],
+        "method",
+        ["Base SO RL", "UDC", "DyLam"],
+    )
+    _make_tiny_series_csv(
+        trad / "halfcheetah_v4_env_return.csv",
+        ["ep_info/total"],
+        "method",
+        ["Base SO RL", "UDC", "DyLam"],
+    )
+    _make_tiny_series_csv(
+        trad / "vss_v0.csv",
+        ["ep_info/Goal"],
+        "method",
+        ["Base SO RL", "UDC", "DyLam", "Tuned-UDC"],
+    )
+
+    # curriculum: one reward + one lambda CSV per (env, component), with the
+    # env's component registry (curriculum/sources.py ENVS) driving names.
+    sys.path.insert(0, str(REPO_ROOT / "result_analysis" / "curriculum"))
+    from sources import ENVS as CURRICULUM_ENVS
+
+    for env_name, spec in CURRICULUM_ENVS.items():
+        for comp in spec.components:
+            _make_tiny_series_csv(
+                curr / f"{env_name.lower()}_{comp.name.lower()}_reward.csv",
+                [comp.ep_metric],
+                "method",
+                ["DyLam"],
+            )
+            _make_tiny_series_csv(
+                curr / f"{env_name.lower()}_{comp.name.lower()}_lambda.csv",
+                [f"lambdas/{comp.name}"],
+                "method",
+                ["DyLam"],
+            )
+
+
+def _build_env_curves(tmp_path_factory):
+    """Build beyond_pdf/env_export.py's per-environment curve explorer from
+    synthetic trad/curriculum Tidy CSVs laid out like the committed ones,
+    via the generator's --data-root flag (a fresh-clone-safe second data
+    root: the generator's module constants stay untouched)."""
+    data_root = tmp_path_factory.mktemp("env_data")
+    _make_env_curves_data(data_root)
+    out = tmp_path_factory.mktemp("out") / "env_curves.html"
+    cmd = [
+        sys.executable,
+        str(ENV_EXPORT_SCRIPT),
+        "--data-root",
+        str(data_root),
+        "--out",
+        str(out),
+        "--grid-points",
+        "10",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert out.exists()
+    html = out.read_text(encoding="utf-8")
+    return html, parse_data_blob(html)
+
+
+def _check_env_curves_indices(data):
+    """Every env x metric cell resolves to a panel in the meta table, and
+    the initial render (first option of each selector) is non-empty."""
+    meta = data["meta"]["panels"]
+    cells = 0
+    for env, metrics in data["panels"].items():
+        cells += len(metrics)
+        for pk in metrics.values():
+            assert pk in meta
+    assert cells == len(meta)
+    for sel in data["selectors"]:
+        first = sel["options"][0]["key"]
+        assert first in data["groups"][sel["key"]]
+
+
+def _make_pareto_csv(path, n_obj, n_seeds, rows_per_seed, with_weights=False):
+    """A synthetic morl-scope candidate-point CSV (and, optionally, the
+    matching weight-trajectory CSV): obj1..objN, seed, point_index."""
+    obj_cols = [f"obj{i + 1}" for i in range(n_obj)]
+    frames = []
+    for seed in range(n_seeds):
+        for point in range(rows_per_seed):
+            # Deterministic spread across the objective space so the
+            # per-seed Pareto filter keeps a non-trivial front.
+            vals = [
+                (point + seed) % (rows_per_seed // 2 or 1) + i for i in range(n_obj)
+            ]
+            frames.append(vals + [seed, point])
+    pd_frames = None
+    header = ",".join(obj_cols + ["seed", "point_index"])
+    lines = [header] + [",".join(str(v) for v in row) for row in frames]
+    path.write_text("\n".join(lines) + "\n")
+    if with_weights:
+        weight_path = path.parent / (path.stem + "_weights.csv")
+        wlines = [",".join(obj_cols + ["seed", "point_index"])]
+        for seed in range(n_seeds):
+            for point in range(rows_per_seed):
+                w = [round(1.0 / n_obj, 6)] * n_obj
+                wlines.append(",".join(str(v) for v in w + [seed, point]))
+        weight_path.write_text("\n".join(wlines) + "\n")
+    return pd_frames
+
+
+def _build_pareto_explorer(tmp_path_factory):
+    """Build beyond_pdf/pareto_export.py's Pareto explorer from synthetic
+    morl Tidy CSVs via --data-root. sources.per_seed reads its module-level
+    DATA constant, so the test patches it before invoking the CLI -- the
+    same patch the generator itself performs for a non-default data root."""
+    data_root = tmp_path_factory.mktemp("morl_data")
+    morl = data_root / "morl" / "data"
+    morl.mkdir(parents=True)
+
+    def write(name, n_obj, rows, with_weights=False):
+        obj_cols = [f"obj{i + 1}" for i in range(n_obj)]
+        lines = [",".join(obj_cols + ["seed", "point_index"])]
+        for seed in range(2):
+            for point in range(rows):
+                vals = [(point + seed) % max(rows // 2, 1) + i for i in range(n_obj)]
+                lines.append(",".join(str(v) for v in vals + [seed, point]))
+        (morl / name).write_text("\n".join(lines) + "\n")
+        if with_weights:
+            wlines = [",".join(obj_cols + ["seed", "point_index"])]
+            for seed in range(2):
+                for point in range(rows):
+                    w = [round(1.0 / n_obj, 6)] * n_obj
+                    wlines.append(",".join(str(v) for v in w + [seed, point]))
+            (morl / (name.replace(".csv", "") + "_weights.csv")).write_text(
+                "\n".join(wlines) + "\n"
+            )
+
+    write("halfcheetah_pgmorl.csv", 2, 20)
+    write("halfcheetah_gpi_ls.csv", 2, 20)
+    write("halfcheetah_dylam.csv", 2, 20, with_weights=True)
+    write("minecart_gpi_ls.csv", 3, 20)
+    write("minecart_dynmorl.csv", 3, 20, with_weights=True)
+    write("minecart_dylam.csv", 3, 20, with_weights=True)
+
+    out = tmp_path_factory.mktemp("out") / "pareto_explorer.html"
+    cmd = [
+        sys.executable,
+        str(PARETO_EXPORT_SCRIPT),
+        "--data-root",
+        str(data_root),
+        "--out",
+        str(out),
+        "--max-points-per-method",
+        "50",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert out.exists()
+    html = out.read_text(encoding="utf-8")
+    return html, parse_data_blob(html)
+
+
+def _check_pareto_explorer_indices(data):
+    """Every point's index is in range of its own method's arrays, every
+    weighted method's weight rows match its point count, and both
+    environments are present."""
+    for env, panel in data["meta"]["panels"].items():
+        for method in panel["methods"]:
+            pts = panel["points"][method["label"]]["obj"]
+            assert len(panel["points"][method["label"]]["i"]) == len(pts)
+        for label, w in panel["weights"].items():
+            assert len(w["values"]) == len(panel["points"][label]["obj"])
+            assert len(w["values"][0]) == len(panel["axisLabels"])
+
+
 def test_mechanism_fidelity_guard_aborts_on_mismatch(tmp_path_factory, tmp_path):
     """The mechanism explainer shares export.py's fidelity-precondition idea
     (see its module docstring): a snapshot whose recorded lambdas.npy
@@ -241,13 +495,26 @@ def test_mechanism_fidelity_guard_aborts_on_mismatch(tmp_path_factory, tmp_path)
     _make_mechanism_returns_csv(returns_csv, window_end)
 
     snapshots = tmp_path_factory.mktemp("mechanism_bad_snapshots")
-    write_snapshot(snapshots, window_end, np.zeros((NUM_REWARDS, N_STATES, N_ACTIONS)),
-                    [1 / 3, 1 / 3, 1 / 3])
+    write_snapshot(
+        snapshots,
+        window_end,
+        np.zeros((NUM_REWARDS, N_STATES, N_ACTIONS)),
+        [1 / 3, 1 / 3, 1 / 3],
+    )
 
     out = tmp_path / "should_not_exist.html"
-    cmd = [sys.executable, str(MECHANISM_EXPORT_SCRIPT), "--snapshots", str(snapshots),
-           "--out", str(out), "--window-end", str(window_end),
-           "--actual-returns", str(returns_csv)]
+    cmd = [
+        sys.executable,
+        str(MECHANISM_EXPORT_SCRIPT),
+        "--snapshots",
+        str(snapshots),
+        "--out",
+        str(out),
+        "--window-end",
+        str(window_end),
+        "--actual-returns",
+        str(returns_csv),
+    ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     assert result.returncode != 0
     assert "fidelity" in result.stderr.lower()
@@ -259,9 +526,18 @@ def test_mechanism_fidelity_guard_aborts_on_mismatch(tmp_path_factory, tmp_path)
 # below runs once per entry via the `generator`/`generated` fixtures.
 GENERATORS = [
     GeneratorSpec("lambda_simplex_scrubber", _build_scrubber, _check_scrubber_indices),
-    GeneratorSpec("ablation_curves", _build_ablation_curves, _check_ablation_curves_indices),
-    GeneratorSpec("mechanism_explainer", _build_mechanism_explainer,
-                  _check_mechanism_explainer_indices),
+    GeneratorSpec(
+        "ablation_curves", _build_ablation_curves, _check_ablation_curves_indices
+    ),
+    GeneratorSpec("env_curves", _build_env_curves, _check_env_curves_indices),
+    GeneratorSpec(
+        "pareto_explorer", _build_pareto_explorer, _check_pareto_explorer_indices
+    ),
+    GeneratorSpec(
+        "mechanism_explainer",
+        _build_mechanism_explainer,
+        _check_mechanism_explainer_indices,
+    ),
 ]
 
 

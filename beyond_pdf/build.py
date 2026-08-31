@@ -48,6 +48,7 @@ model ADR-0002 already accepts for the ported prose.
 This is the one build entry point; new steps land here rather than in
 parallel scripts.
 """
+
 import argparse
 import shutil
 import subprocess
@@ -59,14 +60,22 @@ BEYOND_PDF_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BEYOND_PDF_DIR.parent
 EXPORT_SCRIPT = BEYOND_PDF_DIR / "export.py"
 ABLATION_EXPORT_SCRIPT = BEYOND_PDF_DIR / "ablation_export.py"
+ENV_EXPORT_SCRIPT = BEYOND_PDF_DIR / "env_export.py"
+PARETO_EXPORT_SCRIPT = BEYOND_PDF_DIR / "pareto_export.py"
 MECHANISM_EXPORT_SCRIPT = BEYOND_PDF_DIR / "mechanism_export.py"
 RESULT_ANALYSIS_DIR = REPO_ROOT / "result_analysis"
 CURRICULUM_DATA = RESULT_ANALYSIS_DIR / "curriculum" / "data"
 ACTUAL_RETURNS = BEYOND_PDF_DIR / "data" / "chickenbanana_actual_returns.csv"
-SUBMISSION_HTML_DIR = BEYOND_PDF_DIR / "submission_folder" / "assets" / "html" / "submission"
-SUBMISSION_IMG_DIR = BEYOND_PDF_DIR / "submission_folder" / "assets" / "img" / "submission"
+SUBMISSION_HTML_DIR = (
+    BEYOND_PDF_DIR / "submission_folder" / "assets" / "html" / "submission"
+)
+SUBMISSION_IMG_DIR = (
+    BEYOND_PDF_DIR / "submission_folder" / "assets" / "img" / "submission"
+)
 SCRUBBER_OUT = SUBMISSION_HTML_DIR / "lambda_simplex_scrubber.html"
 ABLATION_CURVES_OUT = SUBMISSION_HTML_DIR / "ablation_curves.html"
+ENV_CURVES_OUT = SUBMISSION_HTML_DIR / "env_curves.html"
+PARETO_EXPLORER_OUT = SUBMISSION_HTML_DIR / "pareto_explorer.html"
 MECHANISM_EXPLAINER_OUT = SUBMISSION_HTML_DIR / "mechanism_explainer.html"
 
 # The worked window the mechanism explainer (issue #47) shows: episode 200 of
@@ -84,26 +93,16 @@ FIGURE_SCOPES = ["trad", "curriculum", "robustness"]
 # scratch-relative output path (as each scope's figure.py --format svg
 # writes it, per its own OUT_DIR/out_rel constants) -> stable filename under
 # submission_folder/assets/img/submission, referenced by submission.md's
-# <img> tags. Two MO-HalfCheetah/MO-Minecart figures are handled separately
-# by build_morl_figures below -- their source scatters are 20k-50k points,
-# and matplotlib's SVG backend emits one vector element per point (a 52MB,
-# page-breaking file for the Minecart figure), so they render as PNG
-# instead, which is also the format the manuscript itself already uses for
-# the Minecart figure.
+# <img> tags. The per-environment curriculum/per-component figures the map
+# once carried are gone with #49 (superseded by the env_curves Embed), and
+# the Pareto front scatters with #50 (superseded by the Pareto explorer);
+# what remains is fig:res/all's three panels, the robustness curves, and
+# the HalfCheetah weight-space scatter (the weight simplex has no hover
+# mapping in the explorer's front view, so the static panel stays).
 FIGURE_MAP = {
     "images/results/tradicional/chicken_banana/reward-total.svg": "trad_reward_total.svg",
     "images/results/tradicional/halfcheetah/HalfCheetah-v4.svg": "trad_halfcheetah_position.svg",
     "images/results/tradicional/vss/VSS-v0.svg": "trad_vss_goal.svg",
-    "images/results/tradicional/chicken_banana/reward-banana.svg": "trad_cb_reward_banana.svg",
-    "images/results/tradicional/chicken_banana/reward-chicken.svg": "trad_cb_reward_chicken.svg",
-    "images/results/tradicional/chicken_banana/reward-gate.svg": "trad_cb_reward_gate.svg",
-    "images/results/tradicional/chicken_banana/reward-total-app.svg": "trad_cb_reward_total_app.svg",
-    "images/results/tradicional/chicken_banana/ChickenBanana-v0-weights.svg": "curriculum_cb_weights.svg",
-    "images/results/tradicional/halfcheetah/HalfCheetah-v4-weights.svg": "curriculum_hc_weights.svg",
-    "images/results/tradicional/vss/VSS-v0-weights.svg": "curriculum_vss_weights.svg",
-    "images/results/tradicional/chicken_banana/ChickenBanana-v0-components.svg": "curriculum_cb_components.svg",
-    "images/results/tradicional/halfcheetah/HalfCheetah-v4-components.svg": "curriculum_hc_components.svg",
-    "images/results/tradicional/vss/VSS-v0-components.svg": "curriculum_vss_components.svg",
     "images/results/robustness_curves.svg": "robustness_curves.svg",
 }
 
@@ -123,7 +122,9 @@ SCRUBBER_LATTICE_STEP = 20
 # this seed with scripts/train_q_learning.py --setup Dylam --env
 # CHICKENBANANA --seed 1764531329 --checkpoint-interval 10, then point
 # --snapshots-dir at the run's models/.../snapshots directory.
-DEFAULT_SNAPSHOTS_DIR = REPO_ROOT / "scripts" / "models" / "chickenbanana_dylam_snapshots"
+DEFAULT_SNAPSHOTS_DIR = (
+    REPO_ROOT / "scripts" / "models" / "chickenbanana_dylam_snapshots"
+)
 
 
 def build_scrubber(snapshots_dir=DEFAULT_SNAPSHOTS_DIR):
@@ -140,7 +141,7 @@ def build_scrubber(snapshots_dir=DEFAULT_SNAPSHOTS_DIR):
             "ChickenBanana/Dylam checkpoints from scripts/train_q_learning.py's "
             "--checkpoint-interval flag, which are not committed to this "
             "repository (see beyond_pdf/export.py's module docstring and "
-            "issue #39's \"Checkpoint availability\" note). Train seed "
+            'issue #39\'s "Checkpoint availability" note). Train seed '
             f"{SCRUBBER_SEED} with --checkpoint-interval 10, then re-run this "
             "build with --snapshots-dir pointing at the resulting snapshots/ "
             "directory. The existing artifact in the submission folder (if "
@@ -151,13 +152,20 @@ def build_scrubber(snapshots_dir=DEFAULT_SNAPSHOTS_DIR):
 
     SUBMISSION_HTML_DIR.mkdir(parents=True, exist_ok=True)
     cmd = [
-        sys.executable, str(EXPORT_SCRIPT),
-        "--snapshots", str(snapshots_dir),
-        "--out", str(SCRUBBER_OUT),
-        "--curriculum-data", str(CURRICULUM_DATA),
-        "--seed", str(SCRUBBER_SEED),
-        "--lattice-step", str(SCRUBBER_LATTICE_STEP),
-        "--actual-returns", str(ACTUAL_RETURNS),
+        sys.executable,
+        str(EXPORT_SCRIPT),
+        "--snapshots",
+        str(snapshots_dir),
+        "--out",
+        str(SCRUBBER_OUT),
+        "--curriculum-data",
+        str(CURRICULUM_DATA),
+        "--seed",
+        str(SCRUBBER_SEED),
+        "--lattice-step",
+        str(SCRUBBER_LATTICE_STEP),
+        "--actual-returns",
+        str(ACTUAL_RETURNS),
     ]
     subprocess.run(cmd, check=True)
     return True
@@ -183,10 +191,14 @@ def build_mechanism_explainer(snapshots_dir=DEFAULT_SNAPSHOTS_DIR):
 
     SUBMISSION_HTML_DIR.mkdir(parents=True, exist_ok=True)
     cmd = [
-        sys.executable, str(MECHANISM_EXPORT_SCRIPT),
-        "--snapshots", str(snapshots_dir),
-        "--out", str(MECHANISM_EXPLAINER_OUT),
-        "--window-end", str(MECHANISM_WINDOW_END),
+        sys.executable,
+        str(MECHANISM_EXPORT_SCRIPT),
+        "--snapshots",
+        str(snapshots_dir),
+        "--out",
+        str(MECHANISM_EXPLAINER_OUT),
+        "--window-end",
+        str(MECHANISM_WINDOW_END),
     ]
     subprocess.run(cmd, check=True)
     return True
@@ -202,8 +214,14 @@ def build_static_figures(scratch_dir):
     scratch_dir = Path(scratch_dir)
     for scope in FIGURE_SCOPES:
         subprocess.run(
-            [sys.executable, str(RESULT_ANALYSIS_DIR / scope / "figure.py"),
-             "--out-path", str(scratch_dir), "--format", "svg"],
+            [
+                sys.executable,
+                str(RESULT_ANALYSIS_DIR / scope / "figure.py"),
+                "--out-path",
+                str(scratch_dir),
+                "--format",
+                "svg",
+            ],
             check=True,
         )
     SUBMISSION_IMG_DIR.mkdir(parents=True, exist_ok=True)
@@ -213,19 +231,15 @@ def build_static_figures(scratch_dir):
 
 
 def build_morl_figures(scratch_dir):
-    """Regenerate the two MO-HalfCheetah/MO-Minecart Pareto figures FIGURE_MAP
-    excludes (see its docstring) as PNG rather than SVG, by monkeypatching
-    core.style.savefig for just this call -- reusing the scope's own drawing
-    functions and data untouched, only the output sink changes. figure.py's
-    third figure (fig:hc_pareto_a, a few hundred points) stays plain SVG via
-    build_static_figures above; only the two large-N scatters need this."""
+    """Regenerate the HalfCheetah weight-space scatter the submission still
+    carries (the Pareto front scatters themselves were superseded by the
+    Pareto explorer Embed, issue #50). figure.py's weight draw is reused
+    untouched -- only the output sink changes."""
     scratch_dir = Path(scratch_dir)
     morl_dir = RESULT_ANALYSIS_DIR / "morl"
     sys.path.insert(0, str(RESULT_ANALYSIS_DIR))
     sys.path.insert(0, str(morl_dir))
     import figure as morl_figure  # noqa: E402
-
-    morl_figure.draw_halfcheetah_pareto(scratch_dir, fmt="svg")
 
     def render_png(fig, out, fmt="pdf", **kwargs):
         kwargs.pop("dpi", None)
@@ -236,15 +250,12 @@ def build_morl_figures(scratch_dir):
 
     morl_figure.style.savefig = render_png
     morl_figure.draw_halfcheetah_weights(scratch_dir)
-    morl_figure.draw_minecart(scratch_dir)
 
     SUBMISSION_IMG_DIR.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(scratch_dir / "images/results/pareto/halfcheetah_pareto.svg",
-                     SUBMISSION_IMG_DIR / "morl_hc_pareto.svg")
-    shutil.copyfile(scratch_dir / "images/results/pareto/halfcheetah_weights_comparison.png",
-                     SUBMISSION_IMG_DIR / "morl_hc_weights.png")
-    shutil.copyfile(scratch_dir / "images/results/pareto/minecart_pareto_weights.png",
-                     SUBMISSION_IMG_DIR / "morl_minecart_pareto_weights.png")
+    shutil.copyfile(
+        scratch_dir / "images/results/pareto/halfcheetah_weights_comparison.png",
+        SUBMISSION_IMG_DIR / "morl_hc_weights.png",
+    )
 
 
 def build_ablation_curves():
@@ -255,7 +266,37 @@ def build_ablation_curves():
     this runs unconditionally on a fresh clone."""
     SUBMISSION_HTML_DIR.mkdir(parents=True, exist_ok=True)
     subprocess.run(
-        [sys.executable, str(ABLATION_EXPORT_SCRIPT), "--out", str(ABLATION_CURVES_OUT)],
+        [
+            sys.executable,
+            str(ABLATION_EXPORT_SCRIPT),
+            "--out",
+            str(ABLATION_CURVES_OUT),
+        ],
+        check=True,
+    )
+
+
+def build_env_curves():
+    """Build the per-environment curve explorer Embed (issue #49) via
+    beyond_pdf/env_export.py -- the shared curves template's second data
+    blob. Reads only the committed Tidy CSVs under
+    result_analysis/{trad,curriculum}/data/, so it runs unconditionally on
+    a fresh clone."""
+    SUBMISSION_HTML_DIR.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        [sys.executable, str(ENV_EXPORT_SCRIPT), "--out", str(ENV_CURVES_OUT)],
+        check=True,
+    )
+
+
+def build_pareto_explorer():
+    """Build the Pareto explorer Embed (issue #50) via
+    beyond_pdf/pareto_export.py. Reads only the committed Tidy CSVs under
+    result_analysis/morl/data/, so it runs unconditionally on a fresh
+    clone."""
+    SUBMISSION_HTML_DIR.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        [sys.executable, str(PARETO_EXPORT_SCRIPT), "--out", str(PARETO_EXPLORER_OUT)],
         check=True,
     )
 
@@ -270,24 +311,58 @@ def assemble_and_serve():
 
 def main():
     ap = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--snapshots-dir", type=Path, default=DEFAULT_SNAPSHOTS_DIR,
-                     help="ChickenBanana/Dylam checkpoint snapshots for the "
-                     "scrubber Embed (not committed to this repository)")
-    ap.add_argument("--skip-scrubber", action="store_true",
-                     help="skip the scrubber Embed generation step")
-    ap.add_argument("--skip-mechanism", action="store_true",
-                     help="skip the mechanism explainer Embed generation step")
-    ap.add_argument("--skip-ablation", action="store_true",
-                     help="skip the ablation explorer Embed generation step")
-    ap.add_argument("--skip-figures", action="store_true",
-                     help="skip regenerating the Results section's static SVG figures")
-    ap.add_argument("--figures-scratch-dir", type=Path, default=None,
-                     help="scratch directory for intermediate figure.py output "
-                     "(default: a temporary directory, cleaned up after the build)")
-    ap.add_argument("--skip-serve", action="store_true",
-                     help="run the Embed generation steps but skip the kit's "
-                     "assemble + Docker/Jekyll serve step")
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    ap.add_argument(
+        "--snapshots-dir",
+        type=Path,
+        default=DEFAULT_SNAPSHOTS_DIR,
+        help="ChickenBanana/Dylam checkpoint snapshots for the "
+        "scrubber Embed (not committed to this repository)",
+    )
+    ap.add_argument(
+        "--skip-scrubber",
+        action="store_true",
+        help="skip the scrubber Embed generation step",
+    )
+    ap.add_argument(
+        "--skip-mechanism",
+        action="store_true",
+        help="skip the mechanism explainer Embed generation step",
+    )
+    ap.add_argument(
+        "--skip-ablation",
+        action="store_true",
+        help="skip the ablation explorer Embed generation step",
+    )
+    ap.add_argument(
+        "--skip-env-curves",
+        action="store_true",
+        help="skip the per-environment curve explorer Embed generation step",
+    )
+    ap.add_argument(
+        "--skip-pareto",
+        action="store_true",
+        help="skip the Pareto explorer Embed generation step",
+    )
+    ap.add_argument(
+        "--skip-figures",
+        action="store_true",
+        help="skip regenerating the Results section's static SVG figures",
+    )
+    ap.add_argument(
+        "--figures-scratch-dir",
+        type=Path,
+        default=None,
+        help="scratch directory for intermediate figure.py output "
+        "(default: a temporary directory, cleaned up after the build)",
+    )
+    ap.add_argument(
+        "--skip-serve",
+        action="store_true",
+        help="run the Embed generation steps but skip the kit's "
+        "assemble + Docker/Jekyll serve step",
+    )
     args = ap.parse_args()
 
     if not args.skip_scrubber:
@@ -298,6 +373,12 @@ def main():
 
     if not args.skip_ablation:
         build_ablation_curves()
+
+    if not args.skip_env_curves:
+        build_env_curves()
+
+    if not args.skip_pareto:
+        build_pareto_explorer()
 
     if not args.skip_figures:
         if args.figures_scratch_dir is not None:

@@ -267,6 +267,14 @@ We begin with DyLam's primary use case: environments where the goal is a single 
   <figcaption>Learning curves summarized across seeds by the interquartile mean, with bands giving a $95\%$ bootstrap confidence interval over seeds ($2000$ resamples) <d-cite key="agarwal2021deep"></d-cite>; each seed's history is smoothed by a rolling mean before aggregation. Colors denote <strong>DyLam</strong> (green), <strong>UDC</strong> (blue), <strong>Q-Learning</strong>/<strong>SAC</strong> (orange), and <strong>Q-Decomp</strong>/<strong>Tuned-UDC</strong> (purple). Every series is $n = 10$ seeds. Metrics: cumulative episode reward, final $x$-position (m), and goal rate.</figcaption>
 </figure>
 
+Below: the same curves plus every per-environment panel the manuscript's appendix figures carried, in one explorer. Switch environment and metric; method colours match the static figure above.
+
+<div class="l-page">
+  <iframe src="{{ 'assets/html/submission/env_curves.html' | relative_url }}" frameborder="0" scrolling="no" height="420" width="100%" style="border: none;"></iframe>
+</div>
+
+The explorer's panels follow the same aggregation protocol as the static figures -- IQM with a $95\%$ bootstrap band for the method comparisons, and for DyLam's per-Component view the seed-mean of each component's return normalized by its bound (dashed $R_{\max}$ line) against its λ weight. Where the manuscript's appendix pre-composed these into fixed multi-panel figures, the explorer makes each one individually reachable and lets environments be compared without paging.
+
 #### Performance (RQ1) {#performance-rq1}
 
 The table below reports final performance across all three environments with the significance tests; the discussion below walks through each in turn, and the efficiency table further down restates the same runs by interquartile mean and reports sample efficiency in full.
@@ -354,71 +362,19 @@ We therefore read the two results without adjudicating between them. On Chicken�
   <figcaption>The Chicken–Banana grid world. The agent (blue) starts at the bottom; reaching the Gate ($G$) terminates the episode. Banana, $B$, (easiest) and Chicken, $C$, (hardest) update inventory and yield positive rewards.</figcaption>
 </figure>
 
-**Per-component performance.** The figure below shows the per-component cumulative episode reward across 2000 episodes for all four methods. DyLam is the only method that consistently learns to collect all three objects before terminating. The decisive component is Chicken (panel b): Q-Learning, Q-Decomposition and UDC all plateau well below the saturation level, while DyLam reaches full Chicken collection by approximately episode 1250 and remains there. On Banana and Gate (panels a and c), the static methods achieve reasonable performance, but only because these components do not need to resolve the structural bias. Once the Gate is reached the episode terminates, and the agent no longer needs to plan around Chicken.
+**Per-component performance.** The per-component cumulative episode reward across 2000 episodes is reachable in the per-environment curve explorer ([Learning-Dynamics-Oriented Environments](#learning-dynamics-oriented-environments)): select Chicken–Banana and the "Per-Component return (normalized)" metric for Banana, Chicken and Gate individually (DyLam; the all-methods totals are under "Cumulative episode reward"). DyLam is the only method that consistently learns to collect all three objects before terminating. The decisive component is Chicken: Q-Learning, Q-Decomposition and UDC all plateau well below the saturation level, while DyLam reaches full Chicken collection by approximately episode 1250 and remains there. On Banana and Gate, the static methods achieve reasonable performance, but only because these components do not need to resolve the structural bias. Once the Gate is reached the episode terminates, and the agent no longer needs to plan around Chicken.
 
-A notable qualitative difference exists between UDC and standard Q-Decomposition. Under Q-Decomposition, each component is updated independently, so the Banana component only receives value backup along trajectories that are locally optimal for Banana alone. UDC, by contrast, bootstraps all components using the shared greedy policy $\pi_G$, coupling them through a single decision rule. This allows early Banana-reaching events to accumulate value even when the trajectory is not optimal for Banana in isolation, which explains the earlier Banana emergence under UDC visible in panel (a) below.
+A notable qualitative difference exists between UDC and standard Q-Decomposition. Under Q-Decomposition, each component is updated independently, so the Banana component only receives value backup along trajectories that are locally optimal for Banana alone. UDC, by contrast, bootstraps all components using the shared greedy policy $\pi_G$, coupling them through a single decision rule. This allows early Banana-reaching events to accumulate value even when the trajectory is not optimal for Banana in isolation, which explains the earlier Banana emergence under UDC visible in the explorer's Banana panel.
 
-<figure id="fig-cb-components" class="results-figure fig-row">
-  <div>
-    <img src="{{ 'assets/img/submission/trad_cb_reward_banana.svg' | relative_url }}" alt="Banana component cumulative reward">
-    <figcaption>(a) Banana component.</figcaption>
-  </div>
-  <div>
-    <img src="{{ 'assets/img/submission/trad_cb_reward_chicken.svg' | relative_url }}" alt="Chicken component cumulative reward">
-    <figcaption>(b) Chicken component.</figcaption>
-  </div>
-  <div>
-    <img src="{{ 'assets/img/submission/trad_cb_reward_gate.svg' | relative_url }}" alt="Gate component cumulative reward">
-    <figcaption>(c) Gate component.</figcaption>
-  </div>
-  <div>
-    <img src="{{ 'assets/img/submission/trad_cb_reward_total_app.svg' | relative_url }}" alt="Total cumulative episode reward">
-    <figcaption>(d) Cumulative episode reward (total).</figcaption>
-  </div>
-  <figcaption>Per-component cumulative episode reward in Chicken–Banana across 2000 episodes (mean over 10 seeds). Rewards are normalized by their respective $R_{\max} = \{30, 70, 100\}$ for Banana, Chicken and Gate. Only DyLam consistently solves the Chicken component (panel b).</figcaption>
-</figure>
-
-**Curriculum: per-component returns.** The figure below gives the per-component cumulative episode returns that drive the $\lambda$-weights shown in [Curriculum (RQ2)](#curriculum-rq2). The three phases described there are read off the two figures together: a component's weight rises while its return sits far below $R_{\max}$ (dashed lines) and relaxes as the return approaches it.
-
-<figure id="fig-curr-components" class="results-figure fig-row">
-  <div>
-    <img src="{{ 'assets/img/submission/curriculum_cb_components.svg' | relative_url }}" alt="Chicken-Banana per-component returns">
-    <figcaption>(a) Chicken–Banana.</figcaption>
-  </div>
-  <div>
-    <img src="{{ 'assets/img/submission/curriculum_hc_components.svg' | relative_url }}" alt="HalfCheetah-v4 per-component returns">
-    <figcaption>(b) HalfCheetah-v4.</figcaption>
-  </div>
-  <div>
-    <img src="{{ 'assets/img/submission/curriculum_vss_components.svg' | relative_url }}" alt="VSS-v0 per-component returns">
-    <figcaption>(c) VSS-v0.</figcaption>
-  </div>
-  <figcaption>Per-component cumulative episode reward over training, with $R_{\max}$ shown as dashed lines where finite. Pair with the $\lambda$-weight figure in <a href="#curriculum-rq2">Curriculum (RQ2)</a>.</figcaption>
-</figure>
+**Curriculum: per-component returns and λ weights.** DyLam's per-component cumulative episode returns (normalized by each component's bound, with $R_{\max}$ dashed) and the λ-weights they drive are both reachable in the per-environment curve explorer ([Learning-Dynamics-Oriented Environments](#learning-dynamics-oriented-environments)), under the "Per-Component return (normalized)" and "λ weight" metrics for each environment. The three phases described below are read off the two together: a component's weight rises while its return sits far below $R_{\max}$ and relaxes as the return approaches it.
 
 #### Curriculum (RQ2) {#curriculum-rq2}
 
-<figure id="fig-curr-weights" class="results-figure fig-row">
-  <div>
-    <img src="{{ 'assets/img/submission/curriculum_cb_weights.svg' | relative_url }}" alt="Chicken-Banana adaptive lambda weights">
-    <figcaption>(a) Chicken–Banana.</figcaption>
-  </div>
-  <div>
-    <img src="{{ 'assets/img/submission/curriculum_hc_weights.svg' | relative_url }}" alt="HalfCheetah-v4 adaptive lambda weights">
-    <figcaption>(b) HalfCheetah-v4.</figcaption>
-  </div>
-  <div>
-    <img src="{{ 'assets/img/submission/curriculum_vss_weights.svg' | relative_url }}" alt="VSS-v0 adaptive lambda weights">
-    <figcaption>(c) VSS-v0.</figcaption>
-  </div>
-  <figcaption>Adaptive $\lambda$-weights over training; the per-component returns they respond to are in the figure above. Chicken–Banana: banana, chicken and gate. HalfCheetah-v4: control cost (blue) and velocity (orange). VSS-v0: approach (blue), ball-to-goal (orange) and energy (green); goal-scoring is the held-out metric, not a weighted component.</figcaption>
-</figure>
+**Chicken–Banana.** DyLam's adaptive weights against the per-component returns (both in the explorer, Chicken–Banana) show the curriculum mechanism in three phases: *weight concentration* (episodes 0–250), in which Chicken's weight rises sharply as the EMA registers that its reward remains near zero while Banana and Gate saturate; *transient instability* (250–750), in which $\pi_G$ favors Chicken-directed trajectories and the policy sacrifices performance on the mastered components, most visibly Banana ($\approx 0.95 \to 0.72$); and *convergence* (750–1250), in which Chicken rises to saturation in the seeds that solve the task, Banana and Gate recover, and Chicken's share relaxes without vanishing. The mid-training regression is the cost of the curriculum, not a failure. The phase structure is why a static allocation must fail here: the optimal scalarization is time-varying, requiring heavy Chicken weight early, tolerance of regression mid-training, and recovery of the saturated components late.
 
-**Chicken–Banana.** Panel (a) above traces DyLam's adaptive weights against the per-component returns of the figure in the previous subsection, and the curriculum mechanism is visible in three phases: *weight concentration* (episodes 0–250), in which Chicken's weight rises sharply as the EMA registers that its reward remains near zero while Banana and Gate saturate; *transient instability* (250–750), in which $\pi_G$ favors Chicken-directed trajectories and the policy sacrifices performance on the mastered components, most visibly Banana ($\approx 0.95 \to 0.72$); and *convergence* (750–1250), in which Chicken rises to saturation in the seeds that solve the task, Banana and Gate recover, and Chicken's share relaxes without vanishing. The mid-training regression is the cost of the curriculum, not a failure. The phase structure is why a static allocation must fail here: the optimal scalarization is time-varying, requiring heavy Chicken weight early, tolerance of regression mid-training, and recovery of the saturated components late.
+**HalfCheetah-v4.** The same signature appears in continuous control (explorer, HalfCheetah, "λ weight"): DyLam suppresses the control-cost weight while velocity is far from $R_{\max}$, allowing the high torques early SAC policies require, then redistributes weight back as velocity saturates, refining toward efficient locomotion rather than brute-force velocity. The transition is smooth, an artifact of the EMA in the $\lambda$ update.
 
-**HalfCheetah-v4.** The same signature appears in continuous control (panel b above): DyLam suppresses the control-cost weight while velocity is far from $R_{\max}$, allowing the high torques early SAC policies require, then redistributes weight back as velocity saturates, refining toward efficient locomotion rather than brute-force velocity. The transition is smooth, an artifact of the EMA in the $\lambda$ update.
-
-**VSS-v0.** The curriculum is cleanest here (panel c above). DyLam first concentrates weight on the ball-approach component, which saturates within roughly $10^5$ steps, then transfers it to ball-to-goal, which begins to improve precisely as approach saturates; the energy penalty holds the smallest share throughout, consistent with its role as a refinement signal. Goal-scoring, which carries no reward term, rises only once the two shaping components have been mastered in sequence. This staged progression is not designed in: it emerges from the relative-progress signal, in the most demanding environment we evaluate. Across all three environments the static baselines fail not because no balanced allocation exists at convergence, but because the binding constraint changes over training; DyLam tracks the optimal *trajectory* of weightings rather than committing to a single point on the simplex.
+**VSS-v0.** The curriculum is cleanest here (explorer, VSS). DyLam first concentrates weight on the ball-approach component, which saturates within roughly $10^5$ steps, then transfers it to ball-to-goal, which begins to improve precisely as approach saturates; the energy penalty holds the smallest share throughout, consistent with its role as a refinement signal. Goal-scoring, which carries no reward term, rises only once the two shaping components have been mastered in sequence. This staged progression is not designed in: it emerges from the relative-progress signal, in the most demanding environment we evaluate. Across all three environments the static baselines fail not because no balanced allocation exists at convergence, but because the binding constraint changes over training; DyLam tracks the optimal *trajectory* of weightings rather than committing to a single point on the simplex. Component colours and names match across every panel: Chicken–Banana runs banana/chicken/gate, HalfCheetah-v4 runs velocity then control cost, VSS-v0 runs approach, ball-to-goal, then energy; goal-scoring is the held-out metric, not a weighted component.
 
 DyLam decomposes a multi-objective reward into per-Component critics and adapts a weight $\lambda(t)$ over training to trade them off. Scrub the slider below to watch $\lambda$ move through training on ChickenBanana and see the greedy policy it induces at each moment. Click anywhere in the weight simplex to try a different, fixed weighting against the *same* learned Component Q-tables at that same moment -- the counterfactual this Embed exists to make checkable.
 
@@ -504,22 +460,19 @@ Four concessions bound the reading. DyLam returns no weight-conditioned policy t
 
 <figure id="fig-hc-pareto" class="results-figure fig-row">
   <div>
-    <img src="{{ 'assets/img/submission/morl_hc_pareto.svg' | relative_url }}" alt="MO-HalfCheetah discovered Pareto fronts">
-    <figcaption>(a) Discovered Pareto fronts.</figcaption>
-  </div>
-  <div>
     <img src="{{ 'assets/img/submission/morl_hc_weights.png' | relative_url }}" alt="MO-HalfCheetah explored weight space">
-    <figcaption>(b) Explored weight space.</figcaption>
+    <figcaption>Explored weight space.</figcaption>
   </div>
-  <figcaption>MO-HalfCheetah: PGMORL (green), GPI-LS (orange), and DyLam (blue). In (a), the dashed lines indicate the per-component $R_{\max}$, with $R_c = 1000 - \text{Control}$. In (b), DyLam traces a near-continuous trajectory along the simplex while the baselines sample it discretely.</figcaption>
+  <figcaption>MO-HalfCheetah: DyLam's explored weight space. DyLam traces a near-continuous trajectory along the simplex while the baselines sample it discretely (visible in the Pareto explorer below); the discovered fronts themselves live in the explorer, which supersedes the static front scatter.</figcaption>
 </figure>
 
-**Front geometry.** The methods occupy qualitatively different regions in both benchmarks. On MO-HalfCheetah (panel a above), PGMORL spreads its solutions broadly across the trade-off surface, including the low-Run/low-cost region, producing a long but sparsely sampled curve; GPI-LS concentrates near the high-Run extreme; DyLam occupies the intermediate band. On MO-Minecart (figure below, top row), DyLam densely populates the $M_1 + M_2 \approx 1.5$ diagonal, the geometric upper boundary of joint mineral collection under the environment's resource constraint, producing a near-continuous curve along the efficient trade-off, while DynMORL covers the same diagonal sparsely and adds a cluster of solutions well below it and GPI-LS returns a few discrete clusters with no interior coverage. The Fuel projections invert the picture: DyLam concentrates near zero fuel cost across the full Minerium range, whereas DynMORL extends into fuel-inefficient configurations that DyLam never visits. The pattern is consistent with the implicit-curriculum mechanism, since DyLam's policies accumulate where both components are still jointly improving rather than at the extremes where one has already saturated.
+**Front geometry.** The methods occupy qualitatively different regions in both benchmarks. On MO-HalfCheetah (front panel in the explorer above), PGMORL spreads its solutions broadly across the trade-off surface, including the low-Run/low-cost region, producing a long but sparsely sampled curve; GPI-LS concentrates near the high-Run extreme; DyLam occupies the intermediate band. On MO-Minecart (front panel above), DyLam densely populates the $M_1 + M_2 \approx 1.5$ diagonal, the geometric upper boundary of joint mineral collection under the environment's resource constraint, producing a near-continuous curve along the efficient trade-off, while DynMORL covers the same diagonal sparsely and adds a cluster of solutions well below it and GPI-LS returns a few discrete clusters with no interior coverage. The Fuel projections invert the picture: DyLam concentrates near zero fuel cost across the full Minerium range, whereas DynMORL extends into fuel-inefficient configurations that DyLam never visits. The pattern is consistent with the implicit-curriculum mechanism, since DyLam's policies accumulate where both components are still jointly improving rather than at the extremes where one has already saturated.
 
-<figure id="fig-minecart-pareto-group" class="results-figure">
-  <img src="{{ 'assets/img/submission/morl_minecart_pareto_weights.png' | relative_url }}" alt="MO-Minecart pairwise projections of discovered Pareto fronts and explored weight simplex">
-  <figcaption>MO-Minecart: pairwise projections of the discovered Pareto fronts (top, $M_1$–$M_2$, $M_1$–Fuel, $M_2$–Fuel) and of the explored weight simplex (bottom) for GPI-LS (orange), DynMORL (green), and DyLam (blue).</figcaption>
-</figure>
+<div class="l-page">
+  <iframe src="{{ 'assets/html/submission/pareto_explorer.html' | relative_url }}" frameborder="0" scrolling="no" height="620" width="100%" style="border: none;"></iframe>
+</div>
+
+Above: every front of the static figures, one explorer -- switch environment and projection at the top, then hover any point. For DyLam and DynMORL (which log a weight trajectory) the hover reveals the λ weighting behind that point; the coverage baselines log no per-policy weight vector under any wandb key (see the manuscript's [Metrics](#pareto-metrics) protocol note), so their hovers report the objective values only. Weights are recovered by interpolating each method's logged λ trajectory at the point's time fraction -- an interpolation, not a logged per-point value, and the tooltip says so. Large fronts (DynMORL and DyLam on MO-Minecart) are uniformly decimated to keep the embed self-contained; the front's extent and shape are preserved, its density is not.
 
 **The continuous weight trajectory.** The weight-space panels above expose the common mechanism. In both benchmarks DyLam traces a near-continuous interior curve through the simplex, while PGMORL and GPI-LS sample it discretely and DynMORL concentrates on its edges and corners, as its externally scheduled weight protocol implies. The smoothness follows directly from the temporal EMA in the $\lambda$ update: consecutive episodes differ by at most $1 - \tau_\lambda$, producing a path rather than a set of independent samples. This is the mechanism behind the density of DyLam's sampled front, since a continuum of intermediate weight vectors maps to a continuum of fine-grained policies, and it explains why DyLam's Pareto points concentrate where its trajectory dwells longest; the cardinality counts themselves are conditional on the sampling protocol of [Metrics](#pareto-metrics) and are not a like-for-like count against the baselines. The coverage behavior reported here is thus a consequence of the same weight-adaptation rule that produces the curricula of [Learning-Dynamics-Oriented Environments](#learning-dynamics-oriented-environments), not of a separate mechanism.
 

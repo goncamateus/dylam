@@ -2,14 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Ablation Explorer</title>
+<title>Curves Explorer</title>
 <style>
   :root {
     color-scheme: light dark;
     --ink: #1a1a1a;
     --ink-faint: #666;
     --surface: #fff;
-    --surface-alt: #f0f0f0;
     --border: #e0e0e0;
     --border-soft: #bbb;
     --grid-line: #e6e6e6;
@@ -19,7 +18,6 @@
       --ink: #e8e8e8;
       --ink-faint: #999;
       --surface: #262626;
-      --surface-alt: #2f2f2f;
       --border: #444;
       --border-soft: #555;
       --grid-line: #3a3a3a;
@@ -57,21 +55,13 @@
   #legend .dot { width: 10px; height: 3px; border-radius: 2px; display: inline-block; }
   .axis-line { stroke: var(--ink-faint); stroke-width: 1; }
   .grid-line { stroke: var(--grid-line); stroke-width: 1; }
+  .ref-line { stroke-dasharray: 4 3; stroke-width: 1; }
   .tick-text { font-size: 9px; fill: var(--ink-faint); }
 </style>
 </head>
 <body>
 <main>
-  <div class="controls">
-    <div class="control-group">
-      <label for="sweep-select">Sweep</label>
-      <select id="sweep-select"></select>
-    </div>
-    <div class="control-group">
-      <label for="kind-select">Panel</label>
-      <select id="kind-select"></select>
-    </div>
-  </div>
+  <div class="controls" id="controls"></div>
   <div class="panels" id="panels"></div>
   <div id="legend"></div>
 </main>
@@ -79,7 +69,17 @@
 <script>
 const DATA = /*__BEYOND_PDF_DATA__*/null;
 
-const state = { sweep: DATA.sweeps[0].key, kind: DATA.kinds[0].key };
+// One state entry per selector; each selector's options are its own
+// `selectors` entry and its value indexes `groups` under the same key, so
+// the template knows nothing about what the selectors mean -- the Generator
+// decides whether they are sweeps x kinds, environments x metrics, or the
+// next categorical pair after that.
+const state = {};
+for (const sel of DATA.selectors) state[sel.key] = sel.options[0].key;
+
+function selectedGroup(key) {
+  return DATA.groups[key][state[key]];
+}
 
 const W = 340, H = 220, padL = 40, padB = 26, padT = 10, padR = 8;
 
@@ -94,12 +94,11 @@ function path(points) {
   return points.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
 }
 
-function drawPanel(comp) {
-  const entry = DATA.panels[state.sweep][state.kind][comp];
-  const grid = entry.grid;
+function drawPanel(panel) {
+  const grid = panel.grid;
   const xmin = grid[0], xmax = grid[grid.length - 1];
   let ymin = Infinity, ymax = -Infinity;
-  for (const line of entry.lines) {
+  for (const line of panel.lines) {
     for (const v of line.lo) ymin = Math.min(ymin, v);
     for (const v of line.hi) ymax = Math.max(ymax, v);
   }
@@ -112,7 +111,14 @@ function drawPanel(comp) {
     const gy = padT + i * (H - padT - padB) / 4;
     s += `<line class="grid-line" x1="${padL}" y1="${gy.toFixed(1)}" x2="${W - padR}" y2="${gy.toFixed(1)}"></line>`;
   }
-  for (const line of entry.lines) {
+  if (panel.refs) {
+    for (const ref of panel.refs) {
+      if (ref.y < ymin || ref.y > ymax) continue;
+      const ry = scaleY(ref.y, ymin, ymax);
+      s += `<line class="ref-line" x1="${padL}" y1="${ry.toFixed(1)}" x2="${W - padR}" y2="${ry.toFixed(1)}" stroke="${ref.color}"></line>`;
+    }
+  }
+  for (const line of panel.lines) {
     const centre = grid.map((x, i) => [scaleX(x, xmin, xmax), scaleY(line.centre[i], ymin, ymax)]);
     const band = grid.map((x, i) => [scaleX(x, xmin, xmax), scaleY(line.hi[i], ymin, ymax)])
       .concat(grid.slice().reverse().map((x, i) =>
@@ -130,30 +136,60 @@ function drawPanel(comp) {
 }
 
 function render() {
+  const combo = DATA.selectors.map(sel => selectedGroup(sel.key));
+  // Every selector but the last contributes its `panels` sub-table; the
+  // innermost one contributes the leaf panels -- the Generator's meta
+  // guarantees this nesting terminates in an array of panel keys.
+  let node = DATA.panels;
+  for (let i = 0; i < combo.length - 1; i++) node = node[combo[i]];
+  // The innermost value is either an array of panel keys (every selector
+  // contributes a sub-table) or a single map of panel key -> panel key
+  // (the last selector picks within one sub-table, as env x metric does).
+  const leaf = node[combo[combo.length - 1]];
+  const panelKeys = Array.isArray(leaf) ? leaf : Object.values(leaf);
+  const meta = DATA.meta;
+  const labels = combo.map((key, i) =>
+    DATA.selectors[i].options.find(o => o.key === key).label);
+
   const panelsEl = document.getElementById("panels");
-  panelsEl.innerHTML = DATA.components.map(comp => `
-    <div class="panel">
-      <h2>${comp}</h2>
-      <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${drawPanel(comp)}</svg>
-    </div>
-  `).join("");
+  panelsEl.innerHTML = panelKeys.map(pk => {
+    const panel = meta.panels[pk];
+    return `<div class="panel">
+      <h2>${panel.label}</h2>
+      <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${drawPanel(panel)}</svg>
+    </div>`;
+  }).join("");
 
   const legend = document.getElementById("legend");
-  const first = DATA.panels[state.sweep][state.kind][DATA.components[0]];
-  legend.innerHTML = first.lines.map(line =>
-    `<span class="swatch"><span class="dot" style="background:${line.color}"></span>${line.label}</span>`
-  ).join("");
+  const first = meta.panels[panelKeys[0]];
+  const comboLabel = labels.join(" · ");
+  legend.innerHTML =
+    `<span class="swatch" style="color:var(--ink-faint)">${comboLabel}</span>` +
+    first.lines.map(line =>
+      `<span class="swatch"><span class="dot" style="background:${line.color}"></span>${line.label}</span>`
+    ).join("");
 }
 
 function init() {
-  const sweepSel = document.getElementById("sweep-select");
-  sweepSel.innerHTML = DATA.sweeps.map(s => `<option value="${s.key}">${s.label}</option>`).join("");
-  sweepSel.addEventListener("change", () => { state.sweep = sweepSel.value; render(); });
-
-  const kindSel = document.getElementById("kind-select");
-  kindSel.innerHTML = DATA.kinds.map(k => `<option value="${k.key}">${k.label}</option>`).join("");
-  kindSel.addEventListener("change", () => { state.kind = kindSel.value; render(); });
-
+  const controls = document.getElementById("controls");
+  for (const sel of DATA.selectors) {
+    const group = document.createElement("div");
+    group.className = "control-group";
+    const label = document.createElement("label");
+    label.htmlFor = `select-${sel.key}`;
+    label.textContent = sel.label;
+    const select = document.createElement("select");
+    select.id = `select-${sel.key}`;
+    select.innerHTML = sel.options.map(o =>
+      `<option value="${o.key}">${o.label}</option>`).join("");
+    select.addEventListener("change", () => {
+      state[sel.key] = select.value;
+      render();
+    });
+    group.appendChild(label);
+    group.appendChild(select);
+    controls.appendChild(group);
+  }
   render();
 }
 
