@@ -244,6 +244,9 @@ def build_morl_figures(scratch_dir):
     def render_png(fig, out, fmt="pdf", **kwargs):
         kwargs.pop("dpi", None)
         png_out = out.with_suffix(".png")
+        # style.savefig mkdirs the output path; this replacement sink must
+        # too -- the scratch tree does not exist beforehand.
+        png_out.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(png_out, dpi=150, **kwargs)
         print(f"wrote {png_out}", file=sys.stderr)
         return [png_out]

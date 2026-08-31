@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DyLam Mechanism Explainer</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --ink: #1a1a1a;
+    --ink-faint: #666;
+    --surface: #fff;
+    --surface-alt: #f0f0f0;
+    --border: #e0e0e0;
+    --border-soft: #bbb;
+    --grid-wall: #9a9a9a;
+    --grid-open: #f2f2f2;
+    --grid-outline: #cfcfcf;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e8e8e8;
+      --ink-faint: #999;
+      --surface: #262626;
+      --surface-alt: #2f2f2f;
+      --border: #444;
+      --border-soft: #555;
+      --grid-wall: #555;
+      --grid-open: #2b2b2b;
+      --grid-outline: #444;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0; background: transparent; color: var(--ink);
+    font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  main { max-width: 980px; margin: 0 auto; }
+  .controls {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin: 4px 0 12px; padding: 10px 14px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  button {
+    padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-soft);
+    background: var(--surface); color: var(--ink); cursor: pointer; font: inherit;
+  }
+  #beat-dots { display: flex; gap: 6px; }
+  .beat-dot {
+    width: 11px; height: 11px; border-radius: 50%; border: 1px solid var(--border-soft);
+    background: var(--surface-alt); cursor: pointer; padding: 0;
+  }
+  .beat-dot.active { background: currentColor; }
+  #beat-label { font-size: 0.85rem; color: var(--ink-faint); flex: 1 1 auto; text-align: right; }
+  .panels { display: flex; gap: 14px; flex-wrap: wrap; align-items: stretch; }
+  .panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px; flex: 1 1 280px; min-width: 260px;
+    transition: opacity 0.6s ease;
+  }
+  .panel h2 {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em;
+    color: var(--ink-faint); margin: 0 0 6px;
+  }
+  svg { display: block; max-width: 100%; height: auto; }
+  .tick-text { font-size: 9px; fill: var(--ink-faint); }
+  .axis-line { stroke: var(--ink-faint); stroke-width: 1; }
+  .grid-line { stroke: var(--border); stroke-width: 1; }
+  .eq-row { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; padding: 2px 0; }
+  .eq-label { color: var(--ink-faint); }
+  .grid-cell-wall { fill: var(--grid-wall); }
+  .grid-cell-open { fill: var(--grid-open); }
+  .grid-cell-outline { stroke: var(--grid-outline); stroke-width: 1; }
+  .marker-text { font-size: 12px; font-weight: 700; fill: currentColor; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .arrow-text { font-size: 13px; font-weight: 700; fill: currentColor; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+</style>
+</head>
+<body>
+<main>
+  <div class="controls">
+    <button id="play-btn">Play</button>
+    <div id="beat-dots"></div>
+    <span id="beat-label"></span>
+  </div>
+  <div class="panels">
+    <div class="panel" id="panel-rewards">
+      <h2>Per-Component Rewards</h2>
+      <svg id="rewards-svg"></svg>
+    </div>
+    <div class="panel" id="panel-update">
+      <h2 id="update-title">λ Update</h2>
+      <svg id="update-svg" viewBox="0 0 300 220" width="300" height="220"></svg>
+      <div id="eq-numbers"></div>
+    </div>
+    <div class="panel" id="panel-policy">
+      <h2>Resulting Policy</h2>
+      <svg id="grid-svg"></svg>
+    </div>
+  </div>
+</main>
+
+<script>
+const DATA = {"meta":{"env":"ChickenBanana-v0","setup":"Dylam","bufferLen":10,"tauLambda":0.995,"windowEnd":200,"snapshotEpisode":200,"components":[{"name":"Objective","label":"Gate","rMax":100,"rMin":0,"color":"#0091FF"},{"name":"Banana","label":"Banana","rMax":30,"rMin":0,"color":"#FF6B2B"},{"name":"Chicken","label":"Chicken","rMax":70,"rMin":0,"color":"#00C48C"}],"nStates":64,"grid":{"layout":[["x","x","x","x","x","x","G","x","x"],["x","x","x","x","x","x"," ","x","x"],["x","x","x","x","x","x"," ","x","x"],["x","x","x","x","x","x"," ","x","x"],["C"," "," "," "," "," "," "," ","B"],["x","x","x","x","x","x"," ","x","x"],["x","x","x","x","x","x"," ","x","x"],["x","x","x","x","x","x","S","x","x"]],"start":[6,7],"goal":[6,0],"banana":[8,4],"chicken":[0,4],"statePositions":[[6,0],[6,1],[6,2],[6,3],[0,4],[1,4],[2,4],[3,4],[4,4],[5,4],[6,4],[7,4],[8,4],[6,5],[6,6],[6,7]]}},"context":{"episodes":[171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200],"rewards":{"Objective":[100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0],"Banana":[0.0,30.0,30.0,30.0,30.0,30.0,30.0,0.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0],"Chicken":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]}},"window":{"episodes":[191,192,193,194,195,196,197,198,199,200],"rewards":{"Objective":[100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0],"Banana":[30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0,30.0],"Chicken":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]}},"m":{"Objective":77.6452962775318,"Banana":18.79862140119788,"Chicken":3.498077481477381},"gbar":{"Objective":77.6452962775318,"Banana":18.79862140119788,"Chicken":3.498077481477381},"rho":{"Objective":0.776452962775318,"Banana":0.6266207133732627,"Chicken":0.04997253544967687},"zeta":{"Objective":0.22354703722468205,"Banana":0.37337928662673725,"Chicken":0.9500274645503232},"w":{"Objective":0.25050445915232666,"Banana":0.4526352004641998,"Chicken":1.5857806756441168},"lambda":{"Objective":0.10948109778316631,"Banana":0.19778557380646786,"Chicken":0.6928207020334477},"policy":{"policy":[0,0,0,2,2,3,3,3,1,1,1,1,3,0,0,0,1,0,0,0,3,1,1,1,1,1,0,3,3,0,0,0,3,0,1,1,1,3,1,1,2,0,2,0,0,3,1,3,0,2,0,2,1,1,3,1,1,3,3,1,1,3,2,0],"path":[[6,7],[6,6],[6,5],[6,4],[7,4],[8,4],[7,4],[6,4],[6,3],[6,2],[6,1],[6,0]],"returns":[100.0,30.0,0.0],"class":"gate_banana"}};
+const BEAT_LABELS = [
+  "1. Recent per-Component rewards",
+  "2. The sliding window (size E)",
+  "3. Feeding the λ update",
+  "4. Resolved: smoothed return → weight",
+  "5. Resulting λ weights",
+  "6. The policy it induces",
+];
+const N_BEATS = BEAT_LABELS.length;
+
+const state = { beat: 0, playing: false, timer: null };
+
+function compByName(name) {
+  return DATA.meta.components.find(c => c.name === name);
+}
+
+// --- Panel: rewards plot (beats 0-3) ---------------------------------------
+
+function drawRewards() {
+  const svg = document.getElementById("rewards-svg");
+  const W = 300, H = 220, padL = 34, padB = 22, padT = 10, padR = 8;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("width", W);
+  svg.setAttribute("height", H);
+
+  const episodes = DATA.context.episodes;
+  const xmin = episodes[0], xmax = episodes[episodes.length - 1];
+  let ymax = 1;
+  for (const c of DATA.meta.components) {
+    for (const v of DATA.context.rewards[c.name]) ymax = Math.max(ymax, v);
+  }
+  const sx = e => padL + (e - xmin) / (xmax - xmin || 1) * (W - padL - padR);
+  const sy = v => H - padB - v / ymax * (H - padT - padB);
+
+  let s = "";
+  if (state.beat >= 1) {
+    const winStart = DATA.window.episodes[0], winEnd = DATA.window.episodes[DATA.window.episodes.length - 1];
+    s += `<rect x="${sx(winStart).toFixed(1)}" y="${padT}" width="${(sx(winEnd) - sx(winStart)).toFixed(1)}" ` +
+         `height="${H - padT - padB}" fill="currentColor" opacity="0.10"></rect>`;
+  }
+  for (const c of DATA.meta.components) {
+    const pts = episodes.map((e, i) => `${sx(e).toFixed(1)},${sy(DATA.context.rewards[c.name][i]).toFixed(1)}`).join(" ");
+    s += `<polyline points="${pts}" fill="none" stroke="${c.color}" stroke-width="1.6"></polyline>`;
+  }
+  s += `<line class="axis-line" x1="${padL}" y1="${padT}" x2="${padL}" y2="${H - padB}"></line>`;
+  s += `<line class="axis-line" x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}"></line>`;
+  s += `<text class="tick-text" x="${padL}" y="${H - 6}">${xmin}</text>`;
+  s += `<text class="tick-text" x="${W - padR}" y="${H - 6}" text-anchor="end">${xmax}</text>`;
+  svg.innerHTML = s;
+}
+
+// --- Panel: update / equation / weights (beats 2-4) ------------------------
+
+function drawUpdatePanel() {
+  const svg = document.getElementById("update-svg");
+  const titleEl = document.getElementById("update-title");
+  const numsEl = document.getElementById("eq-numbers");
+  let s = "";
+
+  if (state.beat < 2) {
+    titleEl.textContent = "λ Update";
+    s += `<text class="tick-text" x="150" y="110" text-anchor="middle">Waiting for the window…</text>`;
+    numsEl.innerHTML = "";
+  } else if (state.beat === 2) {
+    titleEl.textContent = "Feeding the update";
+    s += `<text class="arrow-text" x="150" y="60">M(E) → EMA → λ</text>`;
+    s += `<text class="tick-text" x="150" y="90" text-anchor="middle">window mean feeds the EMA</text>`;
+    numsEl.innerHTML = "";
+  } else if (state.beat === 3) {
+    titleEl.textContent = "Resolved";
+    numsEl.innerHTML = DATA.meta.components.map(c => `
+      <div class="eq-row" style="color:${c.color}">
+        <span class="eq-label">Ḡ<sub>${c.label}</sub> = τ·Ḡ + (1−τ)·M</span>
+        <strong>${DATA.gbar[c.name].toFixed(3)}</strong>
+      </div>
+      <div class="eq-row">
+        <span class="eq-label">ζ<sub>${c.label}</sub></span><span>${DATA.zeta[c.name].toFixed(3)}</span>
+      </div>
+    `).join("");
+  } else {
+    titleEl.textContent = "Resulting λ weights";
+    const barW = 260 / DATA.meta.components.length;
+    DATA.meta.components.forEach((c, i) => {
+      const h = DATA.lambda[c.name] * 160;
+      const x = 20 + i * barW;
+      s += `<rect x="${x}" y="${190 - h}" width="${barW * 0.6}" height="${h}" fill="${c.color}"></rect>`;
+      s += `<text class="marker-text" x="${x + barW * 0.3}" y="204">${c.label}</text>`;
+    });
+    numsEl.innerHTML = DATA.meta.components.map(c => `
+      <div class="eq-row" style="color:${c.color}">
+        <span class="eq-label">λ<sub>${c.label}</sub></span><strong>${DATA.lambda[c.name].toFixed(3)}</strong>
+      </div>
+    `).join("");
+  }
+  svg.innerHTML = s;
+}
+
+// --- Panel: policy (beat 5), reusing the scrubber's grid renderer ----------
+
+const ARROW = { 0: "↑", 1: "→", 2: "↓", 3: "←" };
+
+function drawGrid() {
+  const svg = document.getElementById("grid-svg");
+  const grid = DATA.meta.grid;
+  const cs = 32;
+  const w = grid.layout[0].length * cs, h = grid.layout.length * cs;
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", w);
+  svg.setAttribute("height", h);
+  let s = "";
+  for (let y = 0; y < grid.layout.length; y++) {
+    for (let x = 0; x < grid.layout[y].length; x++) {
+      const wall = grid.layout[y][x] === "x";
+      s += `<rect class="${wall ? "grid-cell-wall" : "grid-cell-open"} grid-cell-outline" ` +
+           `x="${x * cs}" y="${y * cs}" width="${cs}" height="${cs}"></rect>`;
+    }
+  }
+  const mark = (pos, label, color) => {
+    const [x, y] = pos;
+    s += `<circle cx="${x * cs + cs / 2}" cy="${y * cs + cs / 2}" r="${cs * 0.32}" fill="${color}" opacity="0.85"></circle>`;
+    s += `<text class="marker-text" x="${x * cs + cs / 2}" y="${y * cs + cs / 2}">${label}</text>`;
+  };
+  mark(grid.goal, "G", "#2e7d32");
+  mark(grid.banana, "B", compByName("Banana").color);
+  mark(grid.chicken, "C", compByName("Chicken").color);
+  mark(grid.start, "S", "#555");
+
+  if (state.beat >= 5) {
+    const entry = DATA.policy;
+    for (let base = 0; base < grid.statePositions.length; base++) {
+      const [x, y] = grid.statePositions[base];
+      if (x === grid.goal[0] && y === grid.goal[1]) continue;
+      s += `<text class="arrow-text" x="${x * cs + cs / 2}" y="${y * cs + cs / 2}">${ARROW[entry.policy[base]]}</text>`;
+    }
+    if (entry.path.length > 1) {
+      const pts = entry.path.map(([x, y]) => `${x * cs + cs / 2},${y * cs + cs / 2}`).join(" ");
+      s += `<polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2.5" ` +
+           `stroke-opacity="0.55" stroke-linejoin="round"></polyline>`;
+    }
+  }
+  svg.innerHTML = s;
+}
+
+// --- Beat orchestration ------------------------------------------------------
+
+function render() {
+  drawRewards();
+  drawUpdatePanel();
+  drawGrid();
+
+  document.getElementById("panel-rewards").style.opacity = state.beat >= 3 ? "0.25" : "1";
+  document.getElementById("panel-update").style.opacity = state.beat >= 2 ? "1" : "0.4";
+  document.getElementById("panel-policy").style.opacity = state.beat >= 5 ? "1" : "0.3";
+
+  document.getElementById("beat-label").textContent = BEAT_LABELS[state.beat];
+  document.querySelectorAll(".beat-dot").forEach((dot, i) => dot.classList.toggle("active", i === state.beat));
+  document.getElementById("play-btn").textContent = state.playing ? "Pause" : "Play";
+}
+
+function goToBeat(i) {
+  state.beat = Math.max(0, Math.min(N_BEATS - 1, i));
+  render();
+}
+
+function stepOrStop() {
+  if (state.beat >= N_BEATS - 1) {
+    state.playing = false;
+    clearInterval(state.timer);
+    render();
+    return;
+  }
+  goToBeat(state.beat + 1);
+}
+
+function togglePlay() {
+  state.playing = !state.playing;
+  if (state.playing) {
+    if (state.beat >= N_BEATS - 1) state.beat = 0;
+    state.timer = setInterval(stepOrStop, 1600);
+  } else {
+    clearInterval(state.timer);
+  }
+  render();
+}
+
+function init() {
+  const dots = document.getElementById("beat-dots");
+  dots.innerHTML = BEAT_LABELS.map((_, i) => `<button class="beat-dot" data-beat="${i}" aria-label="Beat ${i + 1}"></button>`).join("");
+  dots.querySelectorAll(".beat-dot").forEach(dot => {
+    dot.addEventListener("click", () => {
+      state.playing = false;
+      clearInterval(state.timer);
+      goToBeat(+dot.dataset.beat);
+    });
+  });
+  document.getElementById("play-btn").addEventListener("click", togglePlay);
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

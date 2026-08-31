@@ -233,7 +233,7 @@ def _build_mechanism_explainer(tmp_path_factory):
 
     buffer_len, tau_lambda = mechanism.dylam_hyperparams()
     returns = mechanism.load_actual_returns(returns_csv)
-    gbar, _, _ = mechanism.replay_smoothed_returns(
+    gbar, _ = mechanism.replay_smoothed_returns(
         returns, window_end, buffer_len, tau_lambda
     )
     _, _, _, lam = mechanism.dylam_weights(gbar)

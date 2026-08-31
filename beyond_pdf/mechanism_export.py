@@ -93,20 +93,27 @@ def dylam_hyperparams():
 
 
 def replay_smoothed_returns(returns_by_episode, window_end, buffer_len, tau_lambda):
-    """Replay Eq. dylam-window + Eq. dylam-ema once per episode from episode
-    1 to `window_end`, exactly as Algorithm 1 initializes and updates them
-    (ring buffer of the last `buffer_len` completed episodes; Gbar_i <- 0
-    initially). Returns (Gbar at window_end, M at window_end, the window's
-    own per-episode returns)."""
+    """Replay the agent's own smoothed-return update (QDyLam.update_lambdas,
+    src/dylam/methods/q_learning.py) once per episode from episode 1 to
+    `window_end`: a ring buffer of the last `buffer_len` completed episodes
+    supplies its mean m_t, which is then smoothed as
+    m_t <- m_t + (last_mean - m_t) * tau -- NOTE the direction: tau weights
+    the PREVIOUS estimate, matching the agent's
+    `rew_mean_t + (self.last_reward_mean - rew_mean_t) * self.rew_tau`, not
+    the paper's Eq. dylam-ema phrasing (`gbar <- tau*gbar + (1-tau)*m`).
+    The fidelity precondition against the checkpoint's own lambdas.npy is
+    what pins this form down (and caught the paper-phrasing reading being
+    off by the smoothing direction). Returns (smoothed mean at window_end,
+    the window's own per-episode returns)."""
     names = [c.name for c in COMPONENTS]
-    gbar = {n: 0.0 for n in names}
+    last_mean = None
     episodes = sorted(returns_by_episode)
     if window_end not in returns_by_episode:
         sys.exit(f"--window-end {window_end} has no row in the actual-returns CSV")
     if window_end < buffer_len:
         sys.exit(f"--window-end {window_end} is before the buffer fills (E={buffer_len})")
 
-    m_at_end, window_returns = None, None
+    window_returns = None
     for k in episodes:
         if k > window_end:
             break
@@ -114,13 +121,21 @@ def replay_smoothed_returns(returns_by_episode, window_end, buffer_len, tau_lamb
             continue
         window = [returns_by_episode[j] for j in range(k - buffer_len + 1, k + 1)]
         m = {n: sum(w[n] for w in window) / buffer_len for n in names}
-        gbar = {n: tau_lambda * gbar[n] + (1 - tau_lambda) * m[n] for n in names}
+        if last_mean is not None:
+            m = {n: m[n] + (last_mean[n] - m[n]) * tau_lambda for n in names}
+        last_mean = m
         if k == window_end:
-            m_at_end, window_returns = m, window
-    return gbar, m_at_end, window_returns
+            window_returns = window
+    return last_mean, window_returns
 
 
 def dylam_weights(gbar, epsilon=EPSILON):
+    """The agent's own zeta -> lambda map (QDyLam.set_normalizer's softmax
+    branch, src/dylam/utils/experiment.py::softmax_norm):
+    (e^zeta - 1 + eps) / (sum_j (e^zeta_j - 1) + eps). Note epsilon enters
+    BOTH numerator and denominator (it is a numerical-stability constant,
+    not the paper's single-denominator-epsilon form of Eq. dylam-weights;
+    the checkpoint fidelity check is what disambiguates the two)."""
     rho, zeta, w = {}, {}, {}
     for c in COMPONENTS:
         rho[c.name] = (gbar[c.name] - c.r_min) / (c.r_max - c.r_min)
@@ -145,7 +160,7 @@ def build(snapshots_dir, out_path, window_end, actual_returns_path=ACTUAL_RETURN
     context_episodes = context_episodes or max(3 * buffer_len, 30)
 
     returns_by_episode = load_actual_returns(actual_returns_path)
-    gbar, m, window_returns = replay_smoothed_returns(
+    gbar, window_returns = replay_smoothed_returns(
         returns_by_episode, window_end, buffer_len, tau_lambda)
     rho, zeta, w, lam = dylam_weights(gbar)
 
@@ -198,7 +213,7 @@ def build(snapshots_dir, out_path, window_end, actual_returns_path=ACTUAL_RETURN
         "context": {"episodes": episodes, "rewards": context},
         "window": {"episodes": list(range(window_end - buffer_len + 1, window_end + 1)),
                    "rewards": {c.name: [w[c.name] for w in window_returns] for c in COMPONENTS}},
-        "m": m, "gbar": gbar, "rho": rho, "zeta": zeta, "w": w, "lambda": lam,
+        "m": gbar, "gbar": gbar, "rho": rho, "zeta": zeta, "w": w, "lambda": lam,
         "policy": {"policy": policy.tolist(), "path": path, "returns": returns, "class": behavior},
     }
 
