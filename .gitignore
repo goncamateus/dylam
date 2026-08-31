@@ -177,3 +177,7 @@ beyond_pdf/tmlr_do_not_modify/assets/html/
 beyond_pdf/tmlr_do_not_modify/assets/gif/
 beyond_pdf/tmlr_do_not_modify/assets/img/submission/
 beyond_pdf/tmlr_do_not_modify/assets/css/
+
+.agents/skills
+.claude/skills
+skills-lock.json
