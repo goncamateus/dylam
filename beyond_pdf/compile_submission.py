@@ -62,6 +62,14 @@ def merge_files(submission_dir, target_dir):
       os.path.join(target_dir, 'assets/bibliography')
   )
 
+  # Copy from assets/css
+  css_base_dir = f'{submission_dir}/assets/css'
+  css_target_dir = f'{target_dir}/assets/css'
+  if os.path.exists(css_base_dir):
+    copy_files(css_base_dir, css_target_dir)
+  else:
+    print(f'{css_base_dir} not found, skipping.')
+
   # Copy from assets/html
   html_base_dir = f'{submission_dir}/assets/html'
   html_target_dir = f'{target_dir}/assets/html'

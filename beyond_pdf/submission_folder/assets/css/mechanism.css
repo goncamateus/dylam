@@ -1,0 +1,62 @@
+/* Styling for the Mechanism section (issue #45).
+ *
+ * Distill has no definition/proposition/proof or algorithm environment, so this
+ * file supplies the two constructs the section needs: a callout box for
+ * definitions/propositions/proofs, and a bordered figure for the DyLam
+ * pseudocode (which is authored as a real nested <ol>, never an image).
+ *
+ * Both reuse the kit's own theme custom properties (--global-*), which the
+ * kit already swaps between light and dark mode, so nothing here needs its
+ * own dark-mode media query.
+ */
+
+.callout {
+  margin: 1.5em 0;
+  padding: 0.9em 1.25em;
+  border-left: 4px solid var(--global-theme-color);
+  background-color: var(--global-card-bg-color);
+  border-radius: 4px;
+}
+
+.callout > *:first-child {
+  margin-top: 0;
+}
+
+.callout > *:last-child {
+  margin-bottom: 0;
+}
+
+.callout-label {
+  font-weight: 700;
+  color: var(--global-theme-color);
+}
+
+figure.algorithm {
+  margin: 1.5em 0;
+  padding: 1em 1.5em;
+  border: 1px solid var(--global-divider-color);
+  border-radius: 4px;
+  background-color: var(--global-card-bg-color);
+  overflow-x: auto;
+}
+
+figure.algorithm ol {
+  margin: 0;
+  padding-left: 1.4em;
+}
+
+figure.algorithm li {
+  margin-bottom: 0.35em;
+}
+
+figure.algorithm ol ol {
+  margin-top: 0.35em;
+}
+
+figure.algorithm figcaption {
+  margin-top: 0.75em;
+  padding-top: 0.5em;
+  border-top: 1px solid var(--global-divider-color);
+  font-size: 0.875rem;
+  text-align: left;
+}
