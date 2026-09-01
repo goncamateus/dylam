@@ -181,3 +181,6 @@ beyond_pdf/tmlr_do_not_modify/assets/css/
 .agents/skills
 .claude/skills
 skills-lock.json
+
+# Agent-managed isolated worktrees
+.worktrees/
