@@ -16,28 +16,11 @@ component by max(|r_max|, |r_min|) -- the same convention utils.py's now
 otherwise-dead plot_rewards used for Chicken-Banana, so all three envs
 share it here for consistency, not just Chicken-Banana.
 
-Two discrepancies found and NOT corrected here (out of scope -- captions
-and the narrative they describe are authored prose):
-
-- curriculum.tex's fig:curr/weights caption says HalfCheetah-v4 is
-  "control cost (blue) and velocity (orange)", but fetching lambdas/Run
-  vs lambdas/Control from wandb and comparing curve shapes against the
-  published image shows the opposite of what's actually plotted -- Run
-  is blue, Control is orange, the same comp_names-order-to-palette-index
-  mapping every other env uses.
-- curriculum.tex's VSS-v0 paragraph describes Move's weight
-  concentrating first and transferring to Ball as Move's own return
-  saturates (~10^5 steps). fig:curr/vss-comp (draw_components) matches
-  that story cleanly: Move's return does saturate first. But
-  fig:curr/vss-lam (draw_weights) doesn't show a clean Move-then-Ball
-  handoff -- Ball's weight rises and peaks earlier than Move's does,
-  the two converging to near parity by the end rather than Move ceding
-  share monotonically. Checked for a fetch/plotting bug first (the
-  per-component tidy CSVs' own metric columns are correctly
-  lambdas/Move vs lambdas/Ball, no mix-up); none found, so this reads as
-  a real property of the fetched trajectory, not a code defect.
-
-Both flagged here and in the commit message for the author to judge.
+fig:curr/weights plots, per component, the interquartile mean over seeds
+with a 95% bootstrap band (core.stats.bootstrap_curve), with a legend in
+every panel; its colors and the sec:res_trad_rq2 prose that reads it must
+agree (Velocity is blue in HalfCheetah; Ball's weight peaks before Move's
+in VSS).
 
 Figures have no automated test seam; check the output by eye.
 
@@ -57,7 +40,7 @@ import numpy as np
 import pandas as pd
 from sources import ENVS
 
-from core import style
+from core import stats, style
 
 DATA = Path(__file__).parent / "data"
 DEFAULT_OUT = Path.home() / "doc/DyLam-TMLR"
@@ -69,12 +52,17 @@ OUT_DIR = {
 }
 
 
-def _grid_mean(df, metric):
+def _grid(df, metric):
+    """Per-seed smoothed series interpolated onto a shared grid: (grid, n_seeds x GRID)."""
     series = [(g["_step"].to_numpy(dtype=float), g[metric].to_numpy(dtype=float))
              for _, g in df.groupby("seed", sort=False)]
     hi = min(step.max() for step, _ in series)
     grid = np.linspace(0, hi, GRID)
-    mat = np.array([np.interp(grid, step, style.rolling_smooth(value)) for step, value in series])
+    return grid, np.array([np.interp(grid, step, style.rolling_smooth(value)) for step, value in series])
+
+
+def _grid_mean(df, metric):
+    grid, mat = _grid(df, metric)
     return grid, mat.mean(axis=0)
 
 
@@ -84,13 +72,17 @@ def draw_weights(out_root, fmt="pdf"):
         for i, comp in enumerate(spec.components):
             metric = f"lambdas/{comp.name}"
             df = pd.read_csv(DATA / f"{env.lower()}_{comp.name.lower()}_lambda.csv")
-            grid, mean = _grid_mean(df, metric)
-            ax.plot(grid, mean, color=style.COMPONENT_PALETTE[i], linewidth=1.6, label=comp.label)
+            grid, mat = _grid(df, metric)
+            centre, lo, hi = stats.bootstrap_curve(mat)
+            color = style.COMPONENT_PALETTE[i]
+            ax.plot(grid, centre, color=color, linewidth=1.6, label=comp.label)
+            ax.fill_between(grid, lo, hi, color=color, alpha=0.2, linewidth=0)
         ax.set_xlabel(spec.xlabel)
         ax.set_ylabel(r"$\lambda$ weights")
         ax.set_ylim(0, 1)
         ax.set_title(spec.gym_label)
         ax.grid(alpha=0.3)
+        ax.legend(fontsize=9)
         fig.tight_layout()
         out = out_root / OUT_DIR[env] / f"{spec.gym_label}-weights.pdf"
         for written in style.savefig(fig, out, fmt):

@@ -17,7 +17,8 @@ their first component, not the YAML's current "Gate" --
 
 `label` is the manuscript's own display name for the component
 (curriculum.tex), used only for the legend -- "Gate" for ChickenBanana's
-"Objective", identical to `name` everywhere else.
+"Objective", "Velocity"/"Control cost" for HalfCheetah's Run/Control, and
+"Approach"/"Ball-to-goal" for VSS's Move/Ball.
 
 `ep_metric` is `reward_<name>` with the `reward_` prefix stripped to
 `ep_info/` (log_episode) -- and each env wrapper's own
@@ -38,12 +39,12 @@ ENVS = {
         Component("Chicken", "Chicken", "ep_info/Chicken", 70, 0),
     ]),
     "HALFCHEETAH": Env("HalfCheetah-v4", "Dylam", "Environment step", [
-        Component("Run", "Run", "ep_info/run", 800, 0),
-        Component("Control", "Control", "ep_info/ctrl", -200, -800),
+        Component("Run", "Velocity", "ep_info/run", 800, 0),
+        Component("Control", "Control cost", "ep_info/ctrl", -200, -800),
     ]),
     "VSS": Env("VSS-v0", "Dylam", "Environment step", [
-        Component("Move", "Move", "ep_info/Move", 150, 0),
-        Component("Ball", "Ball", "ep_info/Ball", 40, 0),
+        Component("Move", "Approach", "ep_info/Move", 150, 0),
+        Component("Ball", "Ball-to-goal", "ep_info/Ball", 40, 0),
         Component("Energy", "Energy", "ep_info/Energy", -100, -300),
     ]),
 }
