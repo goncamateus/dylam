@@ -8,9 +8,12 @@
 #SBATCH --mail-user=mgm4@cin.ufpe.br
 
 # Same as slurm_job.sh, but the number of concurrent runs is a parameter.
-# Usage: sbatch slurm_job_n.sh <train_script.py> <ENV> <Setup> <n_runs>
+# Usage: sbatch slurm_job_n.sh <train_script.py> <ENV> <Setup> <n_runs> [seed]
+# With [seed], run i gets --seed seed+i-1; without it every run uses the default
+# seed 0 (same network init and warm-up actions across runs).
 
 N_RUNS=${4:-5}
+SEED=${5:-}
 
 module use /opt/easybuild/modules/all
 module load Python3.10 SWIG
@@ -35,11 +38,11 @@ echo "Installing project dependencies"
 uv sync --frozen
 uv pip install -e .
 
-echo "Starting Job: $1 --env $2 --setup $3  ($N_RUNS runs)"
+echo "Starting Job: $1 --env $2 --setup $3  ($N_RUNS runs, seed ${SEED:-0})"
 for i in $(seq 1 $N_RUNS); do
     (
         sleep $(( (i-1) * 5 ))
-        uv run --directory scripts/ python $1 --env $2 --setup $3 --track --capture-video
+        uv run --directory scripts/ python $1 --env $2 --setup $3 --track --capture-video ${SEED:+--seed $((SEED + i - 1))}
     ) &
 done
 wait

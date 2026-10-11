@@ -164,7 +164,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--setup", type=str, default="Baseline")
     parser.add_argument("--seed", type=int, default=0,
-                        help="0 keeps the legacy behaviour of seeding from the clock")
+                        help="seed for torch/numpy/random and the action space")
     parser.add_argument("--env", type=str, default="LunarLander")
     parser.add_argument(
         "--cuda",
