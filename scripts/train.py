@@ -6,25 +6,24 @@ import time
 import gymnasium as gym
 import numpy as np
 
-from dylam.methods.sac import SAC, SACStrat, SACStratOpenLoop
+from dylam.methods.sac import SAC, SACDyLamScalar, SACStrat, SACStratOpenLoop
 from dylam.utils.experiment import get_experiment, make_env, parse_args, setup_run
 from dylam.utils.logger import SACLogger
 
 
 def train(args, exp_name, logger: SACLogger):
-    if getattr(args, "scalar_critic", False):
-        raise NotImplementedError(
-            "scalar_critic (DyLam weights, single critic) is implemented for the "
-            "tabular path only; see train_q_learning.py. The VSS config exists so the "
-            "run is ready to launch once the SAC-side variant is written."
-        )
+    if getattr(args, "scalar_critic", False) and not args.dylam:
+        raise ValueError("scalar_critic is a DyLam ablation; set dylam: True")
     envs = gym.vector.AsyncVectorEnv(
         [make_env(args, i, exp_name) for i in range(args.num_envs)]
     )
     if args.stratified:
-        agent_cls = (
-            SACStratOpenLoop if getattr(args, "open_loop_schedule", None) else SACStrat
-        )
+        if getattr(args, "scalar_critic", False):
+            agent_cls = SACDyLamScalar
+        elif getattr(args, "open_loop_schedule", None):
+            agent_cls = SACStratOpenLoop
+        else:
+            agent_cls = SACStrat
         agent = agent_cls(
             args,
             envs.single_observation_space,

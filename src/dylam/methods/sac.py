@@ -319,3 +319,34 @@ class SACStratOpenLoop(SACStrat):
             for i in range(self.schedule.shape[1])
         ])
         self.lambdas = torch.Tensor(lam).to(self.device)
+
+
+class SACDyLamScalar(SACStrat):
+    """DyLam weights without Q-decomposition: one critic on r = sum_i lambda_i(t) r_i.
+
+    SAC counterpart of QDyLamScalar. The weights still come from the standard DyLam
+    rule over per-component episodic returns; only the critic is scalar. The buffer
+    keeps vector rewards and they are scalarized at sample time with the current
+    lambda, so a replayed transition is always weighted by lambda(t), not by the
+    lambda in force when it was collected.
+    """
+
+    def get_networks(self):
+        actor, _ = super().get_networks()
+        critic = DoubleQNetwork(
+            self.num_inputs,
+            self.num_actions,
+            num_outputs=1,
+            n_hidden=self.n_hidden,
+        )
+        return actor, critic
+
+    def update_critic(
+        self, state_batch, action_batch, reward_batch, next_state_batch, done_batch
+    ):
+        reward_batch = (reward_batch @ self.lambdas).view(-1, 1)
+        return super().update_critic(
+            state_batch, action_batch, reward_batch, next_state_batch, done_batch
+        )
+
+    update_actor = SAC.update_actor

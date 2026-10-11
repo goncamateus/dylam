@@ -556,11 +556,23 @@ Dylam_Scalar:
     r_min: [0, 0, 0]
     comp_names: ["Gate", "Banana", "Chicken"]
 
-  # Prepared, NOT run. The tabular path implements scalar_critic; the SAC path
-  # does not, and train.py refuses to start with this flag set rather than
-  # silently falling back to full DyLam. The other half of C4, the open-loop
-  # lambda(t) replay (roadmap item R5), IS implemented for this environment:
-  # see the Dylam_Openloop block at the end of this file.
+  # SAC path: SACDyLamScalar (single critic, rewards scalarized at sample time
+  # with the current lambda). The other half of C4, the open-loop lambda(t)
+  # replay (roadmap item R5), is the Dylam_Openloop block at the end of this file.
+  HALFCHEETAH:
+    gym_id: mo-HalfCheetah-v4
+    num_envs: 16
+    total_timesteps: 500000
+    stratified: True
+    scalar_critic: True
+    dylam: True
+    num_rewards: 2
+    r_max: [800, -200]
+    r_min: [0, -800]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    comp_names: ["Run", "Control"]
+
   VSS:
     gym_id: mo-VSS-v0
     num_envs: 20
@@ -585,7 +597,7 @@ Dylam_Scalar:
     dylam_tau: 0.9999
     comp_names: ["Move", "Ball", "Energy"]
 
-# R5 ablation: open-loop replay of DyLam's own mean lambda(t) trajectory on VSS-v0.
+# R5 ablation: open-loop replay of DyLam's own mean lambda(t) trajectory (VSS-v0, HalfCheetah-v4).
 # No return feedback and no bounds are used; the weights come from the recorded
 # schedule alone (result_analysis/extract_lambda_schedule.py writes it). This
 # separates the value of adapting from the value of this particular curve.
@@ -613,3 +625,17 @@ Dylam_Openloop:
     dylam_rb: 500
     dylam_tau: 0.9999
     comp_names: ["Move", "Ball", "Energy"]
+
+  HALFCHEETAH:
+    gym_id: mo-HalfCheetah-v4
+    num_envs: 16
+    total_timesteps: 500000
+    stratified: True
+    dylam: True
+    open_loop_schedule: "schedules/halfcheetah_dylam_lambda.csv"
+    num_rewards: 2
+    r_max: [800, -200]
+    r_min: [0, -800]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    comp_names: ["Run", "Control"]
