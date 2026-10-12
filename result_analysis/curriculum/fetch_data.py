@@ -41,7 +41,10 @@ def main():
             for kind, metric in [("reward", comp.ep_metric), ("lambda", f"lambdas/{comp.name}")]:
                 print(f"  {env:14s} {comp.name:8s} {kind:6s} ...", file=sys.stderr, end=" ")
                 dfs = fetch.histories(env, spec.setup, metric, max_seeds=MAX_SEEDS,
-                                      refresh=args.refresh)
+                                      refresh=args.refresh,
+                                      # CB rerun on explicit seeds 1..100; plot 1..10
+                                      seeds=range(1, MAX_SEEDS + 1)
+                                      if env == "CHICKENBANANA" else None)
                 print(f"n={len(dfs)}", file=sys.stderr)
                 if not dfs:
                     sys.exit(f"no data for {env}/{comp.name}/{kind}")

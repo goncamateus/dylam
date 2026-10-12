@@ -35,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import numpy as np
 import pandas as pd
 from methods import CELLS
+from scipy.stats import binomtest
 
 from core import stats
 from core.html import strong, table as html_table
@@ -52,6 +53,10 @@ IQM_DECIMALS = {"Chicken--Banana": 2, "HalfCheetah-v4": 1,
                 "HalfCheetah-v4 (env return)": 1, "VSS-v0": 3}
 THRESHOLD_DECIMALS = {"Chicken--Banana": 2, "HalfCheetah-v4": 1, "VSS-v0": 3}
 METRIC = {c.column: c.metric for c in CELLS}
+ABLATIONS = ["DyLam-Scalar", "DyLam-OpenLoop"]
+# Chicken--Banana seeds count as solved when most final-10% episodes collect
+# all three objects (0/1 rewards, max 3); the outcome is bimodal (2 or 3).
+CB_SOLVED = 2.5
 
 
 def _slug(column):
@@ -72,7 +77,7 @@ def compute():
     dfs = {col: _load(col) for col in COLUMNS}
     frames, summary = {}, {}
     for col in COLUMNS:
-        for method in ROW_ORDER + ["DyLam-Scalar"]:
+        for method in ROW_ORDER + ABLATIONS:
             fs = _frames(dfs[col], method)
             if fs:
                 frames[(method, col)] = fs
@@ -97,6 +102,42 @@ def family_tests(summary):
         (secondary if "env return" in col else fam).append(entry)
     adj = dict(zip((e[0] for e in fam), stats.holm([e[5] for e in fam])))
     return fam, secondary, adj
+
+
+def mechanism_tests(summary):
+    """Each ablation vs. DyLam, per column; Holm within the mechanism family."""
+    fam = []
+    for col in COLUMNS:
+        dylam = summary.get(("DyLam", col))
+        for abl in ABLATIONS:
+            vals = summary.get((abl, col))
+            if dylam and vals and "env return" not in col:
+                fam.append((col, abl, *stats.exact_mw(dylam, vals)))
+    return fam, stats.holm([e[3] for e in fam])
+
+
+def report(summary, fam, adj, mech, mech_adj):
+    """Prose-quoted numbers: RQ1 tests, mechanism family, CB solved counts."""
+    for col, best, n1, n2, u, p, r in fam:
+        print(f"RQ1 {col}: DyLam vs {best} U={u} p={p:.3g} p_holm={adj[col]:.3g} r={r:+.2f}",
+              file=sys.stderr)
+    for (col, abl, u, p, r), ph in zip(mech, mech_adj):
+        print(f"MECH {col}: DyLam vs {abl} U={u} p={p:.3g} p_holm={ph:.3g} r={r:+.2f}",
+              file=sys.stderr)
+    succ = _load("Chicken--Banana success")
+    for method, d in succ.groupby("method", sort=False):
+        vals = [stats.seed_summary(g, METRIC["Chicken--Banana"]) for _, g in d.groupby("seed")]
+        k, n = sum(v > CB_SOLVED for v in vals), len(vals)
+        ci = binomtest(k, n).proportion_ci(method="exact")
+        print(f"CB success {method}: {k}/{n} = {100 * k / n:.0f}% "
+              f"[{100 * ci.low:.0f}, {100 * ci.high:.0f}]", file=sys.stderr)
+    for method in ROW_ORDER + ABLATIONS:
+        vals = summary.get((method, "Chicken--Banana"))
+        if vals:
+            lo, hi = stats.boot_ci(vals)
+            print(f"CB {method}: solved {sum(v > CB_SOLVED for v in vals)}/{len(vals)} "
+                  f"mean {np.mean(vals):.3f}+-{np.std(vals, ddof=1):.3f} "
+                  f"IQM {stats.iqm(vals):.2f} [{lo:.2f}, {hi:.2f}]", file=sys.stderr)
 
 
 def _header(units_row):
@@ -126,14 +167,14 @@ def render_summary(summary, fam, secondary, adj):
         return (f"${np.mean(vals):.{d}f} \\pm {np.std(vals, ddof=1):.{d}f}{star}$ "
                 f"\\, ($n{{=}}{len(vals)}$)")
 
-    lines = _header(r"(final episode reward, max $200$) & (final $x$-position) & "
+    lines = _header(r"(final episode reward, max $3$) & (final $x$-position) & "
                     r"(env.\ return) & (goal rate)")
     for method in ROW_ORDER:
         lines.append(_row(method, cell))
         if method == "DyLam":
             lines.append(r"\midrule")
             lines.append(r"\multicolumn{5}{l}{\emph{Ablation}} \\")
-    lines.append(_row("DyLam-Scalar", cell))
+    lines += [_row(m, cell) for m in ABLATIONS]
     lines += [r"\bottomrule", r"\end{tabular}"]
     return "\n".join(lines) + "\n"
 
@@ -152,7 +193,7 @@ def render_summary_html(summary, fam, secondary, adj):
 
     headers = ["Method"] + COLUMNS
     body = [[method] + [cell(method, col) for col in COLUMNS] for method in ROW_ORDER]
-    body.append(["DyLam-Scalar"] + [cell("DyLam-Scalar", col) for col in COLUMNS])
+    body += [[m] + [cell(m, col) for col in COLUMNS] for m in ABLATIONS]
     return html_table(headers, body)
 
 
@@ -170,7 +211,7 @@ def render_iqm(summary):
         lines.append(_row(method, cell))
         if method == "DyLam":
             lines.append(r"\midrule")
-    lines.append(_row("DyLam-Scalar", cell))
+    lines += [_row(m, cell) for m in ABLATIONS]
     lines += [r"\bottomrule", r"\end{tabular}"]
     return "\n".join(lines) + "\n"
 
@@ -186,7 +227,7 @@ def render_iqm_html(summary):
 
     headers = ["Method"] + COLUMNS
     body = [[method] + [cell(method, col) for col in COLUMNS] for method in ROW_ORDER]
-    body.append(["DyLam-Scalar"] + [cell("DyLam-Scalar", col) for col in COLUMNS])
+    body += [[m] + [cell(m, col) for col in COLUMNS] for m in ABLATIONS]
     return html_table(headers, body)
 
 
@@ -293,6 +334,7 @@ def main():
     frames, summary = compute()
     fam, secondary, adj = family_tests(summary)
     efficiency = compute_efficiency(frames, summary)
+    report(summary, fam, adj, *mechanism_tests(summary))
 
     if args.format in ("latex", "both"):
         outputs = {

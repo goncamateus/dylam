@@ -34,9 +34,11 @@ Env = namedtuple("Env", "gym_label setup xlabel components")
 
 ENVS = {
     "CHICKENBANANA": Env("ChickenBanana-v0", "Dylam", "Episode", [
-        Component("Objective", "Gate", "ep_info/Objective", 100, 0),
-        Component("Banana", "Banana", "ep_info/Banana", 30, 0),
-        Component("Chicken", "Chicken", "ep_info/Chicken", 70, 0),
+        # 0/1 rewards and the "Gate" lambda key since f4e85fa's rerun; the
+        # env still logs the Gate return as ep_info/Objective.
+        Component("Gate", "Gate", "ep_info/Objective", 1, 0),
+        Component("Banana", "Banana", "ep_info/Banana", 1, 0),
+        Component("Chicken", "Chicken", "ep_info/Chicken", 1, 0),
     ]),
     "HALFCHEETAH": Env("HalfCheetah-v4", "Dylam", "Environment step", [
         Component("Run", "Velocity", "ep_info/run", 800, 0),

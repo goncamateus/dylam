@@ -38,6 +38,8 @@ CELLS = [
 
     *(Cell("VSS-v0", m, "VSS", s, "ep_info/Goal") for m, s in VSS_METHODS.items()),
     Cell("VSS-v0", "Tuned-UDC", "VSS_TUNED", "Drq", "ep_info/Goal"),
+    Cell("VSS-v0", "DyLam-Scalar", "VSS", "Dylam_Scalar", "ep_info/Goal"),
+    Cell("VSS-v0", "DyLam-OpenLoop", "VSS", "Dylam_Openloop", "ep_info/Goal"),
 ]
 
 # Chicken--Banana per-component curves (fig:res/chicken_banana/components):

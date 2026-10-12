@@ -5,6 +5,8 @@ parses the numbers back out of the three tabulars it writes.
 
 FIXTURE is transcribed from the numbers currently published in
 sections/results/trad/{performance,app}.tex in the sibling DyLam-TMLR repo
+(Chicken--Banana and the ablation rows: the 0/1-reward rerun on seeds 1..10,
+as published in DyLam-TNNLS)
 (tab:res/trad/summary, tab:res/trad/iqm, tab:res/trad/efficiency) -- not
 captured from this code. Most values reproduce exactly; a few are marked
 xfail below because Base SO RL has finished five more seeds on
@@ -44,10 +46,10 @@ def _p(*args, xfail=False):
 
 
 SUMMARY_FIXTURE = [
-    _p("Chicken--Banana", "Base SO RL", dict(mean=127.000, std=9.487, n=10)),
-    _p("Chicken--Banana", "Q-Decomposition", dict(mean=90.149, std=17.153, n=10)),
-    _p("Chicken--Banana", "UDC", dict(mean=129.985, std=0.047, n=10)),
-    _p("Chicken--Banana", "DyLam", dict(mean=185.826, std=29.428, n=10)),
+    _p("Chicken--Banana", "Base SO RL", dict(mean=2.200, std=0.422, n=10)),
+    _p("Chicken--Banana", "Q-Decomposition", dict(mean=2.124, std=0.614, n=10)),
+    _p("Chicken--Banana", "UDC", dict(mean=2.100, std=0.316, n=10)),
+    _p("Chicken--Banana", "DyLam", dict(mean=2.697, std=0.481, n=10)),
     _p("HalfCheetah-v4", "Base SO RL", dict(mean=392.227, std=18.594, n=5), xfail=True),
     _p("HalfCheetah-v4", "UDC", dict(mean=329.980, std=80.324, n=6)),
     _p("HalfCheetah-v4", "DyLam", dict(mean=464.568, std=47.627, n=10)),
@@ -58,14 +60,17 @@ SUMMARY_FIXTURE = [
     _p("VSS-v0", "UDC", dict(mean=0.060, std=0.012, n=5)),
     _p("VSS-v0", "Tuned-UDC", dict(mean=0.424, std=0.115, n=7)),
     _p("VSS-v0", "DyLam", dict(mean=0.852, std=0.021, n=10)),
-    _p("Chicken--Banana", "DyLam-Scalar", dict(mean=3.990, std=8.370, n=10), xfail=True),
+    _p("Chicken--Banana", "DyLam-Scalar", dict(mean=0.175, std=0.287, n=10)),
+    _p("Chicken--Banana", "DyLam-OpenLoop", dict(mean=2.198, std=0.423, n=10)),
+    _p("VSS-v0", "DyLam-Scalar", dict(mean=0.669, std=0.032, n=10)),
+    _p("VSS-v0", "DyLam-OpenLoop", dict(mean=0.759, std=0.134, n=10)),
 ]
 
 IQM_FIXTURE = [
-    _p("Chicken--Banana", "Base SO RL", (130.00, 125.00, 130.00)),
-    _p("Chicken--Banana", "Q-Decomposition", (92.79, 76.77, 103.38)),
-    _p("Chicken--Banana", "UDC", (130.00, 129.98, 130.00)),
-    _p("Chicken--Banana", "DyLam", (199.71, 165.00, 200.00)),
+    _p("Chicken--Banana", "Base SO RL", (2.00, 2.00, 2.50)),
+    _p("Chicken--Banana", "Q-Decomposition", (2.01, 1.70, 2.62)),
+    _p("Chicken--Banana", "UDC", (2.00, 2.00, 2.17)),
+    _p("Chicken--Banana", "DyLam", (2.83, 2.33, 3.00)),
     _p("HalfCheetah-v4", "Base SO RL", (389.9, 374.5, 413.0), xfail=True),
     _p("HalfCheetah-v4", "UDC", (333.3, 260.4, 395.4)),
     _p("HalfCheetah-v4", "DyLam", (472.6, 434.0, 496.9)),
@@ -76,15 +81,18 @@ IQM_FIXTURE = [
     _p("VSS-v0", "UDC", (0.060, 0.048, 0.073)),
     _p("VSS-v0", "Tuned-UDC", (0.394, 0.355, 0.516)),
     _p("VSS-v0", "DyLam", (0.848, 0.838, 0.865)),
-    _p("Chicken--Banana", "DyLam-Scalar", (0.29, 0.00, 8.18)),
+    _p("Chicken--Banana", "DyLam-Scalar", (0.08, 0.00, 0.35)),
+    _p("Chicken--Banana", "DyLam-OpenLoop", (2.00, 2.00, 2.50)),
+    _p("VSS-v0", "DyLam-Scalar", (0.671, 0.651, 0.689)),
+    _p("VSS-v0", "DyLam-OpenLoop", (0.791, 0.663, 0.847)),
 ]
 
 # (column, method, reached, total, median value or None, unit, auc_mean, auc_std)
 EFFICIENCY_FIXTURE = [
-    _p("Chicken--Banana", "Base SO RL", 9, 10, 132, "ep", 0.453, 0.066),
-    _p("Chicken--Banana", "Q-Decomposition", 10, 10, 212, "ep", 0.357, 0.052),
-    _p("Chicken--Banana", "UDC", 10, 10, 98, "ep", 0.477, 0.002),
-    _p("Chicken--Banana", "DyLam", 10, 10, 200, "ep", 0.662, 0.126),
+    _p("Chicken--Banana", "Base SO RL", 2, 10, 135, "ep", 0.419, 0.272),
+    _p("Chicken--Banana", "Q-Decomposition", 8, 10, 382, "ep", 0.494, 0.244),
+    _p("Chicken--Banana", "UDC", 1, 10, 140, "ep", 0.353, 0.204),
+    _p("Chicken--Banana", "DyLam", 7, 10, 551, "ep", 0.596, 0.266),
     _p("HalfCheetah-v4", "Base SO RL", 3, 5, 431, "k", 0.347, 0.040, xfail=True),
     _p("HalfCheetah-v4", "UDC", 1, 6, 400, "k", 0.182, 0.143, xfail=True),
     _p("HalfCheetah-v4", "DyLam", 9, 10, 219, "k", 0.523, 0.128, xfail=True),
