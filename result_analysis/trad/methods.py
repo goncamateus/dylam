@@ -15,7 +15,8 @@ Cell = namedtuple("Cell", "column method wandb_env wandb_setup metric")
 # main table cells and the Chicken--Banana per-component figure cells below,
 # so the four methods and their setups are declared exactly once.
 CHICKENBANANA_METHODS = {
-    "Base SO RL": "Baseline", "Q-Decomposition": "Decq", "UDC": "Drq", "DyLam": "Dylam",
+    # "Udc", not the legacy wandb "Drq": CB was rerun on 0/1 rewards (ticket 10)
+    "Base SO RL": "Baseline", "Q-Decomposition": "Decq", "UDC": "Udc", "DyLam": "Dylam",
 }
 HALFCHEETAH_METHODS = {"Base SO RL": "Baseline", "UDC": "Drq", "DyLam": "Dylam"}
 VSS_METHODS = {"Base SO RL": "Baseline", "UDC": "Drq", "DyLam": "Dylam"}
@@ -26,6 +27,8 @@ CELLS = [
     # The ablation of Section 6.1.1 (DyLam's weights, no Q-decomposition): a
     # row of tab:res/trad/summary and tab:res/trad/iqm, not a rival method.
     Cell("Chicken--Banana", "DyLam-Scalar", "CHICKENBANANA", "Dylam_Scalar", "ep_info/total"),
+    Cell("Chicken--Banana", "DyLam-OpenLoop", "CHICKENBANANA", "Dylam_Openloop",
+         "ep_info/total"),
 
     *(Cell("HalfCheetah-v4", m, "HALFCHEETAH", s, "ep_info/Final_position")
       for m, s in HALFCHEETAH_METHODS.items()),

@@ -602,6 +602,21 @@ Dylam_Scalar:
 # schedule alone (result_analysis/extract_lambda_schedule.py writes it). This
 # separates the value of adapting from the value of this particular curve.
 Dylam_Openloop:
+  CHICKENBANANA:
+    gym_id: mo-ChickenBanana-v0
+    total_episodes: 2001
+    gamma: 0.9999
+    q_lr: 0.1
+    epsilon: 1
+    epsilon_decay_factor: 0.9988
+    stratified: True
+    num_rewards: 3
+    dylam: True
+    open_loop_schedule: "schedules/chickenbanana_dylam_lambda.csv"  # run_cb.sh phase B
+    r_max: [1, 1, 1]
+    r_min: [0, 0, 0]
+    comp_names: ["Gate", "Banana", "Chicken"]
+
   VSS:
     gym_id: mo-VSS-v0
     num_envs: 20

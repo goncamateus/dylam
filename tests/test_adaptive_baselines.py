@@ -16,7 +16,8 @@ import torch
 from gymnasium.spaces import Box, Discrete
 from yaml import safe_load
 
-from dylam.methods.q_learning import QDyLamLagrangian
+from dylam.envs.chicken_banana import ChickenBanana
+from dylam.methods.q_learning import QDyLamLagrangian, QDyLamOpenLoop
 from dylam.methods.sac import SACStrat, SACStratLagrangian
 from dylam.utils.experiment import base_hyperparams
 
@@ -65,16 +66,17 @@ def test_tabular_dual_relaxes_when_satisfied():
             agent.add_episode_reward(np.array(returns, dtype=float), True, False)
             agent.update_lambdas()
 
-    # Chicken missed (0 < 70), Gate and Banana exactly at R_max: Chicken's mu grows,
+    r_max = np.array(args.r_max, dtype=float)
+    # Chicken missed (0 < R_max), Gate and Banana exactly at R_max: Chicken's mu grows,
     # the met ones hold their value. CB's R_max are the algebraic maxima, so this
     # freeze is all a real CB run can show; it is the integral term's memory.
-    feed([100.0, 30.0, 0.0], 3000)
+    feed(r_max * [1, 1, 0], 3000)
     assert agent.mu[2] > 1 and np.allclose(agent.mu[:2], 1), agent.mu
     assert agent.lambdas[2] > agent.lambdas[0], agent.lambdas
 
     # overshoot (unreachable in CB, unit check of the projection): every mu relaxes
     # to 0 and the weights stay finite on the simplex
-    feed([200.0, 60.0, 140.0], 50_000)
+    feed(2 * r_max, 50_000)
     assert (agent.mu == 0).all(), agent.mu
     assert np.isfinite(agent.lambdas).all() and np.isclose(agent.lambdas.sum(), 1)
 
@@ -91,6 +93,35 @@ def test_linear_schedules_hit_endpoints():
         assert table[0, 0] == 0 and table[-1, 0] == cfg["total_timesteps"]
         assert np.allclose(table[0, 1:], 1 / n, atol=1e-4), f"{env} start not uniform"
         assert np.allclose(table[-1, 1:], want_end, atol=1e-4), f"{env} end wrong"
+
+
+def test_tabular_open_loop_follows_schedule_per_episode(tmp_path=None):
+    import tempfile
+
+    path = Path(tmp_path or tempfile.mkdtemp()) / "cb.csv"
+    path.write_text("step,Gate,Banana,Chicken\n0,0.2,0.3,0.5\n100,0.6,0.3,0.1\n")
+    args = args_for("Dylam", "CHICKENBANANA", open_loop_schedule=str(path))
+    agent = QDyLamOpenLoop(args, Discrete(10), Discrete(4))
+    assert np.allclose(agent.lambdas, [0.2, 0.3, 0.5])
+    for _ in range(50):  # returns that the closed-loop rule would act on are ignored
+        agent.add_episode_reward(np.zeros(3), True, False)
+        agent.update_lambdas()
+    assert np.allclose(agent.lambdas, [0.4, 0.3, 0.3]), agent.lambdas
+
+
+def test_chicken_banana_rewards_are_binary():
+    env = ChickenBanana()
+    rng = np.random.default_rng(0)
+    for _ in range(20):
+        env.reset(seed=int(rng.integers(1 << 30)))
+        gate, done = 0.0, False
+        while not done:
+            _, r, term, trunc, info = env.step(int(rng.integers(4)))
+            assert set(np.unique(r)) <= {0.0, 1.0}, r
+            gate += r[0]
+            done = term or trunc
+        assert info["reward_Objective"] == gate, (info, gate)
+        assert info["Original_reward"] <= 3
 
 
 def test_dylam_weights_unchanged_by_refactor():

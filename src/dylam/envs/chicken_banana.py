@@ -194,7 +194,7 @@ class ChickenBanana(gym.Env):
         self.cumulative_reward_info["reward_Chicken"] += rewards[2]
         if terminated:
             rewards[0] = 1
-            self.cumulative_reward_info["reward_Objective"] += 100
+            self.cumulative_reward_info["reward_Objective"] += rewards[0]
         self.cumulative_reward_info["Original_reward"] += rewards.sum()
         self.step_count += 1
 

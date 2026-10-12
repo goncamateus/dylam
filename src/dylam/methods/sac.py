@@ -11,8 +11,10 @@ from dylam.methods.networks.targets import TargetCritic
 from dylam.utils.buffer import ReplayBuffer, StratLastRewards
 from dylam.utils.experiment import (
     l1_norm,
+    load_schedule,
     minmax_norm,
     minmax_norm_fixed,
+    schedule_at,
     softmax_norm,
 )
 
@@ -305,25 +307,16 @@ class SACStratOpenLoop(SACStrat):
 
     def __init__(self, args, observation_space, action_space, **kwargs):
         super().__init__(args, observation_space, action_space, **kwargs)
-        path = args.open_loop_schedule
-        with open(path) as f:
-            header = f.readline().strip().split(",")
-        expected = ["step"] + list(args.comp_names)
-        if header != expected:
-            raise ValueError(f"{path} columns {header} do not match {expected}")
-        table = np.loadtxt(path, delimiter=",", skiprows=1)
-        self.schedule_steps = table[:, 0]
-        self.schedule = table[:, 1:]
+        self.schedule_steps, self.schedule = load_schedule(
+            args.open_loop_schedule, args.comp_names
+        )
         self.open_loop_step = 0
         self.lambdas = torch.Tensor(self.schedule[0]).to(self.device)
 
     def update_lambdas(self):
         """Look the weights up by wall-clock training step. Returns are ignored."""
         self.open_loop_step += 1
-        lam = np.array([
-            np.interp(self.open_loop_step, self.schedule_steps, self.schedule[:, i])
-            for i in range(self.schedule.shape[1])
-        ])
+        lam = schedule_at(self.open_loop_step, self.schedule_steps, self.schedule)
         self.lambdas = torch.Tensor(lam).to(self.device)
 
 

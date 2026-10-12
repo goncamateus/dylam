@@ -17,6 +17,22 @@ def strtobool(value: str) -> bool:
     return False
 
 
+def load_schedule(path, comp_names):
+    """Open-loop lambda(t) CSV: a `step` column, then one column per component."""
+    with open(path) as f:
+        header = f.readline().strip().split(",")
+    expected = ["step"] + list(comp_names)
+    if header != expected:
+        raise ValueError(f"{path} columns {header} do not match {expected}")
+    table = np.loadtxt(path, delimiter=",", skiprows=1, ndmin=2)
+    return table[:, 0], table[:, 1:]
+
+
+def schedule_at(step, steps, schedule):
+    """Linear interpolation of every component's weight at `step`."""
+    return np.array([np.interp(step, steps, col) for col in schedule.T])
+
+
 def softmax_norm(dQ):
     expdQ = torch.exp(dQ) - 1
     return (expdQ + 1e-4) / (torch.sum(expdQ, 0) + 1e-4)

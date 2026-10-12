@@ -10,6 +10,7 @@ from dylam.methods.q_learning import (
     UDC,
     QDyLam,
     QDyLamLagrangian,
+    QDyLamOpenLoop,
     QDyLamScalar,
     QLearning,
 )
@@ -24,6 +25,8 @@ def get_agent_type(args):
         return QDyLamScalar
     if args.stratified:
         if args.dylam:
+            if getattr(args, "open_loop_schedule", None):
+                return QDyLamOpenLoop
             return QDyLamLagrangian if getattr(args, "dual_lr", None) else QDyLam
         if args.realistic:
             return UDC

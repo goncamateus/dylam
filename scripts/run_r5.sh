@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Launch the R5 adaptive-baseline runs (ticket 10, ADR 0003), locally.
 #
-#   Dylam_Lagrangian  CB, HC, VSS + CB eta sweep (CHICKENBANANA_ETA01/_ETA10)
-#   Dylam_Linear      HC, VSS  (CB omitted: native scalarization = uniform = UDC)
+#   Dylam_Lagrangian  HC, VSS   (CB, with its eta sweep, lives in run_cb.sh)
+#   Dylam_Linear      HC, VSS   (CB omitted: native scalarization = uniform = UDC)
 #
 # 10 seeds each. A finished run drops a .done marker and is skipped on re-run.
 # Seeds: with SEED_BASE unset no --seed is passed (seed 0, as slurm_job.sh ran the
 # DyLam rows); set SEED_BASE=37000 for explicit seeds 37001..37010 instead.
 #
 #   ./run_r5.sh                     # everything, 5 heavy runs at a time
-#   ./run_r5.sh cb                  # one set only: cb | hc | vss
+#   ./run_r5.sh hc                  # one set only: hc | vss
 #   SEEDS=2 TRACK=false ./run_r5.sh hc --dry-run
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -32,15 +32,12 @@ for i in $(seq 1 "$SEEDS"); do
   seed=${SEED_BASE:+$((SEED_BASE + i))}
   seed=${seed:-none}
   case "$which_set" in
-    all|cb)  for env in CHICKENBANANA CHICKENBANANA_ETA01 CHICKENBANANA_ETA10; do
-               jobs+=("train_q_learning.py Dylam_Lagrangian $env $seed $i")
-             done ;;&
     all|hc)  jobs+=("train.py Dylam_Lagrangian HALFCHEETAH $seed $i"
                     "train.py Dylam_Linear HALFCHEETAH $seed $i") ;;&
     all|vss) jobs+=("train.py Dylam_Lagrangian VSS $seed $i"
                     "train.py Dylam_Linear VSS $seed $i") ;;
-    cb|hc) ;;
-    *) echo "unknown set '$which_set' (use: all | cb | hc | vss)" >&2; exit 2 ;;
+    hc) ;;
+    *) echo "unknown set '$which_set' (use: all | hc | vss)" >&2; exit 2 ;;
   esac
 done
 

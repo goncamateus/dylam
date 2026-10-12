@@ -6,8 +6,10 @@ import torch
 from dylam.utils.buffer import StratLastRewards
 from dylam.utils.experiment import (
     l1_norm,
+    load_schedule,
     minmax_norm,
     minmax_norm_fixed,
+    schedule_at,
     softmax_norm,
 )
 
@@ -312,3 +314,24 @@ class QDyLamLagrangian(QDyLam):
             violation = (self.r_max - rew_mean_t) / (self.r_max - self.r_min)
             self.mu = np.maximum(self.mu + self.dual_lr * violation, 0)
             self.lambdas = (self.mu + 1e-4) / (self.mu + 1e-4).sum()
+
+
+class QDyLamOpenLoop(QDyLam):
+    """Tabular counterpart of SACStratOpenLoop: replays a lambda(t) CSV, no feedback.
+
+    The schedule's `step` is the episode index, which is what DyLam's tabular runs
+    log as `_step`, so a schedule extracted from them replays on the same clock.
+    """
+
+    def __init__(self, args, observation_space, action_space):
+        super().__init__(args, observation_space, action_space)
+        self.schedule_steps, self.schedule = load_schedule(
+            args.open_loop_schedule, args.comp_names
+        )
+        self.open_loop_step = 0
+        self.lambdas = self.schedule[0].copy()
+
+    def update_lambdas(self):
+        """Called once per episode. Returns are ignored."""
+        self.open_loop_step += 1
+        self.lambdas = schedule_at(self.open_loop_step, self.schedule_steps, self.schedule)
