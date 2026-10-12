@@ -238,16 +238,21 @@ class QDyLam(UDC):
             self.last_episode_rewards.add(self.episode_reward)
             self.episode_reward = np.zeros(self.num_rewards)
 
+    def smoothed_returns(self):
+        """EMA of the windowed mean episodic return; None until the window fills."""
+        if not self.last_episode_rewards.can_do():
+            return None
+        rew_mean_t = self.last_episode_rewards.mean()
+        if self.last_reward_mean is not None:
+            rew_mean_t = rew_mean_t + (self.last_reward_mean - rew_mean_t) * self.rew_tau
+        self.last_reward_mean = rew_mean_t
+        return rew_mean_t
+
     def update_lambdas(self):
-        if self.last_episode_rewards.can_do():
-            rew_mean_t = self.last_episode_rewards.mean()
-            if self.last_reward_mean is not None:
-                rew_mean_t = (
-                    rew_mean_t + (self.last_reward_mean - rew_mean_t) * self.rew_tau
-                )
+        rew_mean_t = self.smoothed_returns()
+        if rew_mean_t is not None:
             zeta = np.clip((self.r_max - rew_mean_t) / (self.r_max - self.r_min), 0, 1)
             self.lambdas = self.normalizer(torch.Tensor(zeta)).cpu().numpy()
-            self.last_reward_mean = rew_mean_t
 
 
 class QDyLamScalar(QDyLam):
@@ -286,3 +291,24 @@ class QDyLamScalar(QDyLam):
 
     def load(self, path):
         QLearning.load(self, path)
+
+
+class QDyLamLagrangian(QDyLam):
+    """Tabular counterpart of SACStratLagrangian (R5, ADR 0003).
+
+    Same smoothed returns and bounds as DyLam; weights are mu / sum(mu) with
+    mu_i <- [mu_i + eta * v_i]_+ on the normalized signed violation. Chicken-Banana
+    is where the bounds are attainable, so this is where mu actually relaxes.
+    """
+
+    def __init__(self, args, observation_space, action_space):
+        super().__init__(args, observation_space, action_space)
+        self.dual_lr = args.dual_lr
+        self.mu = np.ones(self.num_rewards)
+
+    def update_lambdas(self):
+        rew_mean_t = self.smoothed_returns()
+        if rew_mean_t is not None:
+            violation = (self.r_max - rew_mean_t) / (self.r_max - self.r_min)
+            self.mu = np.maximum(self.mu + self.dual_lr * violation, 0)
+            self.lambdas = (self.mu + 1e-4) / (self.mu + 1e-4).sum()

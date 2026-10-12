@@ -6,7 +6,13 @@ import time
 import gymnasium as gym
 import numpy as np
 
-from dylam.methods.sac import SAC, SACDyLamScalar, SACStrat, SACStratOpenLoop
+from dylam.methods.sac import (
+    SAC,
+    SACDyLamScalar,
+    SACStrat,
+    SACStratLagrangian,
+    SACStratOpenLoop,
+)
 from dylam.utils.experiment import get_experiment, make_env, parse_args, setup_run
 from dylam.utils.logger import SACLogger
 
@@ -22,6 +28,8 @@ def train(args, exp_name, logger: SACLogger):
             agent_cls = SACDyLamScalar
         elif getattr(args, "open_loop_schedule", None):
             agent_cls = SACStratOpenLoop
+        elif getattr(args, "dual_lr", None):
+            agent_cls = SACStratLagrangian
         else:
             agent_cls = SACStrat
         agent = agent_cls(
@@ -77,6 +85,8 @@ def train(args, exp_name, logger: SACLogger):
                 logger.log_losses(loss_dict)
                 if args.dylam:
                     logger.log_lambdas(agent.lambdas)
+                    if hasattr(agent, "mu"):
+                        logger.log_lambdas(agent.mu, "dual")
 
         logger.push(global_step)
         if global_step % 9999 == 0:

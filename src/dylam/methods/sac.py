@@ -261,18 +261,23 @@ class SACStrat(SAC):
 
         return policy_loss, alpha_loss
 
+    def smoothed_returns(self):
+        """EMA of the windowed mean episodic return; None until the window fills."""
+        if not self.last_episode_rewards.can_do():
+            return None
+        rew_mean_t = torch.Tensor(self.last_episode_rewards.mean()).to(self.device)
+        if self.last_reward_mean is not None:
+            rew_mean_t = rew_mean_t + (self.last_reward_mean - rew_mean_t) * self.rew_tau
+        self.last_reward_mean = rew_mean_t
+        return rew_mean_t
+
     def update_lambdas(self):
-        if self.last_episode_rewards.can_do():
-            rew_mean_t = torch.Tensor(self.last_episode_rewards.mean()).to(self.device)
-            if self.last_reward_mean is not None:
-                rew_mean_t = (
-                    rew_mean_t + (self.last_reward_mean - rew_mean_t) * self.rew_tau
-                )
+        rew_mean_t = self.smoothed_returns()
+        if rew_mean_t is not None:
             dQ = torch.clamp(
                 (self.r_max - rew_mean_t) / (self.r_max - self.r_min), 0, 1
             )
             self.lambdas = self.normalizer(dQ)
-            self.last_reward_mean = rew_mean_t
 
     def add_episode_rewards(self, rewards, terminations, truncations):
         if self.num_rewards == 1:
@@ -295,6 +300,7 @@ class SACStratOpenLoop(SACStrat):
 
     The schedule CSV has a `step` column followed by one column per component, in the
     order of `comp_names` (see result_analysis/extract_lambda_schedule.py).
+    Dylam_Linear reuses it with 2-row CSVs: uniform -> the env's native scalarization.
     """
 
     def __init__(self, args, observation_space, action_space, **kwargs):
@@ -350,3 +356,27 @@ class SACDyLamScalar(SACStrat):
         )
 
     update_actor = SAC.update_actor
+
+
+class SACStratLagrangian(SACStrat):
+    """Primal-dual baseline (R5, ADR 0003): integral control on the same signal.
+
+    Same smoothed returns, bounds and decomposed SAC as DyLam; only the weight rule
+    changes. Each component is a constraint G_i >= R_max^i with multiplier
+    mu_i <- [mu_i + eta * v_i]_+ on the normalized signed violation
+    v_i = (R_max^i - G_i) / (R_max^i - R_min^i), and the actor uses mu / sum(mu).
+    mu is deliberately not clipped: clipping is anti-windup, i.e. not integral.
+    """
+
+    def __init__(self, args, observation_space, action_space, **kwargs):
+        super().__init__(args, observation_space, action_space, **kwargs)
+        self.dual_lr = args.dual_lr
+        self.mu = torch.ones(self.num_rewards).to(self.device)  # uniform, like DyLam
+
+    def update_lambdas(self):
+        rew_mean_t = self.smoothed_returns()
+        if rew_mean_t is not None:
+            violation = (self.r_max - rew_mean_t) / (self.r_max - self.r_min)
+            self.mu = torch.clamp(self.mu + self.dual_lr * violation, min=0)
+            # same 1e-4 floor as softmax_norm, so all-satisfied (mu = 0) stays uniform
+            self.lambdas = (self.mu + 1e-4) / (self.mu + 1e-4).sum()

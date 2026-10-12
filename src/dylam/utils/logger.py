@@ -50,9 +50,9 @@ class WandbResultLogger:
             "This method should be implemented by the child class"
         )
 
-    def log_lambdas(self, lambdas):
+    def log_lambdas(self, lambdas, prefix="lambdas"):
         for i in range(len(lambdas)):
-            self.log.update({f"lambdas/{self.comp_names[i]}": lambdas[i].item()})
+            self.log.update({f"{prefix}/{self.comp_names[i]}": lambdas[i].item()})
 
     def log_artifact(self): ...
 

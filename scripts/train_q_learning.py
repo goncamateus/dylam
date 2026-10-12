@@ -5,7 +5,14 @@ import time
 
 import numpy as np
 
-from dylam.methods.q_learning import DQ, UDC, QDyLam, QDyLamScalar, QLearning
+from dylam.methods.q_learning import (
+    DQ,
+    UDC,
+    QDyLam,
+    QDyLamLagrangian,
+    QDyLamScalar,
+    QLearning,
+)
 from dylam.utils.experiment import get_experiment, parse_args, q_make_env, setup_run
 from dylam.utils.logger import QLogger
 
@@ -17,7 +24,7 @@ def get_agent_type(args):
         return QDyLamScalar
     if args.stratified:
         if args.dylam:
-            return QDyLam
+            return QDyLamLagrangian if getattr(args, "dual_lr", None) else QDyLam
         if args.realistic:
             return UDC
         return DQ
@@ -77,6 +84,8 @@ def train(args, exp_name, logger: QLogger):
         if args.dylam:
             agent.update_lambdas()
             logger.log_lambdas(agent.lambdas)
+            if hasattr(agent, "mu"):
+                logger.log_lambdas(agent.mu, "dual")
 
         logger.push(episode)
         if episode % 10 == 0:
