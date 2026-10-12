@@ -210,7 +210,7 @@ Dylam:
     stratified: True
     num_rewards: 3
     dylam: True
-    r_max: [100, 30, 70]
+    r_max: [1, 1, 1]
     r_min: [0, 0, 0]
     comp_names: ["Gate", "Banana", "Chicken"]
 
@@ -552,7 +552,7 @@ Dylam_Scalar:
     scalar_critic: True
     num_rewards: 3
     dylam: True
-    r_max: [100, 30, 70]
+    r_max: [1, 1, 1]
     r_min: [0, 0, 0]
     comp_names: ["Gate", "Banana", "Chicken"]
 
@@ -639,3 +639,128 @@ Dylam_Openloop:
     dylam_rb: 500
     dylam_tau: 0.9999
     comp_names: ["Run", "Control"]
+
+# R5 (ticket 10): primal-dual baseline, same bounds and smoothed returns as Dylam.
+Dylam_Lagrangian:
+  CHICKENBANANA:
+    gym_id: mo-ChickenBanana-v0
+    total_episodes: 2001
+    gamma: 0.9999
+    q_lr: 0.1
+    epsilon: 1
+    epsilon_decay_factor: 0.9988
+    stratified: True
+    num_rewards: 3
+    dylam: True
+    dual_lr: 0.005  # = 1 - dylam_tau (default 0.995)
+    r_max: [1, 1, 1]
+    r_min: [0, 0, 0]
+    comp_names: ["Gate", "Banana", "Chicken"]
+
+  CHICKENBANANA_ETA01:
+    gym_id: mo-ChickenBanana-v0
+    total_episodes: 2001
+    gamma: 0.9999
+    q_lr: 0.1
+    epsilon: 1
+    epsilon_decay_factor: 0.9988
+    stratified: True
+    num_rewards: 3
+    dylam: True
+    dual_lr: 0.0005  # 0.1x sweep (D5)
+    r_max: [1, 1, 1]
+    r_min: [0, 0, 0]
+    comp_names: ["Gate", "Banana", "Chicken"]
+
+  CHICKENBANANA_ETA10:
+    gym_id: mo-ChickenBanana-v0
+    total_episodes: 2001
+    gamma: 0.9999
+    q_lr: 0.1
+    epsilon: 1
+    epsilon_decay_factor: 0.9988
+    stratified: True
+    num_rewards: 3
+    dylam: True
+    dual_lr: 0.05  # 10x sweep (D5)
+    r_max: [1, 1, 1]
+    r_min: [0, 0, 0]
+    comp_names: ["Gate", "Banana", "Chicken"]
+
+  HALFCHEETAH:
+    gym_id: mo-HalfCheetah-v4
+    num_envs: 16
+    total_timesteps: 500000
+    stratified: True
+    dylam: True
+    dual_lr: 0.0001  # = 1 - dylam_tau (ticket 10, D5)
+    num_rewards: 2
+    r_max: [800, -200]
+    r_min: [0, -800]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    comp_names: ["Run", "Control"]
+
+  VSS:
+    gym_id: mo-VSS-v0
+    num_envs: 20
+    total_timesteps: 500000
+    learning_starts: 5000
+    tau: 0.999
+    policy_frequency: 1
+    policy_lr: 0.0001
+    q_lr: 0.0001
+    batch_size: 256
+    n_hidden: 4
+    gamma: 0.95
+    update_frequency: 1
+    stratified: True
+    dylam: True
+    dual_lr: 0.0001  # = 1 - dylam_tau (ticket 10, D5)
+    normalizer: "l1"
+    num_rewards: 3
+    r_max: [150, 40, -100]
+    r_min: [0, 0, -300]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    comp_names: ["Move", "Ball", "Energy"]
+
+# R5 (ticket 10): hand-designed linear schedule. CB omitted: native = uniform = UDC.
+Dylam_Linear:
+  HALFCHEETAH:
+    gym_id: mo-HalfCheetah-v4
+    num_envs: 16
+    total_timesteps: 500000
+    stratified: True
+    dylam: True
+    open_loop_schedule: "schedules/halfcheetah_linear.csv"  # uniform -> native scalarization (D6)
+    num_rewards: 2
+    r_max: [800, -200]
+    r_min: [0, -800]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    comp_names: ["Run", "Control"]
+
+  VSS:
+    gym_id: mo-VSS-v0
+    num_envs: 20
+    total_timesteps: 500000
+    learning_starts: 5000
+    tau: 0.999
+    policy_frequency: 1
+    policy_lr: 0.0001
+    q_lr: 0.0001
+    batch_size: 256
+    n_hidden: 4
+    gamma: 0.95
+    update_frequency: 1
+    stratified: True
+    dylam: True
+    open_loop_schedule: "schedules/vss_linear.csv"  # uniform -> native scalarization (D6)
+    normalizer: "l1"
+    num_rewards: 3
+    r_max: [150, 40, -100]
+    r_min: [0, 0, -300]
+    dylam_rb: 500
+    dylam_tau: 0.9999
+    comp_names: ["Move", "Ball", "Energy"]

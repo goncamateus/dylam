@@ -174,10 +174,10 @@ class ChickenBanana(gym.Env):
             # Valid move
             cell_content = self.grid_layout[y][x]
             rewards[1] = (
-                30 if cell_content == "B" and not self.has_banana else 0
+                1 if cell_content == "B" and not self.has_banana else 0
             )  # Gasta 4 passos a mais
             rewards[2] = (
-                70 if cell_content == "C" and not self.has_chicken else 0
+                1 if cell_content == "C" and not self.has_chicken else 0
             )  # Gasta 18 passos a mais
             # Check for item collection
             if (x, y) == self.banana_pos and not self.has_banana:
@@ -193,7 +193,7 @@ class ChickenBanana(gym.Env):
         self.cumulative_reward_info["reward_Banana"] += rewards[1]
         self.cumulative_reward_info["reward_Chicken"] += rewards[2]
         if terminated:
-            rewards[0] = 100
+            rewards[0] = 1
             self.cumulative_reward_info["reward_Objective"] += 100
         self.cumulative_reward_info["Original_reward"] += rewards.sum()
         self.step_count += 1
