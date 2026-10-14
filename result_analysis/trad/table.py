@@ -11,10 +11,10 @@ Holm-Bonferroni corrected within the three-comparison RQ1 family
 re-scoring is reported with its own (uncorrected) test, since it re-scores
 runs already in the family rather than adding a fourth independent
 comparison.
-\\mbox{DyLam-Scalar} is the scalar-critic ablation of Section 6.1.1: a row
-of the summary and IQM tables, excluded from the RQ1 family (it is not a
-rival method) and from the efficiency table (it never learns the task, so
-sample-efficiency is not a meaningful comparison for it).
+\\mbox{DyLam-Scalar} and \\mbox{DyLam-OpenLoop} are mechanism ablations: rows
+of the summary and IQM tables, tested against DyLam in their own Holm family
+(mechanism_tests), and excluded from the RQ1 family and the efficiency table
+because they are not rival methods (OpenLoop replays DyLam's own schedule).
 
 Emits three tabular-environment-only fragments (no \\begin{table}, caption,
 or label -- those stay authored prose in the manuscript). --format html

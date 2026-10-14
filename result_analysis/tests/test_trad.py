@@ -64,6 +64,10 @@ SUMMARY_FIXTURE = [
     _p("Chicken--Banana", "DyLam-OpenLoop", dict(mean=2.198, std=0.423, n=10)),
     _p("VSS-v0", "DyLam-Scalar", dict(mean=0.669, std=0.032, n=10)),
     _p("VSS-v0", "DyLam-OpenLoop", dict(mean=0.759, std=0.134, n=10)),
+    _p("HalfCheetah-v4", "DyLam-Scalar", dict(mean=481.483, std=11.764, n=10)),
+    _p("HalfCheetah-v4", "DyLam-OpenLoop", dict(mean=466.689, std=54.181, n=10)),
+    _p("HalfCheetah-v4 (env return)", "DyLam-Scalar", dict(mean=9426.3, std=239.1, n=10)),
+    _p("HalfCheetah-v4 (env return)", "DyLam-OpenLoop", dict(mean=9141.9, std=1069.0, n=10)),
 ]
 
 IQM_FIXTURE = [
@@ -85,6 +89,10 @@ IQM_FIXTURE = [
     _p("Chicken--Banana", "DyLam-OpenLoop", (2.00, 2.00, 2.50)),
     _p("VSS-v0", "DyLam-Scalar", (0.671, 0.651, 0.689)),
     _p("VSS-v0", "DyLam-OpenLoop", (0.791, 0.663, 0.847)),
+    _p("HalfCheetah-v4", "DyLam-Scalar", (481.9, 473.1, 490.3)),
+    _p("HalfCheetah-v4", "DyLam-OpenLoop", (481.0, 435.9, 500.3)),
+    _p("HalfCheetah-v4 (env return)", "DyLam-Scalar", (9433.5, 9256.3, 9605.8)),
+    _p("HalfCheetah-v4 (env return)", "DyLam-OpenLoop", (9423.5, 8537.2, 9806.0)),
 ]
 
 # (column, method, reached, total, median value or None, unit, auc_mean, auc_std)
