@@ -45,6 +45,13 @@ CELLS = [
     Cell("VSS-v0", "Tuned-UDC", "VSS_TUNED", "Udc", "ep_info/Goal"),
     Cell("VSS-v0", "DyLam-Scalar", "VSS", "Dylam_Scalar", "ep_info/Goal"),
     Cell("VSS-v0", "DyLam-OpenLoop", "VSS", "Dylam_Openloop", "ep_info/Goal"),
+
+    # Primal-dual baseline (ADR 0003): its own Holm family, not an RQ1 rival.
+    *(Cell(col, "DyLam-Lagrangian", env, "Dylam_Lagrangian", metric) for col, env, metric in (
+        ("Chicken--Banana", "CHICKENBANANA", "ep_info/total"),
+        ("HalfCheetah-v4", "HALFCHEETAH", "ep_info/Final_position"),
+        ("HalfCheetah-v4 (env return)", "HALFCHEETAH", "ep_info/total"),
+        ("VSS-v0", "VSS", "ep_info/Goal"))),
 ]
 
 # Chicken--Banana per-component curves (fig:res/chicken_banana/components):

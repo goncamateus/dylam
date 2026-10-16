@@ -54,6 +54,8 @@ IQM_DECIMALS = {"Chicken--Banana": 2, "HalfCheetah-v4": 1,
 THRESHOLD_DECIMALS = {"Chicken--Banana": 2, "HalfCheetah-v4": 1, "VSS-v0": 3}
 METRIC = {c.column: c.metric for c in CELLS}
 ABLATIONS = ["DyLam-Scalar", "DyLam-OpenLoop"]
+# Primal-dual baseline (ADR 0003): own block in the tables, own Holm family.
+ADAPTIVE = "DyLam-Lagrangian"
 # Chicken--Banana seeds count as solved when most final-10% episodes collect
 # all three objects (0/1 rewards, max 3); the outcome is bimodal (2 or 3).
 CB_SOLVED = 2.5
@@ -77,7 +79,7 @@ def compute():
     dfs = {col: _load(col) for col in COLUMNS}
     frames, summary = {}, {}
     for col in COLUMNS:
-        for method in ROW_ORDER + ABLATIONS:
+        for method in ROW_ORDER + ABLATIONS + [ADAPTIVE]:
             fs = _frames(dfs[col], method)
             if fs:
                 frames[(method, col)] = fs
@@ -116,10 +118,23 @@ def mechanism_tests(summary):
     return fam, stats.holm([e[3] for e in fam])
 
 
+def adaptive_tests(summary):
+    """DyLam vs. DyLam-Lagrangian per column; Holm within the three primary
+    columns, the HalfCheetah env return tested uncorrected as in RQ1."""
+    tests = {col: stats.exact_mw(summary[("DyLam", col)], summary[(ADAPTIVE, col)])
+             for col in COLUMNS if ("DyLam", col) in summary and (ADAPTIVE, col) in summary}
+    prim = [c for c in tests if "env return" not in c]
+    adj = dict(zip(prim, stats.holm([tests[c][1] for c in prim])))
+    return {col: (*t, adj.get(col, t[1])) for col, t in tests.items()}
+
+
 def report(summary, fam, adj, mech, mech_adj):
     """Prose-quoted numbers: RQ1 tests, mechanism family, CB solved counts."""
     for col, best, n1, n2, u, p, r in fam:
         print(f"RQ1 {col}: DyLam vs {best} U={u} p={p:.3g} p_holm={adj[col]:.3g} r={r:+.2f}",
+              file=sys.stderr)
+    for col, (u, p, r, ph) in adaptive_tests(summary).items():
+        print(f"ADAPTIVE {col}: DyLam vs {ADAPTIVE} U={u} p={p:.3g} p_holm={ph:.3g} r={r:+.2f}",
               file=sys.stderr)
     for (col, abl, u, p, r), ph in zip(mech, mech_adj):
         print(f"MECH {col}: DyLam vs {abl} U={u} p={p:.3g} p_holm={ph:.3g} r={r:+.2f}",
@@ -131,7 +146,7 @@ def report(summary, fam, adj, mech, mech_adj):
         ci = binomtest(k, n).proportion_ci(method="exact")
         print(f"CB success {method}: {k}/{n} = {100 * k / n:.0f}% "
               f"[{100 * ci.low:.0f}, {100 * ci.high:.0f}]", file=sys.stderr)
-    for method in ROW_ORDER + ABLATIONS:
+    for method in ROW_ORDER + ABLATIONS + [ADAPTIVE]:
         vals = summary.get((method, "Chicken--Banana"))
         if vals:
             lo, hi = stats.boot_ci(vals)
@@ -157,6 +172,8 @@ def _row(method, cell):
 def render_summary(summary, fam, secondary, adj):
     star_col = {col: p < ALPHA for col, *_, p, _ in secondary}
     star_col.update({col: adj[col] < ALPHA for col, *_ in fam})
+    dagger = {col: t[3] < ALPHA and t[2] > 0 for col, t in adaptive_tests(summary).items()
+              if "env return" not in col}
 
     def cell(method, col):
         vals = summary.get((method, col))
@@ -164,6 +181,7 @@ def render_summary(summary, fam, secondary, adj):
             return "---"
         d = DECIMALS[col]
         star = r"^\ast" if method == "DyLam" and star_col.get(col) else ""
+        star += r"^\dagger" if method == ADAPTIVE and dagger.get(col) else ""
         return (f"${np.mean(vals):.{d}f} \\pm {np.std(vals, ddof=1):.{d}f}{star}$ "
                 f"\\, ($n{{=}}{len(vals)}$)")
 
@@ -172,7 +190,8 @@ def render_summary(summary, fam, secondary, adj):
     for method in ROW_ORDER:
         lines.append(_row(method, cell))
         if method == "DyLam":
-            lines.append(r"\midrule")
+            lines += [r"\midrule", r"\multicolumn{5}{l}{\emph{Adaptive baseline}} \\",
+                      _row(ADAPTIVE, cell), r"\midrule"]
             lines.append(r"\multicolumn{5}{l}{\emph{Ablation}} \\")
     lines += [_row(m, cell) for m in ABLATIONS]
     lines += [r"\bottomrule", r"\end{tabular}"]
@@ -193,7 +212,7 @@ def render_summary_html(summary, fam, secondary, adj):
 
     headers = ["Method"] + COLUMNS
     body = [[method] + [cell(method, col) for col in COLUMNS] for method in ROW_ORDER]
-    body += [[m] + [cell(m, col) for col in COLUMNS] for m in ABLATIONS]
+    body += [[m] + [cell(m, col) for col in COLUMNS] for m in [ADAPTIVE] + ABLATIONS]
     return html_table(headers, body)
 
 
@@ -210,7 +229,7 @@ def render_iqm(summary):
     for method in ROW_ORDER:
         lines.append(_row(method, cell))
         if method == "DyLam":
-            lines.append(r"\midrule")
+            lines += [r"\midrule", _row(ADAPTIVE, cell), r"\midrule"]
     lines += [_row(m, cell) for m in ABLATIONS]
     lines += [r"\bottomrule", r"\end{tabular}"]
     return "\n".join(lines) + "\n"
@@ -227,7 +246,7 @@ def render_iqm_html(summary):
 
     headers = ["Method"] + COLUMNS
     body = [[method] + [cell(method, col) for col in COLUMNS] for method in ROW_ORDER]
-    body += [[m] + [cell(m, col) for col in COLUMNS] for m in ABLATIONS]
+    body += [[m] + [cell(m, col) for col in COLUMNS] for m in [ADAPTIVE] + ABLATIONS]
     return html_table(headers, body)
 
 
