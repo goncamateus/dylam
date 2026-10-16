@@ -13,13 +13,14 @@ Cell = namedtuple("Cell", "column method wandb_env wandb_setup metric")
 
 # Method -> wandb setup, per environment. The source of truth for both the
 # main table cells and the Chicken--Banana per-component figure cells below,
-# so the four methods and their setups are declared exactly once.
+# so the four methods and their setups are declared exactly once. UDC is
+# "Udc" everywhere: the legacy wandb setup name "Drq" was renamed to "Udc"
+# (original kept in config.legacy_setup).
 CHICKENBANANA_METHODS = {
-    # "Udc", not the legacy wandb "Drq": CB was rerun on 0/1 rewards (ticket 10)
     "Base SO RL": "Baseline", "Q-Decomposition": "Decq", "UDC": "Udc", "DyLam": "Dylam",
 }
-HALFCHEETAH_METHODS = {"Base SO RL": "Baseline", "UDC": "Drq", "DyLam": "Dylam"}
-VSS_METHODS = {"Base SO RL": "Baseline", "UDC": "Drq", "DyLam": "Dylam"}
+HALFCHEETAH_METHODS = {"Base SO RL": "Baseline", "UDC": "Udc", "DyLam": "Dylam"}
+VSS_METHODS = {"Base SO RL": "Baseline", "UDC": "Udc", "DyLam": "Dylam"}
 
 CELLS = [
     *(Cell("Chicken--Banana", m, "CHICKENBANANA", s, "ep_info/total")
@@ -35,9 +36,15 @@ CELLS = [
     # Same runs, re-scored on the environment's own scalar reward.
     *(Cell("HalfCheetah-v4 (env return)", m, "HALFCHEETAH", s, "ep_info/total")
       for m, s in HALFCHEETAH_METHODS.items()),
+    *(Cell(col, abl, "HALFCHEETAH", s, metric)
+      for col, metric in (("HalfCheetah-v4", "ep_info/Final_position"),
+                          ("HalfCheetah-v4 (env return)", "ep_info/total"))
+      for abl, s in (("DyLam-Scalar", "Dylam_Scalar"), ("DyLam-OpenLoop", "Dylam_Openloop"))),
 
     *(Cell("VSS-v0", m, "VSS", s, "ep_info/Goal") for m, s in VSS_METHODS.items()),
-    Cell("VSS-v0", "Tuned-UDC", "VSS_TUNED", "Drq", "ep_info/Goal"),
+    Cell("VSS-v0", "Tuned-UDC", "VSS_TUNED", "Udc", "ep_info/Goal"),
+    Cell("VSS-v0", "DyLam-Scalar", "VSS", "Dylam_Scalar", "ep_info/Goal"),
+    Cell("VSS-v0", "DyLam-OpenLoop", "VSS", "Dylam_Openloop", "ep_info/Goal"),
 ]
 
 # Chicken--Banana per-component curves (fig:res/chicken_banana/components):

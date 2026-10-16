@@ -22,6 +22,10 @@ from methods import CELLS, COMPONENT_CELLS
 from core import fetch
 
 DATA = Path(__file__).parent / "data"
+# CB is rerun on explicit seeds: 1..10 for every table and test (as in the other
+# environments), 1..100 only for the success-rate estimate.
+CB_SEEDS = range(1, 11)
+CB_SUCCESS_SEEDS = range(1, 101)
 
 
 def slug(column):
@@ -41,7 +45,8 @@ def main():
     for column, cells in by_column.items():
         frames = []
         for cell in cells:
-            hs = fetch.histories(cell.wandb_env, cell.wandb_setup, cell.metric, refresh=args.refresh)
+            hs = fetch.histories(cell.wandb_env, cell.wandb_setup, cell.metric, refresh=args.refresh,
+                                 seeds=CB_SEEDS if cell.wandb_env == "CHICKENBANANA" else None)
             print(f"  {column:30s} {cell.method:16s} n={len(hs)}", file=sys.stderr)
             if not hs:
                 sys.exit(f"no finished runs for {cell.wandb_env}/{cell.wandb_setup}")
@@ -49,6 +54,18 @@ def main():
         out = DATA / f"{slug(column)}.csv"
         pd.concat(frames, ignore_index=True).to_csv(out, index=False)
         print(f"wrote {out}")
+
+    # Success-rate estimate only (descriptive, no test): every CB arm on seeds 1..100.
+    frames = []
+    for cell in CELLS:
+        if cell.column == "Chicken--Banana":
+            hs = fetch.histories(cell.wandb_env, cell.wandb_setup, cell.metric,
+                                 refresh=args.refresh, seeds=CB_SUCCESS_SEEDS)
+            print(f"  CB success {cell.method:16s} n={len(hs)}", file=sys.stderr)
+            frames.append(fetch.tidy(hs, cell.metric, cell.method, column="method"))
+    out = DATA / "chicken_banana_success.csv"
+    pd.concat(frames, ignore_index=True).to_csv(out, index=False)
+    print(f"wrote {out}")
 
 
 if __name__ == "__main__":

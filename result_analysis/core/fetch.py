@@ -30,7 +30,7 @@ def api():
 
 
 def histories(env, setup, metric, max_seeds=10, samples=5000, refresh=False,
-              entity_project=ENTITY_PROJECT, with_wall_time=False):
+              entity_project=ENTITY_PROJECT, with_wall_time=False, seeds=None):
     """Per-seed (step, metric) frames for one (env, setup) pair, newest first.
 
     `metric` is one wandb history key, or a list of keys to fetch jointly so
@@ -43,7 +43,11 @@ def histories(env, setup, metric, max_seeds=10, samples=5000, refresh=False,
     methods (GPI-LS, PGMORL) live in a different one. With
     `with_wall_time`, each frame also carries a constant `_wall_time_min`
     column (the run's total wall-clock time), for morl's timing comparison.
+    With `seeds`, only the newest finished run of each listed `config.seed`
+    is kept, and the cap becomes len(seeds).
     """
+    if seeds is not None:
+        seeds, max_seeds = set(seeds), len(seeds)
     metrics = [metric] if isinstance(metric, str) else list(metric)
     runs = api().runs(
         entity_project,
@@ -57,6 +61,11 @@ def histories(env, setup, metric, max_seeds=10, samples=5000, refresh=False,
     for run in runs:
         if len(out) >= max_seeds:
             break
+        seed = run.config.get("seed", run.id)
+        if seeds is not None:
+            if seed not in seeds:
+                continue
+            seeds.discard(seed)
         f = CACHE / f"{run.id}_{cache_key}.csv"
         if f.exists() and not refresh:
             df = pd.read_csv(f)
@@ -69,7 +78,7 @@ def histories(env, setup, metric, max_seeds=10, samples=5000, refresh=False,
             df.to_csv(f, index=False)
         if all(m in df for m in metrics) and len(df):
             df = df.copy()
-            df["seed"] = run.config.get("seed", run.id)
+            df["seed"] = seed
             out.append(df)
     return out
 

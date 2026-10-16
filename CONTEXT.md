@@ -21,8 +21,8 @@ _Avoid_: method, algorithm, variant
 **Method**:
 The paper-facing row label for a trad/ablation comparison (e.g. `Base SO RL`,
 `UDC`, `Tuned-UDC`, `DyLam`, `DyLam-Scalar`). Distinct from Setup: one Setup
-can be more than one Method depending on other config -- `Tuned-UDC` and
-`UDC` are both the `Drq` setup, distinguished only by which wandb env their
+can be more than one Method depending on other config -- `Tuned-UDC` is
+`UDC` setup, distinguished only by which wandb env their
 runs were launched under.
 _Avoid_: setup (see Setup), baseline, row label
 

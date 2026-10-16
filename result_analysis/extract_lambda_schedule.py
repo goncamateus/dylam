@@ -22,6 +22,7 @@ def main():
     ap.add_argument("--env", default="VSS")
     ap.add_argument("--setup", default="Dylam")
     ap.add_argument("--components", nargs="+", default=["Move", "Ball", "Energy"])
+    ap.add_argument("--max-seeds", type=int, default=10, help="newest finished runs averaged")
     ap.add_argument("--out", default=str(Path(__file__).parent.parent / "scripts/schedules/vss_dylam_lambda.csv"))
     args = ap.parse_args()
 
@@ -31,7 +32,7 @@ def main():
                                  "state": "finished"}, order="-created_at")
 
     per_seed, horizon = [], []
-    for run in list(runs)[:10]:
+    for run in list(runs)[:args.max_seeds]:
         df = run.history(samples=5000, keys=keys, pandas=True).dropna()
         if not len(df):
             continue
