@@ -5,6 +5,7 @@ migrated scopes actually use -- notebooks and scripts not yet migrated still
 carry their own (already-drifted) copies of tick formatting, fonts, etc.
 until they are.
 """
+import numpy as np
 import pandas as pd
 
 # Beyond PDF (issue #41): every static figure Generator can additionally
@@ -71,7 +72,7 @@ CONDITION_COLORS = {
 }
 
 
-def rolling_smooth(value, window=None):
+def rolling_smooth(value, window=None, full_window=False):
     """Per-seed rolling mean, applied before cross-seed aggregation.
 
     Aggregating raw per-step values is noisy enough at the episodic sampling
@@ -81,4 +82,17 @@ def rolling_smooth(value, window=None):
     """
     if window is None:
         window = max(5, len(value) // 40)
-    return pd.Series(value).rolling(window, min_periods=1).mean().to_numpy(dtype=float)
+    min_periods = window if full_window else 1
+    return pd.Series(value).rolling(window, min_periods=min_periods).mean().to_numpy(dtype=float)
+
+
+def full_window_series(series):
+    """Smooth each (step, value) seed with full windows only, dropping the
+    leading partial-window points whose few-episode means spike at step 0.
+    Returns the smoothed series and the first step every seed covers."""
+    out = []
+    for step, value in series:
+        sm = rolling_smooth(value, full_window=True)
+        keep = ~np.isnan(sm)
+        out.append((step[keep], sm[keep]))
+    return out, max(step[0] for step, _ in out)

@@ -85,18 +85,22 @@ def _grid_for(series_by_method):
 def draw_main(out_root, fmt="pdf"):
     for panel in MAIN_PANELS:
         df = pd.read_csv(DATA / panel["file"])
-        series_by_method = {method: _per_seed_series(df, "method", method, panel["metric"])
-                            for method in panel["methods"]}
-        grid = _grid_for(series_by_method)
+        smoothed = {method: style.full_window_series(
+                        _per_seed_series(df, "method", method, panel["metric"]))
+                    for method in panel["methods"]}
+        lo_step = max(first for _, first in smoothed.values())
+        series_by_method = {method: series for method, (series, _) in smoothed.items()}
+        grid = np.linspace(lo_step, _grid_for(series_by_method)[-1], GRID)
 
         fig, ax = plt.subplots(figsize=(5.0, 3.0))
         for method in panel["methods"]:
-            mat = np.array([np.interp(grid, step, style.rolling_smooth(value))
+            mat = np.array([np.interp(grid, step, value)
                             for step, value in series_by_method[method]])
             centre, lo, hi = stats.bootstrap_curve(mat)
             color = style.METHOD_COLORS[method]
             ax.plot(grid, centre, color=color, linewidth=1.6)
             ax.fill_between(grid, lo, hi, color=color, alpha=0.20, linewidth=0)
+        ax.set_xlim(left=0)  # curves start once every seed's first window fills
         ax.set_xlabel(panel["xlabel"])
         ax.set_ylabel(panel["ylabel"])
         ax.grid(alpha=0.25, linewidth=0.5)

@@ -59,21 +59,24 @@ def main():
     args = ap.parse_args()
 
     df = pd.read_csv(DATA)
-    series = {key: per_seed_series(df, key) for key in DRAW_ORDER}
+    smoothed = {key: style.full_window_series(per_seed_series(df, key)) for key in DRAW_ORDER}
+    series = {key: one for key, (one, _) in smoothed.items()}
+    grid_lo = max(first for _, first in smoothed.values())
     grid_hi = min(steps.max() for one in series.values() for steps, _ in one)
-    grid = np.linspace(0, grid_hi, GRID)
+    grid = np.linspace(grid_lo, grid_hi, GRID)
 
     fig, ax = plt.subplots(figsize=(5.0, 3.0))
     for key in DRAW_ORDER:
         label = CONDITIONS[key].label
         mat = np.array([
-            np.interp(grid, step, style.rolling_smooth(value))
+            np.interp(grid, step, value)
             for step, value in series[key]
         ])
         centre, lo, hi = stats.bootstrap_curve(mat)
         color = style.CONDITION_COLORS[label]
         ax.plot(grid, centre, color=color, linewidth=1.6)
         ax.fill_between(grid, lo, hi, color=color, alpha=0.20, linewidth=0)
+    ax.set_xlim(left=0)  # curves start once every seed's first window fills
     ax.set_xlabel("Environment step")
     ax.set_ylabel("Goal rate")
     ax.grid(alpha=0.25, linewidth=0.5)
