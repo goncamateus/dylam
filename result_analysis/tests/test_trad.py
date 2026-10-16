@@ -3,21 +3,11 @@
 Invokes trad/table.py through its actual CLI contract (--out-path) and
 parses the numbers back out of the three tabulars it writes.
 
-FIXTURE is transcribed from the numbers currently published in
-sections/results/trad/{performance,app}.tex in the sibling DyLam-TMLR repo
-(Chicken--Banana and the ablation rows: the 0/1-reward rerun on seeds 1..10,
-as published in DyLam-TNNLS)
-(tab:res/trad/summary, tab:res/trad/iqm, tab:res/trad/efficiency) -- not
-captured from this code. Most values reproduce exactly; a few are marked
-xfail below because Base SO RL has finished five more seeds on
-HalfCheetah-v4 and VSS-v0 since the manuscript was submitted (n=10 now,
-n=5 then), a genuine data change that ripples into the RQ1 family test and
-the HalfCheetah efficiency threshold. Per the migration's own testing
-rules, that is a discovery for the author to act on, not a bug to chase:
-the manuscript's Base SO RL numbers for those two environments are stale.
-DyLam-Scalar's mean/std (never computed by any script before this one) is
-off by ~0.1%, plausibly a rounding artifact of however it was originally
-computed by hand; its IQM matches exactly.
+FIXTURE holds the numbers published in the DyLam-TNNLS manuscript
+(Table II, the DyLam-Lagrangian adaptive-baseline row, and the AUC /
+threshold figures quoted in sections/results/trad/performance.tex), not
+values captured blindly from this code. Chicken--Banana is the 0/1-reward
+rerun on seeds 1..10; every cell has n=10.
 
 Also invokes the generator with --format html and checks the HTML sibling
 fragments' rows carry the same values as the LaTeX rows -- both are rendered
@@ -34,80 +24,81 @@ from bs4 import BeautifulSoup
 
 TABLE_SCRIPT = Path(__file__).resolve().parent.parent / "trad" / "table.py"
 
-STALE = pytest.mark.xfail(
-    reason="Base SO RL has 10 finished seeds now vs. 5 when the manuscript was "
-           "written; manuscript numbers are stale, not a code bug",
-    strict=False,
-)
-
-
-def _p(*args, xfail=False):
-    return pytest.param(*args, marks=STALE) if xfail else pytest.param(*args)
+def _p(*args):
+    return pytest.param(*args)
 
 
 SUMMARY_FIXTURE = [
-    _p("Chicken--Banana", "Base SO RL", dict(mean=2.200, std=0.422, n=10)),
-    _p("Chicken--Banana", "Q-Decomposition", dict(mean=2.124, std=0.614, n=10)),
-    _p("Chicken--Banana", "UDC", dict(mean=2.100, std=0.316, n=10)),
-    _p("Chicken--Banana", "DyLam", dict(mean=2.697, std=0.481, n=10)),
-    _p("HalfCheetah-v4", "Base SO RL", dict(mean=392.227, std=18.594, n=5), xfail=True),
-    _p("HalfCheetah-v4", "UDC", dict(mean=329.980, std=80.324, n=6)),
-    _p("HalfCheetah-v4", "DyLam", dict(mean=464.568, std=47.627, n=10)),
-    _p("HalfCheetah-v4 (env return)", "Base SO RL", dict(mean=7705.8, std=364.9, n=5), xfail=True),
-    _p("HalfCheetah-v4 (env return)", "UDC", dict(mean=6480.0, std=1579.1, n=6)),
-    _p("HalfCheetah-v4 (env return)", "DyLam", dict(mean=9086.5, std=962.1, n=10)),
-    _p("VSS-v0", "Base SO RL", dict(mean=0.071, std=0.020, n=5), xfail=True),
-    _p("VSS-v0", "UDC", dict(mean=0.060, std=0.012, n=5)),
-    _p("VSS-v0", "Tuned-UDC", dict(mean=0.424, std=0.115, n=7)),
-    _p("VSS-v0", "DyLam", dict(mean=0.852, std=0.021, n=10)),
-    _p("Chicken--Banana", "DyLam-Scalar", dict(mean=0.175, std=0.287, n=10)),
-    _p("Chicken--Banana", "DyLam-OpenLoop", dict(mean=2.198, std=0.423, n=10)),
-    _p("VSS-v0", "DyLam-Scalar", dict(mean=0.669, std=0.032, n=10)),
-    _p("VSS-v0", "DyLam-OpenLoop", dict(mean=0.759, std=0.134, n=10)),
-    _p("HalfCheetah-v4", "DyLam-Scalar", dict(mean=481.483, std=11.764, n=10)),
-    _p("HalfCheetah-v4", "DyLam-OpenLoop", dict(mean=466.689, std=54.181, n=10)),
-    _p("HalfCheetah-v4 (env return)", "DyLam-Scalar", dict(mean=9426.3, std=239.1, n=10)),
-    _p("HalfCheetah-v4 (env return)", "DyLam-OpenLoop", dict(mean=9141.9, std=1069.0, n=10)),
+   _p("Chicken--Banana", "Base SO RL", dict(mean=2.200, std=0.422, n=10)),
+   _p("Chicken--Banana", "Q-Decomposition", dict(mean=2.124, std=0.614, n=10)),
+   _p("Chicken--Banana", "UDC", dict(mean=2.100, std=0.316, n=10)),
+   _p("Chicken--Banana", "DyLam", dict(mean=2.697, std=0.481, n=10)),
+   _p("Chicken--Banana", "DyLam-Scalar", dict(mean=0.175, std=0.287, n=10)),
+   _p("Chicken--Banana", "DyLam-OpenLoop", dict(mean=2.198, std=0.423, n=10)),
+   _p("Chicken--Banana", "DyLam-Lagrangian", dict(mean=2.100, std=0.316, n=10)),
+   _p("HalfCheetah-v4", "Base SO RL", dict(mean=409.407, std=36.048, n=10)),
+   _p("HalfCheetah-v4", "UDC", dict(mean=284.942, std=83.861, n=10)),
+   _p("HalfCheetah-v4", "DyLam", dict(mean=464.568, std=47.627, n=10)),
+   _p("HalfCheetah-v4", "DyLam-Scalar", dict(mean=481.483, std=11.764, n=10)),
+   _p("HalfCheetah-v4", "DyLam-OpenLoop", dict(mean=466.689, std=54.181, n=10)),
+   _p("HalfCheetah-v4", "DyLam-Lagrangian", dict(mean=379.891, std=32.993, n=10)),
+   _p("HalfCheetah-v4 (env return)", "Base SO RL", dict(mean=8043.4, std=708.8, n=10)),
+   _p("HalfCheetah-v4 (env return)", "UDC", dict(mean=5593.5, std=1649.5, n=10)),
+   _p("HalfCheetah-v4 (env return)", "DyLam", dict(mean=9086.5, std=962.1, n=10)),
+   _p("HalfCheetah-v4 (env return)", "DyLam-Scalar", dict(mean=9426.3, std=239.1, n=10)),
+   _p("HalfCheetah-v4 (env return)", "DyLam-OpenLoop", dict(mean=9141.9, std=1069.0, n=10)),
+   _p("HalfCheetah-v4 (env return)", "DyLam-Lagrangian", dict(mean=7370.5, std=653.2, n=10)),
+   _p("VSS-v0", "Base SO RL", dict(mean=0.070, std=0.023, n=10)),
+   _p("VSS-v0", "UDC", dict(mean=0.054, std=0.011, n=10)),
+   _p("VSS-v0", "Tuned-UDC", dict(mean=0.388, std=0.116, n=10)),
+   _p("VSS-v0", "DyLam", dict(mean=0.852, std=0.021, n=10)),
+   _p("VSS-v0", "DyLam-Scalar", dict(mean=0.669, std=0.032, n=10)),
+   _p("VSS-v0", "DyLam-OpenLoop", dict(mean=0.759, std=0.134, n=10)),
+   _p("VSS-v0", "DyLam-Lagrangian", dict(mean=0.853, std=0.048, n=10)),
 ]
 
 IQM_FIXTURE = [
-    _p("Chicken--Banana", "Base SO RL", (2.00, 2.00, 2.50)),
-    _p("Chicken--Banana", "Q-Decomposition", (2.01, 1.70, 2.62)),
-    _p("Chicken--Banana", "UDC", (2.00, 2.00, 2.17)),
-    _p("Chicken--Banana", "DyLam", (2.83, 2.33, 3.00)),
-    _p("HalfCheetah-v4", "Base SO RL", (389.9, 374.5, 413.0), xfail=True),
-    _p("HalfCheetah-v4", "UDC", (333.3, 260.4, 395.4)),
-    _p("HalfCheetah-v4", "DyLam", (472.6, 434.0, 496.9)),
-    _p("HalfCheetah-v4 (env return)", "Base SO RL", (7661.7, 7356.2, 8113.5), xfail=True),
-    _p("HalfCheetah-v4 (env return)", "UDC", (6543.5, 5114.5, 7766.1)),
-    _p("HalfCheetah-v4 (env return)", "DyLam", (9249.9, 8467.7, 9742.9)),
-    _p("VSS-v0", "Base SO RL", (0.068, 0.052, 0.093), xfail=True),
-    _p("VSS-v0", "UDC", (0.060, 0.048, 0.073)),
-    _p("VSS-v0", "Tuned-UDC", (0.394, 0.355, 0.516)),
-    _p("VSS-v0", "DyLam", (0.848, 0.838, 0.865)),
-    _p("Chicken--Banana", "DyLam-Scalar", (0.08, 0.00, 0.35)),
-    _p("Chicken--Banana", "DyLam-OpenLoop", (2.00, 2.00, 2.50)),
-    _p("VSS-v0", "DyLam-Scalar", (0.671, 0.651, 0.689)),
-    _p("VSS-v0", "DyLam-OpenLoop", (0.791, 0.663, 0.847)),
-    _p("HalfCheetah-v4", "DyLam-Scalar", (481.9, 473.1, 490.3)),
-    _p("HalfCheetah-v4", "DyLam-OpenLoop", (481.0, 435.9, 500.3)),
-    _p("HalfCheetah-v4 (env return)", "DyLam-Scalar", (9433.5, 9256.3, 9605.8)),
-    _p("HalfCheetah-v4 (env return)", "DyLam-OpenLoop", (9423.5, 8537.2, 9806.0)),
+   _p("Chicken--Banana", "Base SO RL", (2.00, 2.00, 2.50)),
+   _p("Chicken--Banana", "Q-Decomposition", (2.01, 1.70, 2.62)),
+   _p("Chicken--Banana", "UDC", (2.00, 2.00, 2.17)),
+   _p("Chicken--Banana", "DyLam", (2.83, 2.33, 3.00)),
+   _p("Chicken--Banana", "DyLam-Scalar", (0.08, 0.00, 0.35)),
+   _p("Chicken--Banana", "DyLam-OpenLoop", (2.00, 2.00, 2.50)),
+   _p("Chicken--Banana", "DyLam-Lagrangian", (2.00, 2.00, 2.17)),
+   _p("HalfCheetah-v4", "Base SO RL", (407.1, 382.6, 436.8)),
+   _p("HalfCheetah-v4", "UDC", (271.7, 218.4, 347.5)),
+   _p("HalfCheetah-v4", "DyLam", (472.6, 434.0, 496.9)),
+   _p("HalfCheetah-v4", "DyLam-Scalar", (481.9, 473.1, 490.3)),
+   _p("HalfCheetah-v4", "DyLam-OpenLoop", (481.0, 435.9, 500.3)),
+   _p("HalfCheetah-v4", "DyLam-Lagrangian", (380.0, 356.1, 401.8)),
+   _p("HalfCheetah-v4 (env return)", "Base SO RL", (7998.9, 7516.5, 8581.7)),
+   _p("HalfCheetah-v4 (env return)", "UDC", (5332.7, 4283.2, 6822.8)),
+   _p("HalfCheetah-v4 (env return)", "DyLam", (9249.9, 8467.7, 9742.9)),
+   _p("HalfCheetah-v4 (env return)", "DyLam-Scalar", (9433.5, 9256.3, 9605.8)),
+   _p("HalfCheetah-v4 (env return)", "DyLam-OpenLoop", (9423.5, 8537.2, 9806.0)),
+   _p("HalfCheetah-v4 (env return)", "DyLam-Lagrangian", (7368.8, 6897.4, 7802.3)),
+   _p("VSS-v0", "Base SO RL", (0.071, 0.056, 0.087)),
+   _p("VSS-v0", "UDC", (0.052, 0.046, 0.061)),
+   _p("VSS-v0", "Tuned-UDC", (0.374, 0.317, 0.446)),
+   _p("VSS-v0", "DyLam", (0.848, 0.838, 0.865)),
+   _p("VSS-v0", "DyLam-Scalar", (0.671, 0.651, 0.689)),
+   _p("VSS-v0", "DyLam-OpenLoop", (0.791, 0.663, 0.847)),
+   _p("VSS-v0", "DyLam-Lagrangian", (0.859, 0.818, 0.889)),
 ]
 
 # (column, method, reached, total, median value or None, unit, auc_mean, auc_std)
 EFFICIENCY_FIXTURE = [
-    _p("Chicken--Banana", "Base SO RL", 2, 10, 135, "ep", 0.419, 0.272),
-    _p("Chicken--Banana", "Q-Decomposition", 8, 10, 382, "ep", 0.494, 0.244),
-    _p("Chicken--Banana", "UDC", 1, 10, 140, "ep", 0.353, 0.204),
-    _p("Chicken--Banana", "DyLam", 7, 10, 551, "ep", 0.596, 0.266),
-    _p("HalfCheetah-v4", "Base SO RL", 3, 5, 431, "k", 0.347, 0.040, xfail=True),
-    _p("HalfCheetah-v4", "UDC", 1, 6, 400, "k", 0.182, 0.143, xfail=True),
-    _p("HalfCheetah-v4", "DyLam", 9, 10, 219, "k", 0.523, 0.128, xfail=True),
-    _p("VSS-v0", "Base SO RL", 0, 5, None, None, 0.070, 0.007, xfail=True),
-    _p("VSS-v0", "UDC", 0, 5, None, None, 0.080, 0.008),
-    _p("VSS-v0", "Tuned-UDC", 7, 7, 118, "k", 0.368, 0.018),
-    _p("VSS-v0", "DyLam", 10, 10, 105, "k", 0.670, 0.030),
+   _p("Chicken--Banana", "Base SO RL", 2, 10, 135, "ep", 0.419, 0.272),
+   _p("Chicken--Banana", "Q-Decomposition", 8, 10, 382, "ep", 0.494, 0.244),
+   _p("Chicken--Banana", "UDC", 1, 10, 140, "ep", 0.353, 0.204),
+   _p("Chicken--Banana", "DyLam", 7, 10, 551, "ep", 0.596, 0.266),
+   _p("HalfCheetah-v4", "Base SO RL", 5, 10, 359, "k", 0.379, 0.069),
+   _p("HalfCheetah-v4", "UDC", 1, 10, 418, "k", 0.128, 0.146),
+   _p("HalfCheetah-v4", "DyLam", 9, 10, 227, "k", 0.541, 0.122),
+   _p("VSS-v0", "Base SO RL", 1, 10, 492, "k", 0.068, 0.007),
+   _p("VSS-v0", "UDC", 6, 10, 301, "k", 0.077, 0.006),
+   _p("VSS-v0", "Tuned-UDC", 10, 10, 112, "k", 0.338, 0.050),
+   _p("VSS-v0", "DyLam", 10, 10, 102, "k", 0.670, 0.030),
 ]
 
 
@@ -133,7 +124,7 @@ def _parse_grid(tex, pattern, build):
 
 def parse_summary(tex):
     return _parse_grid(
-        tex, r"\$([\d.]+) \\pm ([\d.]+)(\^\\ast)?\$.*n\{=\}(\d+)",
+        tex, r"\$([\d.]+) \\pm ([\d.]+)(\^\\ast)?(?:\^\\dagger)?\$.*n\{=\}(\d+)",
         lambda m: dict(mean=float(m.group(1)), std=float(m.group(2)),
                       n=int(m.group(4)), star=bool(m.group(3))),
     )
